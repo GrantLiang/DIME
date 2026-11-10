@@ -9,8 +9,9 @@ on:
         type: boolean
         default: true
   push:
-    branches: [master]
+    branches: [master, 'build/**']
     paths:
+      - '.github/workflows/build_installer.yml'
       - 'src/**/*.cpp'
       - 'src/**/*.h'
       - 'src/**/*.rc'
