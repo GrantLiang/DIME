@@ -149,7 +149,19 @@ jobs:
         shell: pwsh
 
 
+      - name: Upload installer (build/** branches)
+        if: startsWith(github.ref, 'refs/heads/build/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: DIME-installer
+          path: |
+            installer/DIME-Universal.exe
+            installer/DIME-Universal.zip
+            installer/DIME-64bit.msi
+            installer/DIME-32bit.msi
+
       - name: Commit test files
+        if: ${{ !startsWith(github.ref, 'refs/heads/build/') }}
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
