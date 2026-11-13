@@ -55,8 +55,7 @@
     <ClInclude Include="RustSessionHost.h" />
     <ClInclude Include="UILayout.h" />
     <ClInclude Include="RustShadowWindow.h" />
-    <ClInclude Include="RustCandidateWindow.h" />
-    <ClInclude Include="RustNotifyWindow.h" />
+
     <ClInclude Include="CandidateWindow.h" />
     <ClInclude Include="Compartment.h" />
     <ClInclude Include="CompositionProcessorEngine.h" />
@@ -111,13 +110,15 @@
     <ClCompile Include="CandidateListModel.cpp" />
     <ClCompile Include="RustCandidateListModel.cpp" />
     <ClCompile Include="RustSessionHost.cpp" />
-    <ClCompile Include="UILayout.cpp" />
+    <!-- Layout math is dime-ui in the Rust build. UILayout.cpp stays for the C++ build
+         (CandidateWindow / ScrollBarWindow / DIME_CPP_PRESENTER). Tests compile their own. -->
+    <ClCompile Include="UILayout.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="RustShadowWindow.cpp" />
-    <ClCompile Include="RustCandidateWindow.cpp" />
-    <ClCompile Include="RustNotifyWindow.cpp" />
+
     <ClCompile Include="CandidateWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="Config.cpp" />
-    <ClCompile Include="ConfigDialog.cpp" />
+    <!-- The legacy PropertySheet (ConfigDialog.cpp) and its dialog resources were
+         removed in phase 5b-10; DIMESettings.exe is the only settings UI. -->
     <ClCompile Include="Compartment.cpp" />
     <ClCompile Include="Composition.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>

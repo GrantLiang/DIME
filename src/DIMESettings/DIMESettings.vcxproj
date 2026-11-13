@@ -109,6 +109,23 @@
     <ClInclude Include="SettingsWindow.h" />
     <ClInclude Include="SettingsPageLayout.h" />
     <ClInclude Include="SettingsGeometry.h" />
+    <ClInclude Include="SettingsWindowLayout.h" />
+    <ClInclude Include="SettingsWindowPaint.h" />
+    <ClInclude Include="SettingsMsgBox.h" />
+    <ClInclude Include="SettingsNav.h" />
+    <ClInclude Include="SettingsCommand.h" />
+    <ClInclude Include="SettingsEditor.h" />
+    <ClInclude Include="SettingsPopulate.h" />
+    <ClInclude Include="SettingsControls.h" />
+    <ClInclude Include="SettingsLifecycle.h" />
+    <ClInclude Include="SettingsFrame.h" />
+    <ClInclude Include="SettingsOwnerDraw.h" />
+    <ClInclude Include="SettingsWinHost.h" />
+    <ClInclude Include="SettingsProc.h" />
+    <ClInclude Include="SettingsDriver.h" />
+    <ClInclude Include="SettingsChildren.h" />
+    <ClInclude Include="SettingsShell.h" />
+    <ClInclude Include="SettingsApp.h" />
     <ClInclude Include="DIMESettings.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="DIMESettingsResource.h" />
@@ -118,7 +135,6 @@
     <ClCompile Include="..\BaseStructure.cpp" />
     <ClCompile Include="..\CompositionProcessorEngine.cpp" />
     <ClCompile Include="..\Config.cpp" />
-    <ClCompile Include="..\ConfigDialog.cpp" />
     <ClCompile Include="..\DictionaryParser.cpp" />
     <ClCompile Include="..\DictionarySearch.cpp" />
     <ClCompile Include="..\File.cpp" />
@@ -132,6 +148,23 @@
     <ClCompile Include="SettingsWindow.cpp" />
     <ClCompile Include="SettingsPageLayout.cpp" />
     <ClCompile Include="SettingsGeometry.cpp" />
+    <ClCompile Include="SettingsWindowLayout.cpp" />
+    <ClCompile Include="SettingsWindowPaint.cpp" />
+    <ClCompile Include="SettingsMsgBox.cpp" />
+    <ClCompile Include="SettingsNav.cpp" />
+    <ClCompile Include="SettingsCommand.cpp" />
+    <ClCompile Include="SettingsEditor.cpp" />
+    <ClCompile Include="SettingsPopulate.cpp" />
+    <ClCompile Include="SettingsControls.cpp" />
+    <ClCompile Include="SettingsLifecycle.cpp" />
+    <ClCompile Include="SettingsFrame.cpp" />
+    <ClCompile Include="SettingsOwnerDraw.cpp" />
+    <ClCompile Include="SettingsWinHost.cpp" />
+    <ClCompile Include="SettingsProc.cpp" />
+    <ClCompile Include="SettingsDriver.cpp" />
+    <ClCompile Include="SettingsChildren.cpp" />
+    <ClCompile Include="SettingsShell.cpp" />
+    <ClCompile Include="SettingsApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\DIME.rc" />
