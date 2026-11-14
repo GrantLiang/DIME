@@ -759,6 +759,21 @@ Since phase 5b-12 the tests open the C++ and the Rust settings window side by si
 
 ---
 
+### Settings Screenshot Tests (8 tests, `SettingsScreenshotTest.cpp`)
+
+**Target**: every page of the real settings window, C++ (`SettingsWindow`) vs Rust (`dime-settings`), as pictures
+**Test File**: `src/tests/SettingsScreenshotTest.cpp` (class `SettingsScreenshotTest`, namespace `DIMEUnitTests`)
+
+Phase 5b-13. Both windows side by side over `SettingsFakeApp` (layered, alpha 0, click-through, not activated). Each test method is one theme × dpi: `Light96`, `Light120`, `Light144`, `Light192`, `Dark96`, `Dark120`, `Dark144`, `Dark192`. Each walks 26 pages (home and every sub-page of the four IMEs, the load-table page) at a wide size and at a size below the sidebar collapse break, and requires the two pictures to be identical. The custom table page loads a table with valid and invalid lines.
+
+- Pictures are composed without DWM: the main window and the content area through their `WM_PAINT` bodies, child controls and the scroll bar through `WM_PRINT`, in z-order, clipped to the parent. (`PrintWindow(PW_RENDERFULLCONTENT)` returned stale frames when DWM was not composing.)
+- Sanity checks: the picture has several colours and the top-left corner matches the theme.
+- On a mismatch: C++, Rust and diff PNGs in `%TEMP%\DIMESettingsScreenshots`. With `DIME_SETTINGS_SCREENSHOT_DIR` set, every picture is saved for manual review.
+- Run with `/p:DimeTestRustEngine=false` for a full comparison: in the default build the C++ window also calls the Rust drawing and control code.
+- Manual checks that the tests cannot do: `docs/SETTINGS_MANUAL_CHECKLIST.md`.
+
+---
+
 ## Testing Tools
 
 ### Automated Testing

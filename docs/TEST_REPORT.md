@@ -265,6 +265,15 @@
   - **IT_RE_08**: Save of a valid table writes a UTF-16 BOM file, compiles it, disables Save
 - **Mutation check:** removing the Rust editor's event-mask restore after painting fails IT_RE_01, 02, 06 and 07
 
+#### Settings Screenshot Tests
+
+- **Tests:** 8 (`Light96`, `Light120`, `Light144`, `Light192`, `Dark96`, `Dark120`, `Dark144`, `Dark192`), 26 pages × wide and narrow each
+- **Status:** ✅ All Passing (2026-11-14: Debug x64, Win32, x64 all-C++)
+- **Files:** `SettingsScreenshotTest.cpp` (class `SettingsScreenshotTest`, namespace `DIMEUnitTests`)
+- **Setup:** C++ and Rust settings windows side by side over `SettingsFakeApp`; pictures composed from each window's `WM_PAINT` body and `WM_PRINT` of the child controls (phase 5b-13)
+- **Mutation check (all-C++ build):** the Rust owner-drawn button dropping its last character fails Dark96 and Light144 on every page with a button, with the difference exactly on the buttons
+- **Manual checklist:** `docs/SETTINGS_MANUAL_CHECKLIST.md`
+
 #### UT-09: CMemoryFile Filter + Cache Tests
 
 - **Tests:** 31 (UT-09-01 through UT-09-31)
