@@ -15,3 +15,6 @@ dime-config = { path = "../dime-config" }
 dime-core = { path = "../dime-core" }
 dime-settings = { path = "../dime-settings" }
 dime-ui = { path = "../dime-ui" }
+
+[target.'cfg(windows)'.dependencies]
+windows-link = "0.2.1"

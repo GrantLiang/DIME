@@ -1,0 +1,514 @@
+/********************************************************************************
+* SettingsAppParityTest: the settings app's configuration, C++
+* (SettingsApp::ConfigHost over CConfig) vs Rust (dime-ffi settings_app.rs,
+* phase 5b-15a), both driven through DimeSettingsAppVtbl.
+*
+* Each side gets its own temporary AppData folder and the same starting
+* state (settings values, CConfig statics, reverse-conversion list), then
+* the same random operations: LoadConfig / WriteConfig / ResetAllDefaults
+* for every mode, colour modes and palettes, SetColor, snapshots, reverse
+* selections, and INI files written or deleted behind the app's back.
+* After every step the return values, the settings values, the six live
+* colours, the snapshot, the paths and every INI file must match. The two
+* sides run one after the other: with DIME_USE_RUST_CONFIG, CConfig's values
+* are the same Rust object the Rust app uses.
+*
+* File times: after each step a changed INI file gets "base + step" as its
+* modification time and an unchanged one keeps its old time, on both sides,
+* so "the file was updated by someone else" does not depend on the clock.
+*
+* Source is ASCII only (the project compiles with code page 950).
+********************************************************************************/
+#include "pch.h"
+
+#ifdef DIME_RUST_AVAILABLE
+
+#include "CppUnitTest.h"
+#include <Windows.h>
+#include <array>
+#include <random>
+#include <string>
+#include <vector>
+
+#include "../Globals.h"
+#include "../Config.h"
+#include "../Define.h"
+#include "../DIMESettings/SettingsApp.h"
+#include "../DIMESettings/SettingsController.h"
+#include "dime_ffi.h"
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace DIMEUnitTests
+{
+    // Friend of CConfig: its statics for the settings app.
+    struct SettingsAppConfigAccess
+    {
+        struct Saved {
+            IME_MODE imeMode, configMode;
+            struct _stat stamp;
+            WCHAR ini[MAX_PATH], profile[MAX_PATH];
+            COLORREF colors[6];
+        };
+
+        static Saved Save()
+        {
+            Saved s = {};
+            s.imeMode = CConfig::_imeMode;
+            s.configMode = CConfig::_configIMEMode;
+            s.stamp = CConfig::_initTimeStamp;
+            memcpy(s.ini, CConfig::_pwszINIFileName, sizeof(s.ini));
+            memcpy(s.profile, CConfig::_pwzsDIMEProfile, sizeof(s.profile));
+            for (int i = 0; i < 6; i++) s.colors[i] = CConfig::colors[i].color;
+            return s;
+        }
+
+        static void Restore(const Saved& s)
+        {
+            CConfig::_imeMode = s.imeMode;
+            CConfig::_configIMEMode = s.configMode;
+            CConfig::_initTimeStamp = s.stamp;
+            memcpy(CConfig::_pwszINIFileName, s.ini, sizeof(s.ini));
+            memcpy(CConfig::_pwzsDIMEProfile, s.profile, sizeof(s.profile));
+            for (int i = 0; i < 6; i++) CConfig::colors[i].color = s.colors[i];
+        }
+
+        // The static initialisers.
+        static void Reset()
+        {
+            CConfig::_imeMode = IME_MODE::IME_MODE_NONE;
+            CConfig::_configIMEMode = IME_MODE::IME_MODE_NONE;
+            CConfig::_initTimeStamp = {};
+            CConfig::_pwszINIFileName[0] = 0;
+            CConfig::_pwzsDIMEProfile[0] = 0;
+            const COLORREF init[6] = { CANDWND_ITEM_COLOR, CANDWND_SELECTED_ITEM_COLOR, GetSysColor(COLOR_3DHIGHLIGHT),
+                CANDWND_PHRASE_COLOR, CANDWND_NUM_COLOR, CANDWND_SELECTED_BK_COLOR };
+            for (int i = 0; i < 6; i++) CConfig::colors[i].color = init[i];
+        }
+    };
+}
+
+namespace
+{
+    using Access = DIMEUnitTests::SettingsAppConfigAccess;
+
+    const wchar_t* const kIniNames[] = { L"DayiConfig.ini", L"ArrayConfig.ini", L"PhoneConfig.ini",
+        L"GenericConfig.ini", L"config.ini" };
+
+    // A reverse-conversion provider of the test list.
+    struct Provider {
+        GUID clsid, profile;
+        std::wstring description;
+    };
+
+    std::vector<Provider> TestProviders()
+    {
+        // The second entry has the Dayi profile: LoadConfig(Dayi) drops it.
+        const GUID dayi = { 0x36851834, 0x92ad, 0x4397, { 0x9f, 0x50, 0x80, 0x3, 0x84, 0xd5, 0xc2, 0x4c } };
+        std::vector<Provider> out;
+        out.push_back({ { 0x11111111, 1, 2, { 1, 2, 3, 4, 5, 6, 7, 8 } }, { 0x22222222, 3, 4, { 8, 7, 6, 5, 4, 3, 2, 1 } },
+            std::wstring(1, (wchar_t)0x5009) + L" one" });
+        out.push_back({ { 0x33333333, 5, 6, { 9, 9, 9, 9, 9, 9, 9, 9 } }, dayi, L"dayi itself" });
+        out.push_back({ { 0x44444444, 7, 8, { 1, 1, 1, 1, 1, 1, 1, 1 } }, { 0x55555555, 9, 10, { 2, 2, 2, 2, 2, 2, 2, 2 } },
+            L"three" });
+        return out;
+    }
+
+    std::wstring Hex(const void* p, size_t n)
+    {
+        static const wchar_t* d = L"0123456789abcdef";
+        std::wstring s;
+        const uint8_t* b = (const uint8_t*)p;
+        for (size_t i = 0; i < n; i++) { s += d[b[i] >> 4]; s += d[b[i] & 15]; }
+        return s;
+    }
+
+    std::string ReadBytes(const std::wstring& path)
+    {
+        std::string out;
+        HANDLE h = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+        if (h == INVALID_HANDLE_VALUE) return out;
+        char buf[65536];
+        DWORD n = 0;
+        while (ReadFile(h, buf, sizeof(buf), &n, nullptr) && n > 0) out.append(buf, n);
+        CloseHandle(h);
+        return out;
+    }
+
+    void WriteBytes(const std::wstring& path, const std::string& bytes)
+    {
+        HANDLE h = CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        Assert::IsTrue(h != INVALID_HANDLE_VALUE, path.c_str());
+        DWORD n = 0;
+        if (!bytes.empty()) WriteFile(h, bytes.data(), (DWORD)bytes.size(), &n, nullptr);
+        CloseHandle(h);
+    }
+
+    bool GetWriteTime(const std::wstring& path, FILETIME& ft)
+    {
+        WIN32_FILE_ATTRIBUTE_DATA a = {};
+        if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &a)) return false;
+        ft = a.ftLastWriteTime;
+        return true;
+    }
+
+    void SetWriteTime(const std::wstring& path, const FILETIME& ft)
+    {
+        HANDLE h = CreateFileW(path.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+        if (h == INVALID_HANDLE_VALUE) return;
+        SetFileTime(h, nullptr, nullptr, &ft);
+        CloseHandle(h);
+    }
+
+    std::string Utf16File(const std::wstring& text)
+    {
+        std::string s("\xFF\xFE", 2);
+        s.append((const char*)text.data(), text.size() * sizeof(wchar_t));
+        return s;
+    }
+
+    // One operation, replayed on both sides.
+    struct Op {
+        int kind = 0, a = 0, b = 0;
+        uint32_t c = 0;
+        std::wstring Name() const
+        {
+            return L"op " + std::to_wstring(kind) + L"(" + std::to_wstring(a) + L"," + std::to_wstring(b) + L","
+                + std::to_wstring(c) + L")";
+        }
+    };
+
+    std::vector<Op> RandomOps(unsigned seed, int count)
+    {
+        std::mt19937 rng(seed);
+        auto R = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
+        std::vector<Op> out;
+        for (int i = 0; i < count; i++) {
+            Op op;
+            static const int kinds[] = { 0, 0, 0, 1, 1, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11 };
+            op.kind = kinds[R(0, (int)_countof(kinds) - 1)];
+            op.a = R(0, 4);
+            op.b = R(0, 7);
+            op.c = (uint32_t)rng() & 0xFFFFFF;
+            out.push_back(op);
+        }
+        return out;
+    }
+
+    struct Side {
+        bool rust;
+        std::wstring dir;
+        const DimeSettingsAppVtbl* v = nullptr;
+        void* ctx = nullptr;
+        SettingsApp::ConfigHost cpp;     // the C++ host (and the Rust app's fallback)
+        void* native = nullptr;
+        std::vector<std::wstring> log;
+
+        std::wstring Ini(int i) const { return dir + L"\\DIME\\" + kIniNames[i]; }
+
+        std::wstring Norm(std::wstring s) const
+        {
+            for (size_t p; (p = s.find(dir)) != std::wstring::npos;) s.replace(p, dir.size(), L"<dir>");
+            return s;
+        }
+
+        std::wstring Str(size_t (*f)(void*, int32_t, uint16_t*, size_t), int arg)
+        {
+            uint16_t buf[1024] = {};
+            size_t n = f(ctx, arg, buf, 1024);
+            return Norm(std::wstring((const wchar_t*)buf, n < 1024 ? n : 1023));
+        }
+
+        // Values, description, colours, snapshot, reverse list, paths, files.
+        std::wstring State()
+        {
+            DimeConfigValues vals = {};
+            std::wstring desc = L"<null>";
+            if (rust) {
+                dime_settings_get_values(dime_settings_global(), &vals);
+                const uint16_t* t = nullptr;
+                size_t n = 0;
+                if (dime_settings_get_description(dime_settings_global(), &t, &n)) desc.assign((const wchar_t*)t, n);
+            } else {
+                CConfig::ExportValues(&vals);
+                if (WCHAR* d = CConfig::GetReverseConversionDescription()) desc = d;
+            }
+            bool end = false;
+            for (uint16_t& ch : vals.font_face_name) { if (end) ch = 0; else if (ch == 0) end = true; }
+            std::wstring s = L"values " + Hex(&vals, sizeof(vals)) + L"\ndesc [" + desc + L"]\n";
+            uint32_t colors[6] = {};
+            v->get_colors(ctx, colors);
+            s += L"colors " + Hex(colors, sizeof(colors)) + L" mode " + std::to_wstring(v->color_mode(ctx)) + L"\n";
+            SettingsSnapshot snap = {};
+            v->load_snapshot(ctx, &snap);
+            s += L"snapshot " + Hex(&snap, sizeof(snap)) + L"\n";
+            int n = v->reverse_count(ctx);
+            s += L"reverse " + std::to_wstring(n) + L" null " + std::to_wstring(v->reverse_is_null(ctx));
+            for (int i = 0; i < n; i++)
+                s += L" [" + Str(v->reverse_description, i) + L" cur " + std::to_wstring(v->reverse_is_current(ctx, i)) + L"]";
+            s += L"\n";
+            for (int m = 0; m < 4; m++)
+                s += L"paths " + Str(v->custom_table_txt_path, m) + L" " + Str(v->custom_table_cin_path, m) + L"\n";
+            uint16_t buf[1024] = {};
+            size_t len = v->app_data_path(ctx, buf, 1024);
+            s += L"appdata " + Norm(std::wstring((const wchar_t*)buf, len)) + L" 1809 " + std::to_wstring(v->windows_1809_or_later(ctx)) + L"\n";
+            for (int i = 0; i < 5; i++) {
+                std::string b = ReadBytes(Ini(i));
+                DWORD attr = GetFileAttributesW(Ini(i).c_str());
+                s += std::wstring(kIniNames[i]) + L" " + (attr == INVALID_FILE_ATTRIBUTES ? L"-" : Hex(b.data(), b.size())) + L"\n";
+            }
+            return s;
+        }
+    };
+
+    // The same starting point for each side.
+    void ResetCommon(const DimeConfigEnv& env, const std::vector<Provider>& providers)
+    {
+        DimeSettings* fresh = dime_settings_new(nullptr, &env);
+        DimeConfigValues v = {};
+        dime_settings_get_values(fresh, &v);
+        dime_settings_free(fresh);
+        CConfig::ImportValues(&v);
+        CConfig::SetReverseConversionDescriptionText(nullptr);
+        dime_settings_set_env(dime_settings_global(), &env);
+        dime_settings_set_values(dime_settings_global(), &v);
+        dime_settings_set_description(dime_settings_global(), nullptr, 0, 0);
+        Access::Reset();
+        CDIMEArray<LanguageProfileInfo> list;
+        for (const Provider& p : providers) {
+            LanguageProfileInfo* info = list.Append();
+            info->clsid = p.clsid;
+            info->guidProfile = p.profile;
+            info->description = const_cast<WCHAR*>(p.description.c_str());
+        }
+        CConfig::SetReverseConvervsionInfoList(&list);
+    }
+
+    void Run(Side& s, const std::vector<Op>& ops, const DimeConfigEnv& env, const std::vector<Provider>& providers)
+    {
+        CreateDirectoryW(s.dir.c_str(), nullptr);
+        ResetCommon(env, providers);
+        wcscpy_s(Global::testAppDataOverride, s.dir.c_str());
+        if (s.rust) {
+            s.native = dime_settings_native_app_new(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
+                static_cast<SettingsApp::Host*>(&s.cpp), (const uint16_t*)s.dir.c_str());
+            Assert::IsNotNull(s.native);
+            s.v = dime_settings_native_app_vtbl();
+            s.ctx = s.native;
+            std::vector<std::array<uint8_t, 16>> clsids, profiles;
+            std::vector<const uint16_t*> descs;
+            for (const Provider& p : providers) {
+                std::array<uint8_t, 16> a, b;
+                memcpy(a.data(), &p.clsid, 16);
+                memcpy(b.data(), &p.profile, 16);
+                clsids.push_back(a);
+                profiles.push_back(b);
+                descs.push_back((const uint16_t*)p.description.c_str());
+            }
+            dime_settings_native_app_set_reverse(s.native, providers.size(),
+                reinterpret_cast<const uint8_t(*)[16]>(clsids.data()), reinterpret_cast<const uint8_t(*)[16]>(profiles.data()),
+                descs.data());
+        } else {
+            s.v = static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl());
+            s.ctx = static_cast<SettingsApp::Host*>(&s.cpp);
+        }
+
+        FILETIME base = {};
+        SYSTEMTIME st = { 2031, 1, 0, 1, 0, 0, 0, 0 };
+        SystemTimeToFileTime(&st, &base);
+        auto at = [&](int step) {
+            ULARGE_INTEGER u = { { base.dwLowDateTime, base.dwHighDateTime } };
+            u.QuadPart += (ULONGLONG)step * 20000000ull;   // 2 s per step
+            FILETIME f = { u.LowPart, u.HighPart };
+            return f;
+        };
+
+        for (size_t i = 0; i < ops.size(); i++) {
+            const Op& op = ops[i];
+            // Files and times before the step.
+            std::string before[5];
+            bool existed[5];
+            FILETIME times[5] = {};
+            for (int f = 0; f < 5; f++) {
+                existed[f] = GetFileAttributesW(s.Ini(f).c_str()) != INVALID_FILE_ATTRIBUTES;
+                before[f] = ReadBytes(s.Ini(f));
+                GetWriteTime(s.Ini(f), times[f]);
+            }
+            std::wstring result;
+            switch (op.kind) {
+            case 0: s.v->load_config(s.ctx, op.a); break;
+            case 1: s.v->write_config(s.ctx, op.a); break;
+            case 2: s.v->reset_all_defaults(s.ctx, op.a); break;
+            case 3: s.v->set_color_mode(s.ctx, op.a % 4); break;
+            case 4: s.v->load_colors_for_mode(s.ctx, op.a % 4); break;
+            case 5: s.v->save_colors_for_mode(s.ctx, op.a % 4); break;
+            case 6: s.v->set_color(s.ctx, op.b % 6, op.c); break;
+            case 7: {
+                SettingsSnapshot snap = {};
+                s.v->load_snapshot(s.ctx, &snap);
+                uint8_t* p = reinterpret_cast<uint8_t*>(&snap);
+                p[(op.c >> 8) % sizeof(snap)] ^= (uint8_t)(1 << op.b);
+                s.v->apply_snapshot(s.ctx, &snap);
+                break;
+            }
+            case 8: s.v->set_reverse_selection(s.ctx, op.a % (s.v->reverse_count(s.ctx) + 1)); break;
+            case 9: {
+                // An INI file written by someone else.
+                std::wstring text;
+                switch (op.b % 4) {
+                case 0: text = L"[Config]\r\nMaxCodes = " + std::to_wstring(op.c % 9) + L"\r\nColorMode = "
+                    + std::to_wstring(op.c % 5) + L"\r\nItemColor = 0x" + std::to_wstring(op.c % 1000) + L"\r\n"; break;
+                case 1: text = L"[Config]\r\nAutoCompose = 1\r\nFontSize = " + std::to_wstring(op.c % 40)
+                    + L"\r\nAppPermissionSet = " + std::to_wstring(op.c & 1) + L"\r\nDarkItemColor = 0x00FF00\r\n"; break;
+                case 2: text = L"no section\r\nMaxCodes = 3\r\n"; break;
+                default: text.clear(); break;
+                }
+                std::string bytes = (op.b % 4 == 3) ? std::string("\x01\x02\x03", (op.c % 4)) : Utf16File(text);
+                CreateDirectoryW((s.dir + L"\\DIME").c_str(), nullptr);
+                WriteBytes(s.Ini(op.a), bytes);
+                break;
+            }
+            case 10: DeleteFileW(s.Ini(op.a).c_str()); break;
+            default: {
+                // Getters only.
+                result = L"dark " + std::to_wstring(s.v->system_dark(s.ctx));
+                break;
+            }
+            }
+            // Deterministic file times.
+            for (int f = 0; f < 5; f++) {
+                if (GetFileAttributesW(s.Ini(f).c_str()) == INVALID_FILE_ATTRIBUTES) continue;
+                std::string now = ReadBytes(s.Ini(f));
+                if (!existed[f] || now != before[f]) SetWriteTime(s.Ini(f), at((int)i + 1));
+                else SetWriteTime(s.Ini(f), times[f]);
+            }
+            s.log.push_back(op.Name() + L" " + result + L"\n" + s.State());
+        }
+        if (s.native) dime_settings_native_app_free(s.native);
+        s.native = nullptr;
+    }
+
+    void Cleanup(const std::wstring& dir)
+    {
+        for (int i = 0; i < 5; i++) DeleteFileW((dir + L"\\DIME\\" + kIniNames[i]).c_str());
+        RemoveDirectoryW((dir + L"\\DIME").c_str());
+        RemoveDirectoryW(dir.c_str());
+    }
+}
+
+namespace DIMEUnitTests
+{
+    TEST_CLASS(SettingsAppParityTest)
+    {
+        DimeConfigValues _savedValues = {};
+        std::wstring _savedDescription;
+        bool _savedHasDescription = false;
+        SettingsAppConfigAccess::Saved _savedStatics = {};
+        WCHAR _savedAppData[MAX_PATH] = {};
+
+    public:
+        TEST_METHOD_INITIALIZE(Setup)
+        {
+            CConfig::ExportValues(&_savedValues);
+            WCHAR* d = CConfig::GetReverseConversionDescription();
+            _savedHasDescription = d != nullptr;
+            _savedDescription = d ? d : L"";
+            _savedStatics = SettingsAppConfigAccess::Save();
+            wcscpy_s(_savedAppData, Global::testAppDataOverride);
+        }
+
+        TEST_METHOD_CLEANUP(Teardown)
+        {
+            CConfig::ImportValues(&_savedValues);
+            CConfig::SetReverseConversionDescriptionText(_savedHasDescription ? _savedDescription.c_str() : nullptr);
+            SettingsAppConfigAccess::Restore(_savedStatics);
+            CDIMEArray<LanguageProfileInfo> empty;
+            CConfig::SetReverseConvervsionInfoList(&empty);
+            wcscpy_s(Global::testAppDataOverride, _savedAppData);
+        }
+
+        // Random operations: every step matches.
+        TEST_METHOD(RandomOperations)
+        {
+            DimeConfigEnv env = { GetSysColor(COLOR_3DHIGHLIGHT), Global::isWindows1809OrLater ? 1 : 0 };
+            std::vector<Provider> providers = TestProviders();
+            wchar_t tmp[MAX_PATH] = {};
+            GetTempPathW(MAX_PATH, tmp);
+            int loads = 0;
+            for (unsigned seed = 1; seed <= 6; seed++) {
+                std::vector<Op> ops = RandomOps(seed, 250);
+                for (const Op& op : ops) if (op.kind == 0) loads++;
+                std::wstring base = std::wstring(tmp) + L"DIMEAppParity" + std::to_wstring(GetCurrentProcessId());
+                Side c, r;
+                c.rust = false;
+                r.rust = true;
+                c.dir = base + L"C";
+                r.dir = base + L"R";
+                Cleanup(c.dir);
+                Cleanup(r.dir);
+                Run(c, ops, env, providers);
+                Run(r, ops, env, providers);
+                Cleanup(c.dir);
+                Cleanup(r.dir);
+                for (size_t i = 0; i < ops.size(); i++) {
+                    if (c.log[i] == r.log[i]) continue;
+                    // Only the lines that differ.
+                    std::wstring diff;
+                    size_t pc = 0, pr = 0;
+                    while (pc < c.log[i].size() || pr < r.log[i].size()) {
+                        size_t ec = c.log[i].find(L'\n', pc), er = r.log[i].find(L'\n', pr);
+                        std::wstring lc = c.log[i].substr(pc, ec == std::wstring::npos ? std::wstring::npos : ec - pc);
+                        std::wstring lr = r.log[i].substr(pr, er == std::wstring::npos ? std::wstring::npos : er - pr);
+                        if (lc != lr) diff += L"C++:  " + lc.substr(0, 600) + L"\nRust: " + lr.substr(0, 600) + L"\n";
+                        pc = ec == std::wstring::npos ? c.log[i].size() : ec + 1;
+                        pr = er == std::wstring::npos ? r.log[i].size() : er + 1;
+                    }
+                    std::wstring history;
+                    for (size_t k = (i > 6 ? i - 6 : 0); k <= i; k++) history += ops[k].Name() + L"; ";
+                    Assert::Fail((L"seed " + std::to_wstring(seed) + L" step " + std::to_wstring(i) + L"\nops: " + history
+                        + L"\n" + diff).c_str());
+                }
+            }
+            Assert::IsTrue(loads > 100, std::to_wstring(loads).c_str());
+        }
+
+        // What the app reads from the system is the same on both sides.
+        TEST_METHOD(SystemFacts)
+        {
+            SettingsApp::ConfigHost cpp;
+            void* native = dime_settings_native_app_new(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
+                static_cast<SettingsApp::Host*>(&cpp), nullptr);
+            Assert::IsNotNull(native);
+            const DimeSettingsAppVtbl* cv = static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl());
+            const DimeSettingsAppVtbl* rv = dime_settings_native_app_vtbl();
+            void* cc = static_cast<SettingsApp::Host*>(&cpp);
+            Assert::AreEqual(cv->dpi_for_window(cc, nullptr), rv->dpi_for_window(native, nullptr), L"dpi");
+            Assert::AreEqual(cv->system_dark(cc), rv->system_dark(native), L"dark");
+            // %APPDATA% without the test override.
+            wchar_t saved[MAX_PATH];
+            wcscpy_s(saved, Global::testAppDataOverride);
+            Global::testAppDataOverride[0] = 0;
+            uint16_t a[MAX_PATH] = {}, b[MAX_PATH] = {};
+            size_t na = cv->app_data_path(cc, a, MAX_PATH), nb = rv->app_data_path(native, b, MAX_PATH);
+            wcscpy_s(Global::testAppDataOverride, saved);
+            Assert::AreEqual(std::wstring((const wchar_t*)a, na), std::wstring((const wchar_t*)b, nb), L"AppData");
+            // The TSF reverse-conversion providers of this machine.
+            CoInitialize(nullptr);
+            cv->enumerate_reverse_providers(cc);
+            rv->enumerate_reverse_providers(native);
+            int n = cv->reverse_count(cc);
+            Assert::AreEqual(n, rv->reverse_count(native), L"providers");
+            for (int i = 0; i < n; i++) {
+                uint16_t x[256] = {}, y[256] = {};
+                cv->reverse_description(cc, i, x, 256);
+                rv->reverse_description(native, i, y, 256);
+                Assert::AreEqual(std::wstring((const wchar_t*)x), std::wstring((const wchar_t*)y), L"provider description");
+            }
+            Logger::WriteMessage((L"reverse-conversion providers: " + std::to_wstring(n) + L"\n").c_str());
+            dime_settings_native_app_free(native);
+            CoUninitialize();
+        }
+    };
+}
+
+#endif

@@ -21,6 +21,7 @@ dependencies = [
  "dime-core",
  "dime-settings",
  "dime-ui",
+ "windows-link",
 ]
 
 [[package]]

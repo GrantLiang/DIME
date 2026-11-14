@@ -1761,6 +1761,20 @@ typedef struct DimeSettingsAppVtbl {
     size_t (*app_data_path)(void* ctx, uint16_t* buf, size_t cap);
     int32_t (*windows_1809_or_later)(void* ctx);
 } DimeSettingsAppVtbl;
+/* The settings app's configuration in Rust (phase 5b-15a, settings_app.rs):
+ * an app whose vtable is dime_settings_native_app_vtbl(). It does what
+ * SettingsApp::ConfigHost does with CConfig (INI load / write, palettes and
+ * colours, reverse-conversion providers, snapshot, paths, dpi, dark theme)
+ * on the process-wide settings object; the message box, table parsing and
+ * the engine go to `fallback`, which must outlive the app. app_data: a
+ * folder used instead of %APPDATA% (tests), or NULL.
+ * dime_settings_native_app_set_reverse replaces the provider list (tests;
+ * clsids / profiles are 16 bytes each, descriptions NUL-terminated). */
+const DimeSettingsAppVtbl* dime_settings_native_app_vtbl(void);
+void* dime_settings_native_app_new(const DimeSettingsAppVtbl* fallback, void* fallback_ctx, const uint16_t* app_data);
+void dime_settings_native_app_free(void* app);
+void dime_settings_native_app_set_reverse(void* app, size_t count, const uint8_t (*clsids)[16],
+    const uint8_t (*profiles)[16], const uint16_t* const* descriptions);
 /* SettingsWindow::Run: register the classes, create and show the window
  * (saved placement or n_cmd_show), run the message loop. */
 int32_t dime_settings_window_run(const DimeSettingsAppVtbl* vtbl, void* app, void* instance, int32_t n_cmd_show,

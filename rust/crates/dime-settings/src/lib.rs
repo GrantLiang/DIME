@@ -26,6 +26,8 @@
 //! The binary comes in a later step.
 
 #[cfg(windows)]
+pub mod appenv;
+#[cfg(windows)]
 pub mod children;
 pub mod command;
 pub mod controls;

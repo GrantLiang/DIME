@@ -696,7 +696,7 @@ pub unsafe extern "C" fn dime_settings_nav_min_track_size(screen_dpi: u32, out: 
 
 use dime_settings::command::{self, CommandEvent, LogFont};
 
-type Ctx = *mut c_void;
+pub(crate) type Ctx = *mut c_void;
 
 /// `DimeSettingsCmdHostVtbl`: the order must match dime_ffi.h and
 /// SettingsCommand.cpp (`kVtbl`). Returned strings stay valid until the next
@@ -2102,41 +2102,41 @@ use dime_settings::window::{self, App};
 /// SettingsApp.cpp (kVtbl).
 #[repr(C)]
 pub struct AppVtbl {
-    dpi_for_window: unsafe extern "C" fn(Ctx, Handle) -> u32,
-    system_dark: unsafe extern "C" fn(Ctx) -> i32,
-    show_message: unsafe extern "C" fn(Ctx, Handle, *const u16, *const u16, u32) -> i32,
-    load_config: unsafe extern "C" fn(Ctx, i32),
-    write_config: unsafe extern "C" fn(Ctx, i32),
-    reset_all_defaults: unsafe extern "C" fn(Ctx, i32),
-    color_mode: unsafe extern "C" fn(Ctx) -> i32,
-    set_color_mode: unsafe extern "C" fn(Ctx, i32),
-    load_colors_for_mode: unsafe extern "C" fn(Ctx, i32),
-    save_colors_for_mode: unsafe extern "C" fn(Ctx, i32),
-    get_colors: unsafe extern "C" fn(Ctx, *mut u32),
-    set_color: unsafe extern "C" fn(Ctx, i32, u32),
-    set_reverse_selection: unsafe extern "C" fn(Ctx, i32),
-    enumerate_reverse_providers: unsafe extern "C" fn(Ctx),
-    reverse_count: unsafe extern "C" fn(Ctx) -> i32,
-    reverse_description: unsafe extern "C" fn(Ctx, i32, *mut u16, usize) -> usize,
-    reverse_is_current: unsafe extern "C" fn(Ctx, i32) -> i32,
-    reverse_is_null: unsafe extern "C" fn(Ctx) -> i32,
-    load_snapshot: unsafe extern "C" fn(Ctx, *mut SettingsSnapshot),
-    apply_snapshot: unsafe extern "C" fn(Ctx, *const SettingsSnapshot),
-    parse_cin: unsafe extern "C" fn(Ctx, *const u16, *const u16, i32) -> i32,
-    recreate_engine: unsafe extern "C" fn(Ctx, i32),
-    destroy_engine: unsafe extern "C" fn(Ctx),
-    has_engine: unsafe extern "C" fn(Ctx) -> i32,
-    engine_char_ok: unsafe extern "C" fn(Ctx, u16) -> i32,
-    custom_table_txt_path: unsafe extern "C" fn(Ctx, i32, *mut u16, usize) -> usize,
-    custom_table_cin_path: unsafe extern "C" fn(Ctx, i32, *mut u16, usize) -> usize,
-    app_data_path: unsafe extern "C" fn(Ctx, *mut u16, usize) -> usize,
-    windows_1809_or_later: unsafe extern "C" fn(Ctx) -> i32,
+    pub(crate) dpi_for_window: unsafe extern "C" fn(Ctx, Handle) -> u32,
+    pub(crate) system_dark: unsafe extern "C" fn(Ctx) -> i32,
+    pub(crate) show_message: unsafe extern "C" fn(Ctx, Handle, *const u16, *const u16, u32) -> i32,
+    pub(crate) load_config: unsafe extern "C" fn(Ctx, i32),
+    pub(crate) write_config: unsafe extern "C" fn(Ctx, i32),
+    pub(crate) reset_all_defaults: unsafe extern "C" fn(Ctx, i32),
+    pub(crate) color_mode: unsafe extern "C" fn(Ctx) -> i32,
+    pub(crate) set_color_mode: unsafe extern "C" fn(Ctx, i32),
+    pub(crate) load_colors_for_mode: unsafe extern "C" fn(Ctx, i32),
+    pub(crate) save_colors_for_mode: unsafe extern "C" fn(Ctx, i32),
+    pub(crate) get_colors: unsafe extern "C" fn(Ctx, *mut u32),
+    pub(crate) set_color: unsafe extern "C" fn(Ctx, i32, u32),
+    pub(crate) set_reverse_selection: unsafe extern "C" fn(Ctx, i32),
+    pub(crate) enumerate_reverse_providers: unsafe extern "C" fn(Ctx),
+    pub(crate) reverse_count: unsafe extern "C" fn(Ctx) -> i32,
+    pub(crate) reverse_description: unsafe extern "C" fn(Ctx, i32, *mut u16, usize) -> usize,
+    pub(crate) reverse_is_current: unsafe extern "C" fn(Ctx, i32) -> i32,
+    pub(crate) reverse_is_null: unsafe extern "C" fn(Ctx) -> i32,
+    pub(crate) load_snapshot: unsafe extern "C" fn(Ctx, *mut SettingsSnapshot),
+    pub(crate) apply_snapshot: unsafe extern "C" fn(Ctx, *const SettingsSnapshot),
+    pub(crate) parse_cin: unsafe extern "C" fn(Ctx, *const u16, *const u16, i32) -> i32,
+    pub(crate) recreate_engine: unsafe extern "C" fn(Ctx, i32),
+    pub(crate) destroy_engine: unsafe extern "C" fn(Ctx),
+    pub(crate) has_engine: unsafe extern "C" fn(Ctx) -> i32,
+    pub(crate) engine_char_ok: unsafe extern "C" fn(Ctx, u16) -> i32,
+    pub(crate) custom_table_txt_path: unsafe extern "C" fn(Ctx, i32, *mut u16, usize) -> usize,
+    pub(crate) custom_table_cin_path: unsafe extern "C" fn(Ctx, i32, *mut u16, usize) -> usize,
+    pub(crate) app_data_path: unsafe extern "C" fn(Ctx, *mut u16, usize) -> usize,
+    pub(crate) windows_1809_or_later: unsafe extern "C" fn(Ctx) -> i32,
 }
 
 /// A `SettingsApp::Host` through its vtable. The C++ host outlives the window.
-struct VtblApp {
-    v: &'static AppVtbl,
-    ctx: Ctx,
+pub(crate) struct VtblApp {
+    pub(crate) v: &'static AppVtbl,
+    pub(crate) ctx: Ctx,
 }
 
 /// One call with room for the longest Win32 path (the thunks write at most

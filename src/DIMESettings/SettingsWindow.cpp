@@ -556,10 +556,20 @@ int SettingsWindow::Run(HINSTANCE hInstance, int nCmdShow, IME_MODE initialMode)
     WCHAR caption[128];
     StringCchPrintfW(caption, 128, L"DIME 設定 v%d.%d.%d", BUILD_VER_MAJOR, BUILD_VER_MINOR, BUILD_COMMIT_COUNT);
 #ifdef DIME_USE_RUST_CONFIG
-    // dime-settings::window owns the window; CConfig and the engine stay here.
-    return dime_settings_window_run(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
-        static_cast<SettingsApp::Host*>(&app), hInstance, nCmdShow, (int)initialMode,
+    // dime-settings::window owns the window. The configuration is the Rust
+    // app (dime-ffi settings_app.rs, phase 5b-15a); the message box, table
+    // parsing and the engine still go to ConfigHost.
+    void* native = dime_settings_native_app_new(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
+        static_cast<SettingsApp::Host*>(&app), nullptr);
+    if (!native) return -1;
+    const DimeSettingsAppVtbl* vtbl = dime_settings_native_app_vtbl();
+    // As wWinMain does for CConfig: the reverse-conversion providers before
+    // the first LoadConfig (which drops this IME from the list).
+    vtbl->enumerate_reverse_providers(native);
+    int result = dime_settings_window_run(vtbl, native, hInstance, nCmdShow, (int)initialMode,
         reinterpret_cast<const uint16_t*>(caption), IDI_DIMESETTINGS);
+    dime_settings_native_app_free(native);
+    return result;
 #else
     return RunCpp(&app, hInstance, nCmdShow, initialMode, caption);
 #endif

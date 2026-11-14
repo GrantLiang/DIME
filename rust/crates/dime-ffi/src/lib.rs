@@ -34,6 +34,8 @@ mod geometry;
 mod host_ui;
 mod langbar;
 mod page_layout;
+#[cfg(windows)]
+mod settings_app;
 mod settings_model;
 mod settings_window;
 mod setup;
@@ -720,8 +722,8 @@ pub unsafe extern "C" fn dime_user_model_learn(
 
 /// A settings record plus the host values its defaults depend on.
 pub struct DimeSettings {
-    settings: Settings,
-    env: Env,
+    pub(crate) settings: Settings,
+    pub(crate) env: Env,
     /// NUL-terminated copy of the description for `dime_settings_description_cstr`.
     description_c: Vec<u16>,
 }
@@ -736,7 +738,7 @@ impl DimeSettings {
     }
 
     /// Re-derive `description_c`; called after every operation that may change it.
-    fn refresh(&mut self) {
+    pub(crate) fn refresh(&mut self) {
         self.description_c.clear();
         if let Some(d) = &self.settings.reverse_conversion_description {
             self.description_c.extend(d.iter().copied().take_while(|&c| c != 0));
@@ -759,7 +761,7 @@ struct GlobalSettings(std::cell::UnsafeCell<DimeSettings>);
 unsafe impl Sync for GlobalSettings {}
 static GLOBAL_SETTINGS: GlobalSettings = GlobalSettings(std::cell::UnsafeCell::new(DimeSettings::empty()));
 
-fn global_settings() -> *mut DimeSettings {
+pub(crate) fn global_settings() -> *mut DimeSettings {
     GLOBAL_SETTINGS.0.get()
 }
 
