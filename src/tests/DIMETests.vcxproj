@@ -1200,7 +1200,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(DimeRustLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>dime_ffi.lib;ntdll.lib;userenv.lib;ws2_32.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dime_ffi.lib;ntdll.lib;userenv.lib;ws2_32.lib;dbghelp.lib;synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <!-- Rust links against the release CRT; Debug builds use the debug CRT instead. -->
       <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)'=='Debug'">msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>

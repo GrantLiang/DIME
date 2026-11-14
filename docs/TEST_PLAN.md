@@ -739,29 +739,23 @@ Real-file integration tests that exercise `CMemoryFile` against installed dictio
 
 ---
 
-### IT-RE: RichEdit Viewport Tests (6 tests, `RichEditViewportTest.cpp`)
+### IT-RE: Custom Table Editor Tests (8 tests, `RichEditViewportTest.cpp`)
 
-**Target**: `SettingsWindow.cpp` RichEdit + TOM patterns | **Coverage**: ~90%
+**Target**: the custom table (自建詞庫) RichEdit of the real settings window, C++ (`SettingsWindow`) vs Rust (`dime-settings`)
 **Test File**: `src/tests/RichEditViewportTest.cpp` (class `RichEditViewportTest`, namespace `DIMEIntegratedTests`)
 
-Hosts a bare `RICHEDIT50W` in-process (no Settings UI needed). Verifies the RichEdit + TOM contract exercised by the custom-table editor: `EM_EXLIMITTEXT`, caret stability under TOM colour painting, `ValidateViewport`-style error colouring, auto-jump, and `EN_CHANGE` mute/restore brackets. All test data generated programmatically — no fixture files.
-
-**Setup**: `TEST_CLASS_INITIALIZE` loads `Msftedit.dll`, creates a `RICHEDIT50W` window (`WS_POPUP | ES_MULTILINE`), and raises the text limit to 100 MB via `EM_EXLIMITTEXT`.
+Since phase 5b-12 the tests open the C++ and the Rust settings window side by side (layered, alpha 0, as in `SettingsUiaTest`), each over its own `SettingsFakeApp` with its own folder holding the saved table, and navigate both to the 自建詞庫 page of the first IME. Every test sends the same messages to both editors, content areas and Save buttons, then compares text, selection, first visible line, event mask, Save enabled, the TOM colour of every character, and the app calls; each test also asserts the expected behaviour itself. Enter and Backspace are sent as `WM_KEYDOWN` (RichEdit ignores `\r` and `\b` in `WM_CHAR`).
 
 | Test | Key Validations |
 |------|-----------------|
-| **IT_RE_01** `LargeImportAcceptsInput` | Build ~1.5 MB buffer (200 K lines × `"a 中\n"`); after `SetWindowTextW`, `EM_REPLACESEL("X")` must increase `GetWindowTextLengthW` — proves `EM_EXLIMITTEXT(100 MB)` keeps the control editable at import scale |
-| **IT_RE_02** `ExLimitText_RaisesAboveDefault` | Fresh `RICHEDIT50W`: `EM_GETLIMITTEXT` default < 100 MB; after `EM_EXLIMITTEXT(100 MB)`: returned limit ≥ 100 MB — confirms the raise is necessary (issue #130 fix) |
-| **IT_RE_03** `TOMPaintDoesNotMoveSelection` | Set caret (5,5); `PaintRangeColor(0, 100, RED)` via `ITextFont::SetForeColor`; `EM_EXGETSEL` must still return (5,5) |
-| **IT_RE_04** `ValidateViewport_PaintsErrors` | 4 valid + 1 `"foo bar baz"` line; per-line `ValidateLine` + `PaintRangeColor`; `GetCharColor` via TOM: line 0 = `RGB(0,180,0)`, line 4 = `RGB(200,0,0)` |
-| **IT_RE_05** `AutoJumpAfterSaveError` | 60 lines; `EM_LINEINDEX(49)` → `EM_SETSEL(cp,cp)` → `EM_SCROLLCARET`; `EM_EXGETSEL` returns `(cp, cp)` |
-| **IT_RE_06** `ENChangeMuteSurvivesPaint` | Set `ENM_CHANGE`; mute → `PaintRangeColor` → restore; `EM_GETEVENTMASK` returns `ENM_CHANGE` after restore |
-
-**TOM helpers** (local to the test file, same API as production `SettingsWindow.cpp`):
-- `GetTOM(hRE)` — `EM_GETOLEINTERFACE` + `QueryInterface(__uuidof(ITextDocument))`
-- `PaintRangeColor(pDoc, cpMin, cpMax, color)` — `ITextDocument::Range` + `ITextFont::SetForeColor`
-- `GetCharColor(pDoc, cp)` — `ITextDocument::Range(cp, cp+1)` + `ITextFont::GetForeColor`
-- `SetTextQ(hRE, text)` — `EM_SETEVENTMASK(0)` + `SetWindowTextW` + restore mask
+| **IT_RE_01** `LargeTableAcceptsTyping` | 200 K-line saved table loads; typing at the end grows the text by one (issue #130, `EM_EXLIMITTEXT(100 MB)`); Save enabled |
+| **IT_RE_02** `EditorSetup` | After loading: `EM_GETLIMITTEXT` ≥ 100 MB, mask `ENM_CHANGE`, 5 lines, Save disabled, visible lines painted in the valid colour |
+| **IT_RE_03** `PaintKeepsSelection` | Selection (3,8) survives the viewport message, the revalidate message and a page-down scroll |
+| **IT_RE_04** `ViewportPaintsVisibleErrors` | 300 lines with errors at lines 1 and 299: only visible lines painted, line 1 in an error colour, lines below the viewport untouched; after scrolling to the bottom line 299 is in an error colour |
+| **IT_RE_05** `SaveErrorJumpsToLine` | Save with an error at line 50: message names 第 50 行, caret at the start of line 50 and visible, file unchanged |
+| **IT_RE_06** `ENChangeMutedDuringPaint` | No `EN_CHANGE` reaches the content area while repainting; exactly one per typed character; mask restored |
+| **IT_RE_07** `TypingRepaintsLine` | Typing `z ` before `a 中` turns line 0 to an error colour and enables Save; two Backspaces restore the valid colour |
+| **IT_RE_08** `SaveWritesFile` | Enter + `k 字`, Save: UTF-16 BOM file containing the new line (same bytes on both sides), `.cin` compiled, Save disabled |
 
 ---
 

@@ -590,7 +590,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(DimeRustLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>dime_ffi.lib;ntdll.lib;userenv.lib;ws2_32.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dime_ffi.lib;ntdll.lib;userenv.lib;ws2_32.lib;dbghelp.lib;synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)'!='Release'">msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>

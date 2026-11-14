@@ -1,4 +1,4 @@
-/********************************************************************************
+﻿/********************************************************************************
 * RichEditViewportTest: the custom table editor (自建詞庫) of the real settings
 * window, C++ (SettingsWindow) vs Rust (dime-settings window.rs), both over
 * the recording SettingsTestApp::FakeApp (no CConfig, no real %APPDATA%; each
@@ -245,6 +245,15 @@ namespace
             SendMessageW(Content(), WM_COMMAND, MAKEWPARAM(3000 + CTRL_CUSTOM_TABLE_SAVE, BN_CLICKED), (LPARAM)SaveButton());
             Pump();
         }
+        // Keys RichEdit handles on WM_KEYDOWN (Enter, Backspace).
+        void Key(UINT vk, int times = 1)
+        {
+            for (int k = 0; k < times; k++) {
+                SendMessageW(Editor(), WM_KEYDOWN, vk, 1);
+                SendMessageW(Editor(), WM_KEYUP, vk, 0xC0000001);
+            }
+            Pump();
+        }
         void Type(const wchar_t* chars)
         {
             for (const wchar_t* p = chars; *p; p++) SendMessageW(Editor(), WM_CHAR, *p, 1);
@@ -415,7 +424,7 @@ public:
     TEST_METHOD(IT_RE_04_ViewportPaintsVisibleErrors)
     {
         const int n = 300;
-        Pair p(Lines(n, [](int i) { return std::wstring(i == 1 || i == n - 1 ? L"foo bar baz" : L"a 中"); }));
+        Pair p(Lines(n, [n](int i) { return std::wstring(i == 1 || i == n - 1 ? L"foo bar baz" : L"a 中"); }));
         for (Side* s : p.both) {
             HWND re = s->Editor();
             int first, last;
@@ -508,8 +517,8 @@ public:
         }
         p.CompareEditors(L"after typing");
         for (Side* s : p.both) {
-            s->Type(L"\b\b");
-            Assert::IsTrue(AllAre(LineColors(s->Editor(), 0), kValid), L"line 0 valid again");
+            s->Key(VK_BACK, 2);
+            Assert::IsTrue(AllAre(LineColors(s->Editor(), 0), kValid), (std::wstring(s->rust ? L"Rust" : L"C++") + L": line 0 valid again: [" + EditorText(s->Editor()).substr(0, 12) + L"] " + Describe(LineColors(s->Editor(), 0))).c_str());
         }
         p.CompareEditors(L"after Backspace");
         p.CompareLogs(L"typing");
@@ -521,22 +530,27 @@ public:
     {
         Pair p(Lines(10, [](int i) { return std::wstring(1, (wchar_t)(L'a' + i)) + L" 中"; }));
         int mode = p.OpenMode();
+        std::wstring saveLogs[2];
         for (Side* s : p.both) {
             HWND re = s->Editor();
             LONG end = GetWindowTextLengthW(re);
             SendMessageW(re, EM_SETSEL, end, end);
-            s->Type(L"\rk 字");
+            s->Key(VK_RETURN);
+            s->Type(L"k 字");
             Assert::IsTrue(IsWindowEnabled(s->SaveButton()) != FALSE, L"Save enabled");
+            s->NewLog();
             s->ClickSave();
-            Assert::IsFalse(IsWindowEnabled(s->SaveButton()) != FALSE, L"Save disabled after saving");
+            std::wstring& saveLog = saveLogs[s->rust ? 1 : 0];
+            saveLog = s->NewLog();
+            Assert::IsFalse(IsWindowEnabled(s->SaveButton()) != FALSE, (std::wstring(s->rust ? L"Rust" : L"C++") + L": Save disabled after saving\n[" + saveLog + L"]\n" + EditorText(re).substr(0, 60)).c_str());
             std::string bytes = ReadBytes(Pair::TxtPath(*s, mode));
             Assert::IsTrue(bytes.size() > 2 && (unsigned char)bytes[0] == 0xFF && (unsigned char)bytes[1] == 0xFE, L"UTF-16 BOM");
             std::wstring saved((const wchar_t*)(bytes.data() + 2), (bytes.size() - 2) / sizeof(wchar_t));
             Assert::IsTrue(saved.find(L"k 字") != std::wstring::npos, L"typed line saved");
         }
         Assert::IsTrue(ReadBytes(Pair::TxtPath(p.c, mode)) == ReadBytes(Pair::TxtPath(p.r, mode)), L"same file");
-        std::wstring lc = p.c.NewLog(), lr = p.r.NewLog();
-        Assert::AreEqual(lc, lr, L"app calls");
+        const std::wstring& lc = saveLogs[0];
+        Assert::AreEqual(lc, saveLogs[1], L"app calls of Save");
         Assert::IsTrue(lc.find(L"parse <dir>\\custom") != std::wstring::npos, lc.c_str());
         p.CompareEditors(L"after Save");
     }
