@@ -29,6 +29,7 @@ name = "dime-settings"
 version = "0.1.0"
 dependencies = [
  "dime-config",
+ "dime-core",
  "windows",
  "windows-link",
 ]

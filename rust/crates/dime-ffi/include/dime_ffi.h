@@ -1770,6 +1770,9 @@ typedef struct DimeSettingsAppVtbl {
  * folder used instead of %APPDATA% (tests), or NULL.
  * dime_settings_native_app_set_reverse replaces the provider list (tests;
  * clsids / profiles are 16 bytes each, descriptions NUL-terminated). */
+/* CConfig::parseCINFile in Rust (phase 5b-15b, cin_convert.rs): 1 on
+ * success. Paths are NUL-terminated. */
+int32_t dime_settings_parse_cin_file(const uint16_t* src, const uint16_t* dst, int32_t custom_table, int32_t suppress_ui);
 const DimeSettingsAppVtbl* dime_settings_native_app_vtbl(void);
 void* dime_settings_native_app_new(const DimeSettingsAppVtbl* fallback, void* fallback_ctx, const uint16_t* app_data);
 void dime_settings_native_app_free(void* app);

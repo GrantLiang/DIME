@@ -8,8 +8,9 @@
 //! providers and selection, the snapshot, the paths, the dpi and the dark
 //! theme. The values are the process-wide settings object that `CConfig`
 //! also reads (`DIME_USE_RUST_CONFIG`), so the parts still in C++ (message
-//! box, table parsing, the composition engine) see the same values; those
-//! calls go to the C++ host the app was made with.
+//! box, the composition engine) see the same values; those calls go to the
+//! C++ host the app was made with. Table parsing (`CConfig::parseCINFile`)
+//! is `appenv::parse_cin_file` since phase 5b-15b.
 //!
 //! State `CConfig` keeps in its own statics lives here: the IME mode and its
 //! INI path, the INI time stamp and the mode it was loaded for, `colors[6]`
@@ -455,7 +456,7 @@ impl App for NativeApp {
         self.s().apply_snapshot(s);
     }
     fn parse_cin(&self, src: &[u16], dst: &[u16], custom_table: bool) -> bool {
-        self.fallback.parse_cin(src, dst, custom_table)
+        appenv::parse_cin_file(src, dst, custom_table, false)
     }
     fn recreate_engine(&self, mode: i32) {
         self.fallback.recreate_engine(mode);
@@ -720,4 +721,16 @@ pub unsafe extern "C" fn dime_settings_native_app_set_reverse(
             .collect();
         app(a).s().set_reverse_providers(list);
     })
+}
+
+/// `CConfig::parseCINFile(src, dst, custom_table, suppress_ui)` in Rust
+/// (phase 5b-15b). Paths are NUL-terminated. Returns 1 on success.
+#[no_mangle]
+pub unsafe extern "C" fn dime_settings_parse_cin_file(
+    src: *const u16,
+    dst: *const u16,
+    custom_table: i32,
+    suppress_ui: i32,
+) -> i32 {
+    guard(0, || i32::from(appenv::parse_cin_file(wstr(src), wstr(dst), custom_table != 0, suppress_ui != 0)))
 }

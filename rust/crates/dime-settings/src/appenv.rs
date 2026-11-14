@@ -41,6 +41,9 @@ windows_link::link!("kernel32.dll" "system" fn SetFilePointer(h: Handle, dist: i
 windows_link::link!("kernel32.dll" "system" fn ReadFile(h: Handle, buf: *mut u8, len: u32, read: *mut u32, ov: *mut c_void) -> i32);
 windows_link::link!("kernel32.dll" "system" fn CloseHandle(h: Handle) -> i32);
 windows_link::link!("advapi32.dll" "system" fn IsTextUnicode(buf: *const c_void, len: i32, result: *mut i32) -> i32);
+windows_link::link!("kernel32.dll" "system" fn MultiByteToWideChar(cp: u32, flags: u32, src: *const u8, cb: i32, dst: *mut u16, cch: i32) -> i32);
+windows_link::link!("user32.dll" "system" fn MessageBoxW(owner: Handle, text: *const u16, caption: *const u16, ty: u32) -> i32);
+windows_link::link!("user32.dll" "system" fn GetFocus() -> Handle);
 
 const LOGPIXELSY: i32 = 90;
 const CSIDL_APPDATA: i32 = 0x001A;
@@ -398,4 +401,45 @@ pub fn reverse_providers(langid: u16) -> Vec<ReverseProvider> {
         }
     }
     out
+}
+
+/// UTF-8 to UTF-16 as the CRT's `ccs=UTF-8` read does
+/// (`MultiByteToWideChar(CP_UTF8, 0)`).
+pub fn utf8_to_utf16(bytes: &[u8]) -> Vec<u16> {
+    const CP_UTF8: u32 = 65001;
+    let mut out = Vec::new();
+    for chunk in bytes.chunks(i32::MAX as usize) {
+        // SAFETY: the sizes are the slice lengths.
+        unsafe {
+            let n = MultiByteToWideChar(CP_UTF8, 0, chunk.as_ptr(), chunk.len() as i32, null_mut(), 0);
+            if n <= 0 {
+                continue;
+            }
+            let start = out.len();
+            out.resize(start + n as usize, 0);
+            let got = MultiByteToWideChar(CP_UTF8, 0, chunk.as_ptr(), chunk.len() as i32, out[start..].as_mut_ptr(), n);
+            out.truncate(start + got.max(0) as usize);
+        }
+    }
+    out
+}
+
+/// `CConfig::parseCINFile(src, dst, custom_table, suppress_ui)`: false when
+/// the source cannot be opened (with a message box unless `suppress_ui`) or
+/// the destination cannot be created. Paths have no NUL.
+pub fn parse_cin_file(src: &[u16], dst: &[u16], custom_table: bool, suppress_ui: bool) -> bool {
+    use dime_config::cin_convert;
+    let Ok(bytes) = std::fs::read(String::from_utf16_lossy(src)) else {
+        if !suppress_ui {
+            let text = wide("\u{6307}\u{5B9A}\u{6A94}\u{6848}\u{7121}\u{6CD5}\u{958B}\u{555F}!!");
+            let caption = wide("File open error!");
+            // SAFETY: NUL-terminated strings; MB_ICONERROR.
+            unsafe { MessageBoxW(GetFocus(), text.as_ptr(), caption.as_ptr(), 0x10) };
+        }
+        return false;
+    };
+    let source = cin_convert::decode_source(&bytes, custom_table, &utf8_to_utf16);
+    let ops = dime_core::WinTextOps { lcid: 1028 };
+    let out = cin_convert::encode_output(&cin_convert::convert(&ops, &source, custom_table));
+    std::fs::write(String::from_utf16_lossy(dst), out).is_ok()
 }

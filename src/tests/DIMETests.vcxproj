@@ -416,6 +416,7 @@
     <ClCompile Include="SettingsUiaTest.cpp" />
     <ClCompile Include="SettingsScreenshotTest.cpp" />
     <ClCompile Include="SettingsAppParityTest.cpp" />
+    <ClCompile Include="CinConvertParityTest.cpp" />
     <ClCompile Include="TestAppData.cpp" />
     <ClCompile Include="CandidatePaintParityTest.cpp" />
     <ClCompile Include="ScrollBarProcParityTest.cpp" />
