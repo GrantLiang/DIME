@@ -288,9 +288,12 @@ bool RowControlRect(RowType type, int ctrlRight, int cy, int ctrlH, int btnH, UI
     int editW = ScaleForDpi(g_geo.editWidth, dpi);
     int btnW = ScaleForDpi(g_geo.buttonWidth, dpi);
     switch (type) {
-    case RowType::Toggle:
-        *out = { 0, 0, 0, 0, 0 };
+    case RowType::Toggle: {
+        // The check box sits over the painted switch (phase 5b-14).
+        int tw = ScaleForDpi(g_geo.toggleW, dpi), th = ScaleForDpi(g_geo.toggleH, dpi);
+        *out = { ctrlRight - tw, cy + (ctrlH - th) / 2, tw, th, th };
         return true;
+    }
     case RowType::ComboBox:
         *out = { ctrlRight - comboW, cy, comboW, ScaleForDpi(g_geo.comboDropH, dpi), ScaleForDpi(g_geo.ctrlHeight, dpi) };
         return true;

@@ -1471,6 +1471,8 @@ typedef struct DimeControlSpec {
     int32_t vis_h;
     int32_t set_font;
     int32_t dark_theme;
+    int32_t acc_offset;   /* accessible name in `text` (phase 5b-14), */
+    int32_t acc_len;      /* acc_len 0: none */
 } DimeControlSpec;
 void dime_settings_control_specs(const void* input, int32_t card_w, const void* ime, int32_t ime_count,
     const void* load, int32_t load_count, DimeControlSpec* out, size_t cap, size_t* out_count,

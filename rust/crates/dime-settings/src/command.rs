@@ -8,9 +8,12 @@
 
 use dime_config::geometry::mul_div;
 use dime_config::page_layout::{
-    ime_cards, load_cards, ACT_EXPORT, ACT_FONT, ACT_IMPORT, ACT_LOAD, ACT_NONE, ACT_RESET, CTRL_CUSTOM_TABLE_EDITOR,
+    ime_cards, load_cards, ACT_EXPORT, ACT_FONT, ACT_IMPORT, ACT_LOAD, ACT_NONE, ACT_RESET, ACT_TOGGLE,
+    CTRL_CUSTOM_TABLE_EDITOR,
 };
-use dime_config::settings_model::{load_table_suffix, parse_max_codes, sync_combo, SettingsSnapshot, CTRL_MAX_CODES};
+use dime_config::settings_model::{
+    load_table_suffix, parse_max_codes, sync_combo, sync_toggle, SettingsSnapshot, CTRL_MAX_CODES,
+};
 
 use crate::layout::card_rows;
 
@@ -47,6 +50,8 @@ pub struct CommandEvent {
     pub combo_sel: i32,
     pub combo_item_data: i32,
     pub edit_text: [u16; 16],
+    /// `BN_CLICKED`: `BM_GETCHECK` of the sender is `BST_CHECKED` (phase 5b-14).
+    pub checked: i32,
 }
 
 /// `LOGFONTW`.
@@ -358,6 +363,15 @@ pub unsafe fn handle(host: &mut dyn Host, s: *mut SettingsSnapshot, set_grid: &m
             ACT_SAVE => save_custom_table(host, ev.mode),
             ACT_EXPORT => export_custom_table(host),
             ACT_IMPORT => import_custom_table(host),
+            // UI Automation toggled the check box (phase 5b-14); a mouse
+            // click on the row goes through `nav` instead.
+            ACT_TOGGLE => {
+                // SAFETY: forwarded contract; no host call while borrowed.
+                sync_toggle(unsafe { snap(s) }, btn_id, ev.checked != 0);
+                host.apply_and_save();
+                host.invalidate_content(false);
+                host.update_content();
+            }
             _ => {}
         }
     }
@@ -462,7 +476,7 @@ mod tests {
 
     #[test]
     fn struct_sizes() {
-        assert_eq!(size_of::<CommandEvent>(), 52);
+        assert_eq!(size_of::<CommandEvent>(), 56);
         assert_eq!(size_of::<LogFont>(), 92);
     }
 

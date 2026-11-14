@@ -33,7 +33,7 @@ namespace
         return L"id=" + std::to_wstring(s.ctrlId) + L" menu=" + std::to_wstring(s.menuId) + L" role=" + std::to_wstring(s.role)
             + L" cls=" + std::to_wstring(s.controlClass) + L" ex=" + std::to_wstring(s.exStyle) + L" st=" + std::to_wstring(s.style)
             + L" text=" + (s.hasText ? L"[" + s.text + L"]" : L"null") + L" create=" + R(s.create) + L" add=" + R(s.add)
-            + L" visH=" + std::to_wstring(s.visH) + L" font=" + std::to_wstring(s.setFont) + L" dark=" + std::to_wstring(s.darkTheme);
+            + L" visH=" + std::to_wstring(s.visH) + L" font=" + std::to_wstring(s.setFont) + L" dark=" + std::to_wstring(s.darkTheme) + L" acc=[" + s.accName + L"]";
     }
 
     void Check(const SWL::PlanInput& in, int cardW, const LayoutCard* ime, int imeCount,

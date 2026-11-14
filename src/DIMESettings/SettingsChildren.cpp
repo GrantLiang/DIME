@@ -9,6 +9,7 @@
 #include <richedit.h>
 #include <strsafe.h>
 #include <Shlwapi.h>
+#include <oleacc.h>
 #include "..\BaseStructure.h"
 #include "SettingsChildren.h"
 #include "SettingsController.h"
@@ -20,6 +21,7 @@
 #pragma comment(lib, "ComCtl32.lib")
 #pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "oleacc.lib")
 
 namespace SettingsChildren {
 
@@ -27,14 +29,48 @@ namespace Cpp {
 
 namespace {
 
+// Accessible name through dynamic annotation (phase 5b-14): combo and edit
+// boxes show their value, the label is painted on the card. Needs COM on
+// the thread; without it the control just has no name.
+// Own copies: oleacc.lib does not export these GUIDs on every platform.
+const CLSID kClsidAccPropServices = { 0xb5f8350b, 0x0548, 0x48b1, { 0xa6, 0xee, 0x88, 0xbd, 0x00, 0xb4, 0xa5, 0xe7 } };
+const MSAAPROPID kPropIdAccName = { 0x608d3df8, 0x8128, 0x4aa7, { 0xa4, 0x28, 0xf5, 0x5e, 0x49, 0x26, 0x72, 0x91 } };
+
+bool SetAccName(HWND h, const std::wstring& name)
+{
+    IAccPropServices* svc = nullptr;
+    if (FAILED(CoCreateInstance(kClsidAccPropServices, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&svc))) || !svc)
+        return false;
+    HRESULT hr = svc->SetHwndPropStr(h, (DWORD)OBJID_CLIENT, CHILDID_SELF, kPropIdAccName, name.c_str());
+    svc->Release();
+    return SUCCEEDED(hr);
+}
+
+// Annotations outlive the window unless cleared (and a reused HWND would
+// inherit them).
+void ClearAccName(HWND h)
+{
+    IAccPropServices* svc = nullptr;
+    if (FAILED(CoCreateInstance(kClsidAccPropServices, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(&svc))) || !svc)
+        return;
+    MSAAPROPID props[] = { kPropIdAccName };
+    svc->ClearHwndProps(h, (DWORD)OBJID_CLIENT, CHILDID_SELF, props, 1);
+    svc->Release();
+}
+
 // Child controls forward the wheel to the content area so it scrolls.
+// Reference data 1: the control has an accessible name to clear.
 LRESULT CALLBACK WheelSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-    UINT_PTR uIdSubclass, DWORD_PTR)
+    UINT_PTR uIdSubclass, DWORD_PTR named)
 {
     if (uMsg == WM_MOUSEWHEEL)
         return SendMessage(GetParent(hWnd), uMsg, wParam, lParam);
-    if (uMsg == WM_NCDESTROY)
+    if (uMsg == WM_NCDESTROY) {
+        if (named) ClearAccName(hWnd);
         RemoveWindowSubclass(hWnd, WheelSubclassProc, uIdSubclass);
+    }
     return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
 
@@ -107,8 +143,13 @@ void Create(Host& host, const Context& ctx, const std::vector<SettingsControls::
             SetWindowTheme(h, L"DarkMode_CFD", nullptr);
         else if (h && ctx.isDark && spec.darkTheme == SettingsControls::DARK_EXPLORER)
             SetWindowTheme(h, L"DarkMode_Explorer", nullptr);
+        // A toggle's check box takes no pixels and no clicks: the content
+        // area paints the switch and handles the row click.
+        if (h && spec.role == SettingsControls::ROLE_TOGGLE)
+            SetWindowRgn(h, CreateRectRgn(0, 0, 0, 0), FALSE);
+        bool named = h && !spec.accName.empty() && SetAccName(h, spec.accName);
         host.Added(spec.ctrlId, h, spec.add.left, spec.add.top, spec.add.right, spec.add.bottom, spec.visH);
-        if (h) SetWindowSubclass(h, WheelSubclassProc, kWheelSubclassId, 0);
+        if (h) SetWindowSubclass(h, WheelSubclassProc, kWheelSubclassId, named ? 1 : 0);
     }
 }
 
@@ -116,7 +157,7 @@ void Create(Host& host, const Context& ctx, const std::vector<SettingsControls::
 
 #if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 
-static_assert(sizeof(DimeControlSpec) == 80, "DimeControlSpec");
+static_assert(sizeof(DimeControlSpec) == 88, "DimeControlSpec");
 static_assert(sizeof(DimeSettingsChildContext) == sizeof(Context), "DimeSettingsChildContext");
 
 namespace {
@@ -181,6 +222,9 @@ void CreateRust(Host& host, const Context& ctx, const std::vector<SettingsContro
         r.vis_h = s.visH;
         r.set_font = s.setFont ? 1 : 0;
         r.dark_theme = s.darkTheme;
+        r.acc_offset = (int32_t)text.size();
+        r.acc_len = (int32_t)s.accName.size();
+        text.insert(text.end(), s.accName.begin(), s.accName.end());
         raw.push_back(r);
     }
     dime_settings_create_children(&kVtbl, &host, &ctx, raw.data(), raw.size(), text.data(), text.size());

@@ -251,6 +251,7 @@ namespace DIMEUnitTests
                 ev.mode = (int)(rng() % 4);
                 ev.comboSel = (int)(rng() % 12) - 1;
                 ev.comboItemData = (int)(rng() % 6) - 1;
+        ev.checked = (int)(rng() & 1);
                 wcscpy_s(ev.editText, edits[rng() % _countof(edits)]);
 
                 SettingsSnapshot start = RandomSnapshot(rng);

@@ -109,8 +109,8 @@ windows_link::link!("user32.dll" "system" fn DefWindowProcW(h: Handle, m: u32, w
 windows_link::link!("user32.dll" "system" fn GetWindowLongPtrW(h: Handle, i: i32) -> isize);
 #[cfg(target_pointer_width = "64")]
 windows_link::link!("user32.dll" "system" fn SetWindowLongPtrW(h: Handle, i: i32, v: isize) -> isize);
-#[cfg(target_pointer_width = "32")]
 windows_link::link!("user32.dll" "system" fn GetWindowLongW(h: Handle, i: i32) -> i32);
+windows_link::link!("gdi32.dll" "system" fn CreateRectRgn(l: i32, t: i32, r: i32, b: i32) -> Handle);
 #[cfg(target_pointer_width = "32")]
 windows_link::link!("user32.dll" "system" fn SetWindowLongW(h: Handle, i: i32, v: i32) -> i32);
 windows_link::link!("user32.dll" "system" fn GetClientRect(h: Handle, rc: *mut Rect) -> i32);
@@ -155,6 +155,10 @@ const SW_SHOW: i32 = 5;
 const BM_GETCHECK: u32 = 0x00F0;
 const BM_SETCHECK: u32 = 0x00F1;
 const BST_CHECKED: isize = 1;
+const GWL_STYLE: i32 = -16;
+const BN_CLICKED_CODE: i32 = 0;
+const BS_TYPEMASK: u32 = 0xF;
+const BS_AUTOCHECKBOX: u32 = 0x3;
 const TME_LEAVE: u32 = 0x0002;
 const SIF_RANGE: u32 = 0x1;
 const SIF_PAGE: u32 = 0x2;
@@ -639,8 +643,13 @@ impl DriverHost for DriverHostImpl {
     fn reset_control_region(&mut self, index: i32) {
         let hc = self.control_hwnd(index);
         if !hc.is_null() {
-            // SAFETY: plain user32 call.
-            unsafe { SetWindowRgn(hc, null_mut(), 1) };
+            // A toggle's check box keeps its empty region (children.rs).
+            // SAFETY: plain user32 / gdi32 calls; the system owns the region.
+            unsafe {
+                let toggle = (GetWindowLongW(hc, GWL_STYLE) as u32 & BS_TYPEMASK) == BS_AUTOCHECKBOX;
+                let rgn = if toggle { CreateRectRgn(0, 0, 0, 0) } else { null_mut() };
+                SetWindowRgn(hc, rgn, 1);
+            }
         }
     }
     fn control_checked(&mut self, index: i32) -> bool {
@@ -1159,7 +1168,12 @@ fn handle_command(hwnd: Handle, wd: *mut WindowData, wparam: usize, lparam: isiz
         combo_sel: 0,
         combo_item_data: 0,
         edit_text: [0; 16],
+        checked: 0,
     };
+    if ev.notify_code == BN_CLICKED_CODE && !sender.is_null() {
+        // SAFETY: plain user32 call.
+        ev.checked = i32::from(unsafe { SendMessageW(sender, BM_GETCHECK, 0, 0) } == BST_CHECKED);
+    }
     if ev.notify_code == CBN_SELCHANGE && !sender.is_null() {
         // SAFETY: plain user32 calls.
         unsafe {

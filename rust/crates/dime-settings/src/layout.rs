@@ -515,8 +515,9 @@ pub struct CtrlRect {
     pub vis_h: i32,
 }
 
-/// The child-window rectangle `CreateRowControl` uses. Toggles are hidden
-/// checkboxes at 0,0,0,0. Returns `None` for row types without a control.
+/// The child-window rectangle `CreateRowControl` uses. A toggle's check box
+/// sits over the painted switch (right-aligned, centred on the control
+/// row). Returns `None` for row types without a control.
 pub fn row_control_rect(
     row_type: i32,
     ctrl_right: i32,
@@ -528,7 +529,11 @@ pub fn row_control_rect(
     let g = defaults();
     let rect = |x, y, w, h, vis_h| CtrlRect { x, y, w, h, vis_h };
     match row_type {
-        TY_TOGGLE => Some(rect(0, 0, 0, 0, 0)),
+        TY_TOGGLE => {
+            let w = scale(g.toggle_w, dpi);
+            let h = scale(g.toggle_h, dpi);
+            Some(rect(ctrl_right - w, cy + (ctrl_h - h) / 2, w, h, h))
+        }
         TY_COMBO => {
             let w = scale(g.combo_width, dpi);
             Some(rect(

@@ -274,6 +274,15 @@
 - **Mutation check (all-C++ build):** the Rust owner-drawn button dropping its last character fails Dark96 and Light144 on every page with a button, with the difference exactly on the buttons
 - **Manual checklist:** `docs/SETTINGS_MANUAL_CHECKLIST.md`
 
+#### Settings UI Automation Tests
+
+- **Tests:** 2 (`PagesMatch`, `PatternsMatch`)
+- **Status:** ✅ All Passing (2026-11-14: Debug x64, Win32, x64 all-C++)
+- **Files:** `SettingsUiaTest.cpp` (class `SettingsUiaTest`, namespace `DIMEUnitTests`)
+- **Setup:** C++ and Rust settings windows side by side over `SettingsFakeApp`, walked by a UIA client on an MTA thread (phase 5b-11)
+- **Key validations:** the two UIA trees match on every page; combo and edit boxes have names (phase 5b-14); every toggle row has a named check box in the tree (77); toggling each through UIA applies the setting on both sides with the same app calls
+- **Mutation check:** the Rust command handler ignoring toggle rows fails `PatternsMatch` and `SettingsCommandParityTest::RandomCommands`
+
 #### UT-09: CMemoryFile Filter + Cache Tests
 
 - **Tests:** 31 (UT-09-01 through UT-09-31)

@@ -57,19 +57,20 @@ void RowControl(std::vector<ControlSpec>& out, const LayoutRow& lr, int ctrlRigh
     if (!SettingsWindowLayout::Cpp::RowControlRect(lr.type, ctrlRight, cy, ctrlH, btnH, dpi, &rc))
         return;
     int menu = 3000 + lr.id;
-    SettingsWindowLayout::CtrlRect zero = {};
     switch (lr.type) {
     case RowType::Toggle:
-        out.push_back(Spec(lr.id, menu, ROLE_PLAIN, CLS_BUTTON, 0, WS_CHILD | BS_AUTOCHECKBOX, lr.label,
-            zero, rc, -1, false, DARK_NONE));
+        out.push_back(Spec(lr.id, menu, ROLE_TOGGLE, CLS_BUTTON, 0, WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, lr.label,
+            rc, rc, -1, false, DARK_NONE));
         break;
     case RowType::ComboBox:
         out.push_back(Spec(lr.id, menu, ROLE_PLAIN, CLS_COMBOBOX, 0, WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL,
             nullptr, rc, rc, rc.visH, true, DARK_CFD));
+        if (lr.label) out.back().accName = lr.label;
         break;
     case RowType::Edit:
         out.push_back(Spec(lr.id, menu, ROLE_PLAIN, CLS_EDIT, WS_EX_CLIENTEDGE, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
             nullptr, rc, rc, -1, true, DARK_CFD));
+        if (lr.label) out.back().accName = lr.label;
         break;
     case RowType::Button:
     case RowType::Clickable: {
@@ -140,7 +141,7 @@ std::vector<ControlSpec> BuildSpecs(const SettingsWindowLayout::PlanInput& in, i
 
 #if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 
-static_assert(sizeof(DimeControlSpec) == 80, "DimeControlSpec");
+static_assert(sizeof(DimeControlSpec) == 88, "DimeControlSpec");
 
 std::vector<ControlSpec> BuildSpecsRust(const SettingsWindowLayout::PlanInput& in, int cardW,
     const LayoutCard* ime, int imeCount, const LayoutCard* load, int loadCount)
@@ -168,6 +169,8 @@ std::vector<ControlSpec> BuildSpecsRust(const SettingsWindowLayout::PlanInput& i
         s.visH = r.vis_h;
         s.setFont = r.set_font != 0;
         s.darkTheme = r.dark_theme;
+        if (r.acc_len > 0 && (size_t)r.acc_offset + (size_t)r.acc_len <= text.size())
+            s.accName.assign(reinterpret_cast<const wchar_t*>(text.data()) + r.acc_offset, (size_t)r.acc_len);
         out.push_back(s);
     }
     return out;

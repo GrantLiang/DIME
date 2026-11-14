@@ -14,7 +14,7 @@
 
 namespace SettingsCommand {
 
-static_assert(sizeof(CommandEvent) == 52, "CommandEvent must match dime-settings");
+static_assert(sizeof(CommandEvent) == 56, "CommandEvent must match dime-settings");
 
 namespace Cpp {
 
@@ -199,6 +199,14 @@ void Handle(Host& host, SettingsSnapshot& s, int& colorGridExpanded, const Comma
         case RowAction::SaveCustomTable:   SaveCustomTable(host, ev.mode); break;
         case RowAction::ExportCustomTable: ExportCustomTable(host); break;
         case RowAction::ImportCustomTable: ImportCustomTable(host); break;
+        case RowAction::ToggleValue:
+            // UI Automation toggled the check box (phase 5b-14); a mouse
+            // click on the row goes through SettingsNav instead.
+            SettingsModel::SyncToggleToSnapshot(s, btnId, ev.checked != 0);
+            host.ApplyAndSave();
+            host.InvalidateContent(false);
+            host.UpdateContent();
+            break;
         default: break;
         }
     }

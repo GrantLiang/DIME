@@ -1060,7 +1060,8 @@ pub unsafe extern "C" fn dime_settings_populate_ops(
 use dime_settings::controls;
 use dime_settings::layout::PlanInput as ControlsPlanInput;
 
-/// `DimeControlSpec` (80 bytes). Text is `text[text_offset..+text_len]`.
+/// `DimeControlSpec` (88 bytes). Text is `text[text_offset..+text_len]`,
+/// the accessible name `text[acc_offset..+acc_len]` (none when `acc_len` is 0).
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
 pub struct ControlSpecC {
@@ -1078,6 +1079,8 @@ pub struct ControlSpecC {
     vis_h: i32,
     set_font: i32,
     dark_theme: i32,
+    acc_offset: i32,
+    acc_len: i32,
 }
 
 /// `SettingsControls::BuildSpecs`. Writes up to `cap` specs and `text_cap`
@@ -1113,6 +1116,11 @@ pub unsafe extern "C" fn dime_settings_control_specs(
                 if let Some(t) = &s.text {
                     pool.extend_from_slice(t);
                 }
+                let acc_offset = pool.len() as i32;
+                let acc_len = s.acc_name.as_ref().map_or(0, |t| t.len()) as i32;
+                if let Some(t) = &s.acc_name {
+                    pool.extend_from_slice(t);
+                }
                 ControlSpecC {
                     ctrl_id: s.ctrl_id,
                     menu_id: s.menu_id,
@@ -1128,6 +1136,8 @@ pub unsafe extern "C" fn dime_settings_control_specs(
                     vis_h: s.vis_h,
                     set_font: i32::from(s.set_font),
                     dark_theme: s.dark_theme,
+                    acc_offset,
+                    acc_len,
                 }
             })
             .collect();
@@ -1920,6 +1930,11 @@ pub unsafe extern "C" fn dime_settings_create_children(
                     let end = start.saturating_add(r.text_len.max(0) as usize);
                     pool.get(start..end).map_or_else(Vec::new, <[u16]>::to_vec)
                 });
+                let acc_start = r.acc_offset.max(0) as usize;
+                let acc_end = acc_start.saturating_add(r.acc_len.max(0) as usize);
+                let acc_name = (r.acc_len > 0)
+                    .then(|| pool.get(acc_start..acc_end).map(<[u16]>::to_vec))
+                    .flatten();
                 ControlSpec {
                     ctrl_id: r.ctrl_id,
                     menu_id: r.menu_id,
@@ -1933,6 +1948,7 @@ pub unsafe extern "C" fn dime_settings_create_children(
                     vis_h: r.vis_h,
                     set_font: r.set_font != 0,
                     dark_theme: r.dark_theme,
+                    acc_name,
                 }
             })
             .collect();

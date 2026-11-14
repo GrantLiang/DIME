@@ -774,6 +774,18 @@ Phase 5b-13. Both windows side by side over `SettingsFakeApp` (layered, alpha 0,
 
 ---
 
+### Settings UI Automation Tests (2 tests, `SettingsUiaTest.cpp`)
+
+**Target**: the settings window as UI Automation clients (Narrator) see it, C++ vs Rust
+**Test File**: `src/tests/SettingsUiaTest.cpp` (class `SettingsUiaTest`, namespace `DIMEUnitTests`)
+
+| Test | Key Validations |
+|------|-----------------|
+| `PagesMatch` | On every page the raw-view trees of both windows match (type, name, automation id, class, rectangle, enabled / offscreen / focusable, toggle / value / selection). Focusable on-screen combo and edit boxes have a name (their row label, phase 5b-14). The named check boxes in the tree equal the visible toggle check boxes counted through Win32. |
+| `PatternsMatch` | On every page each check box is toggled (Toggle), each combo box gets its next item (Select, collapsed), the edit box gets a value (SetValue); app calls and trees match after each action, and every toggle applies the setting. |
+
+---
+
 ## Testing Tools
 
 ### Automated Testing

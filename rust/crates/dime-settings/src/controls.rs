@@ -24,6 +24,10 @@ pub const CLS_RICHEDIT: i32 = 4;
 pub const ROLE_PLAIN: i32 = 0;
 pub const ROLE_RICH_EDITOR: i32 = 1;
 pub const ROLE_SAVE_BUTTON: i32 = 2;
+/// A toggle row's check box: visible over the switch with an empty window
+/// region (the content area paints the switch), so UI Automation can find
+/// and toggle it (phase 5b-14).
+pub const ROLE_TOGGLE: i32 = 3;
 
 pub const DARK_NONE: i32 = 0;
 pub const DARK_CFD: i32 = 1;
@@ -63,6 +67,9 @@ pub struct ControlSpec {
     pub vis_h: i32,
     pub set_font: bool,
     pub dark_theme: i32,
+    /// Accessible name (dynamic annotation), None for none: the row label
+    /// of combo boxes and edit boxes, whose own text is the value.
+    pub acc_name: Option<Vec<u16>>,
 }
 
 fn rect4(r: &CtrlRect) -> [i32; 4] {
@@ -97,6 +104,7 @@ fn spec(
         vis_h,
         set_font,
         dark_theme: dark,
+        acc_name: None,
     }
 }
 
@@ -149,18 +157,20 @@ pub fn build_specs(input: &PlanInput, card_w: i32, ime: &[LayoutCard], load: &[L
                     TY_TOGGLE => out.push(spec(
                         row.id,
                         menu,
-                        ROLE_PLAIN,
+                        ROLE_TOGGLE,
                         CLS_BUTTON,
                         0,
-                        WS_CHILD | BS_AUTOCHECKBOX,
+                        WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
                         label(row.label),
-                        [0; 4],
+                        r,
                         r,
                         -1,
                         false,
                         DARK_NONE,
                     )),
-                    TY_COMBO => out.push(spec(
+                    TY_COMBO => out.push(ControlSpec {
+                        acc_name: label(row.label),
+                        ..spec(
                         row.id,
                         menu,
                         ROLE_PLAIN,
@@ -173,8 +183,11 @@ pub fn build_specs(input: &PlanInput, card_w: i32, ime: &[LayoutCard], load: &[L
                         rc.vis_h,
                         true,
                         DARK_CFD,
-                    )),
-                    TY_EDIT => out.push(spec(
+                    )
+                    }),
+                    TY_EDIT => out.push(ControlSpec {
+                        acc_name: label(row.label),
+                        ..spec(
                         row.id,
                         menu,
                         ROLE_PLAIN,
@@ -187,7 +200,8 @@ pub fn build_specs(input: &PlanInput, card_w: i32, ime: &[LayoutCard], load: &[L
                         -1,
                         true,
                         DARK_CFD,
-                    )),
+                    )
+                    }),
                     TY_BUTTON | TY_CLICKABLE => {
                         let text = match row.action {
                             ACT_LOAD => w("載入"),

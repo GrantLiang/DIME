@@ -25,6 +25,7 @@ struct CommandEvent {
     int comboSel;            // CBN_SELCHANGE: CB_GETCURSEL
     int comboItemData;       // CBN_SELCHANGE: CB_GETITEMDATA of comboSel
     wchar_t editText[16];    // EN_CHANGE of CTRL_MAX_CODES: GetWindowTextW(buf, 16)
+    int checked;             // BN_CLICKED: BM_GETCHECK of the sender == BST_CHECKED (5b-14)
 };
 
 class Host {

@@ -224,6 +224,24 @@ namespace
         return dir;
     }
 
+    BOOL CALLBACK CountToggle(HWND h, LPARAM lp)
+    {
+        wchar_t cls[16] = {};
+        GetClassNameW(h, cls, 16);
+        if (_wcsicmp(cls, L"Button") == 0 && (GetWindowLongW(h, GWL_STYLE) & BS_TYPEMASK) == BS_AUTOCHECKBOX
+            && IsWindowVisible(h))
+            ++*reinterpret_cast<int*>(lp);
+        return TRUE;
+    }
+
+    // Visible toggle check boxes under the window, counted through Win32.
+    int ToggleCheckBoxes(HWND main)
+    {
+        int n = 0;
+        EnumChildWindows(main, CountToggle, reinterpret_cast<LPARAM>(&n));
+        return n;
+    }
+
     struct Page {
         int mode, sel, level, card;
         std::wstring Name() const
@@ -266,8 +284,8 @@ namespace DIMEUnitTests
             for (Side* s : { &c, &r }) { s->app.snap = snap; s->app.snap.colorMode = 3; s->app.colorMode = 3; }
             c.Create(dir);
             r.Create(dir);
-            int elements = 0, unnamed = 0;
-            std::wstring unnamedList;
+            int elements = 0, unnamed = 0, toggles = 0;
+            std::wstring unnamedList, unnamedControls;
             for (const Page& p : Pages()) {
                 c.Navigate(p.mode, p.sel, p.level, p.card);
                 r.Navigate(p.mode, p.sel, p.level, p.card);
@@ -279,19 +297,33 @@ namespace DIMEUnitTests
                 });
                 CompareTrees(tc, tr, p.Name());
                 elements += (int)tc.size();
-                // Accessibility report (not an assertion): focusable,
-                // on-screen controls without a name.
+                // Accessibility report: focusable, on-screen elements
+                // without a name. Combo and edit boxes must have one
+                // (their label, phase 5b-14); the rest is reported.
                 for (const std::wstring& e : tc) {
                     if (e.find(L"focus=1") != std::wstring::npos && e.find(L"name=[]") != std::wstring::npos
                         && e.find(L"off=0") != std::wstring::npos) {
                         unnamed++;
                         if (unnamedList.size() < 1500) unnamedList += p.Name() + L": " + e + L"\n";
+                        if (e.find(L"cls=ComboBox") != std::wstring::npos || e.find(L"cls=Edit") != std::wstring::npos)
+                            unnamedControls += p.Name() + L": " + e + L"\n";
                     }
                 }
+                // Every toggle row on the page has a named check box in the
+                // tree (phase 5b-14).
+                int toggleRows = ToggleCheckBoxes(c.main), checkBoxes = 0;
+                for (const std::wstring& e : tc)
+                    if (e.find(L"type=50002 ") != std::wstring::npos && e.find(L"name=[]") == std::wstring::npos
+                        && e.find(L" toggle=") != std::wstring::npos)
+                        checkBoxes++;
+                Assert::AreEqual(toggleRows, checkBoxes, (p.Name() + L": check boxes for the toggle rows").c_str());
+                toggles += checkBoxes;
             }
-            Logger::WriteMessage((L"elements " + std::to_wstring(elements) + L", focusable without a name "
-                + std::to_wstring(unnamed) + L"\n" + unnamedList).c_str());
+            Logger::WriteMessage((L"elements " + std::to_wstring(elements) + L", toggles " + std::to_wstring(toggles)
+                + L", focusable without a name " + std::to_wstring(unnamed) + L"\n" + unnamedList).c_str());
             Assert::IsTrue(elements > 200, std::to_wstring(elements).c_str());
+            Assert::IsTrue(toggles > 20, std::to_wstring(toggles).c_str());
+            Assert::IsTrue(unnamedControls.empty(), (L"combo / edit boxes without a name:\n" + unnamedControls).c_str());
             DestroyWindow(c.main);
             DestroyWindow(r.main);
             Pump();
@@ -308,7 +340,7 @@ namespace DIMEUnitTests
             for (Side* s : { &c, &r }) s->app.snap = snap;
             c.Create(dir);
             r.Create(dir);
-            int actions = 0, effective = 0, comboActions = 0, comboChanged = 0;
+            int actions = 0, effective = 0, comboActions = 0, comboChanged = 0, toggleActions = 0;
             for (const Page& p : Pages()) {
                 c.Navigate(p.mode, p.sel, p.level, p.card);
                 r.Navigate(p.mode, p.sel, p.level, p.card);
@@ -395,6 +427,11 @@ namespace DIMEUnitTests
                     if (lc != lr) Assert::Fail((what + L": app calls\nC++:\n" + lc + L"Rust:\n" + lr).c_str());
                     if (!lc.empty()) effective++;
                     actions++;
+                    // Toggling a check box applies the setting (phase 5b-14).
+                    if (pattern == UIA_TogglePatternId) {
+                        toggleActions++;
+                        Assert::IsTrue(lc.find(L"apply ") != std::wstring::npos, (what + L": toggle applied nothing\n" + lc).c_str());
+                    }
                     std::vector<std::wstring> tc, tr;
                     OnUiaThread([&](IUIAutomation* uia) {
                         tc = Tree(uia, c.main);
@@ -408,10 +445,12 @@ namespace DIMEUnitTests
                     before = tc;
                 }
             }
-            Logger::WriteMessage((L"actions " + std::to_wstring(actions) + L", with app calls " + std::to_wstring(effective)
+            Logger::WriteMessage((L"actions " + std::to_wstring(actions) + L" (toggles " + std::to_wstring(toggleActions)
+                + L"), with app calls " + std::to_wstring(effective)
                 + L"; combo selections " + std::to_wstring(comboActions) + L", changed the tree " + std::to_wstring(comboChanged)).c_str());
             Assert::IsTrue(actions > 30, std::to_wstring(actions).c_str());
             Assert::IsTrue(effective > 5, std::to_wstring(effective).c_str());
+            Assert::IsTrue(toggleActions > 20, std::to_wstring(toggleActions).c_str());
             DestroyWindow(c.main);
             DestroyWindow(r.main);
             Pump();

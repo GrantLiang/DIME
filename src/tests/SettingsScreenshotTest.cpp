@@ -10,7 +10,8 @@
 * window and the content area through their WM_PAINT bodies, and the child
 * controls (combo boxes, edit boxes, owner-drawn buttons, colour swatches,
 * the RichEdit) and the scroll bar through WM_PRINT, in z-order, clipped to
-* their parent. SettingsWindowParityTest compares only the WM_PAINT part. Pages: the
+* their parent and to their window region (a toggle's check box has an empty
+* one). SettingsWindowParityTest compares only the WM_PAINT part. Pages: the
 * first level of each IME, every card of each IME, and the load-table page, at a
 * wide size and at a size below the sidebar collapse break. The two pictures
 * must be identical pixel for pixel.
@@ -167,9 +168,26 @@ namespace
         for (HWND c = first ? GetWindow(first, GW_HWNDLAST) : nullptr; c; c = GetWindow(c, GW_HWNDPREV)) {
             if (!IsWindowVisible(c)) continue;
             RECT at = RectIn(c, h);
+            // A window region limits what the window shows (a toggle's
+            // check box has an empty one and shows nothing).
+            HRGN rgn = CreateRectRgn(0, 0, 0, 0);
+            int kind = GetWindowRgn(c, rgn);
+            if (kind == NULLREGION) {
+                DeleteObject(rgn);
+                continue;
+            }
             Dib child(at.right - at.left, at.bottom - at.top);
             Render(c, rust, child);
-            BlitClipped(out.dc, at, child.dc, client);
+            if (kind == SIMPLEREGION || kind == COMPLEXREGION) {
+                OffsetRgn(rgn, at.left, at.top);
+                int saved = SaveDC(out.dc);
+                ExtSelectClipRgn(out.dc, rgn, RGN_COPY);
+                BlitClipped(out.dc, at, child.dc, client);
+                RestoreDC(out.dc, saved);
+            } else {
+                BlitClipped(out.dc, at, child.dc, client);
+            }
+            DeleteObject(rgn);
         }
         GdiFlush();
     }

@@ -18,7 +18,9 @@
 namespace SettingsControls {
 
 enum ControlClass { CLS_BUTTON = 0, CLS_COMBOBOX, CLS_EDIT, CLS_STATIC, CLS_RICHEDIT };
-enum ControlRole { ROLE_PLAIN = 0, ROLE_RICH_EDITOR, ROLE_SAVE_BUTTON };
+// ROLE_TOGGLE: a toggle row's check box, visible over the painted switch with
+// an empty window region, so UI Automation can find and toggle it (5b-14).
+enum ControlRole { ROLE_PLAIN = 0, ROLE_RICH_EDITOR, ROLE_SAVE_BUTTON, ROLE_TOGGLE };
 enum DarkTheme { DARK_NONE = 0, DARK_CFD, DARK_EXPLORER };   // SetWindowTheme when dark
 
 struct ControlSpec {
@@ -35,6 +37,8 @@ struct ControlSpec {
     int visH;                // AddControl visH (-1: default)
     bool setFont;            // WM_SETFONT with the body font
     int darkTheme;           // DarkTheme applied only when the window is dark
+    std::wstring accName;    // accessible name (dynamic annotation), empty: none —
+                             // the row label of combo boxes and edit boxes
 };
 
 // ---- Dispatched (Rust under DIME_USE_RUST_CONFIG) -------------------------

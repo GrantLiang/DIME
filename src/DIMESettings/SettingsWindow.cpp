@@ -290,7 +290,11 @@ public:
     }
     void ResetControlRegion(int i) override
     {
-        if (HWND hc = ControlHwnd(i)) SetWindowRgn(hc, nullptr, TRUE);
+        // A toggle's check box keeps its empty region (SettingsChildren).
+        if (HWND hc = ControlHwnd(i)) {
+            bool toggle = (GetWindowLongW(hc, GWL_STYLE) & BS_TYPEMASK) == BS_AUTOCHECKBOX;
+            SetWindowRgn(hc, toggle ? CreateRectRgn(0, 0, 0, 0) : nullptr, TRUE);
+        }
     }
     bool ControlChecked(int i) override
     {
@@ -971,6 +975,8 @@ void SettingsWindow::HandleCommand(HWND hWnd, WindowData* wd, WPARAM wParam, LPA
     ev.ctrlId = LOWORD(wParam);
     ev.mode = (int)wd->Mode();
     HWND hSender = (HWND)lParam;
+    if (ev.notifyCode == BN_CLICKED && hSender)
+        ev.checked = SendMessage(hSender, BM_GETCHECK, 0, 0) == BST_CHECKED ? 1 : 0;
     if (ev.notifyCode == CBN_SELCHANGE && hSender) {
         ev.comboSel = (int)SendMessage(hSender, CB_GETCURSEL, 0, 0);
         if (ev.comboSel != CB_ERR)

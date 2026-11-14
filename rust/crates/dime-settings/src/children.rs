@@ -21,6 +21,7 @@ use dime_config::text_file;
 
 use crate::controls::{
     ControlSpec, CLS_COMBOBOX, CLS_EDIT, CLS_RICHEDIT, CLS_STATIC, DARK_CFD, DARK_EXPLORER, ROLE_RICH_EDITOR,
+    ROLE_TOGGLE,
 };
 use crate::editor;
 
@@ -42,6 +43,9 @@ windows_link::link!("kernel32.dll" "system" fn CreateFileW(name: *const u16, acc
 windows_link::link!("kernel32.dll" "system" fn GetFileSize(h: Handle, high: *mut u32) -> u32);
 windows_link::link!("kernel32.dll" "system" fn ReadFile(h: Handle, buf: *mut u8, len: u32, read: *mut u32, ov: *mut c_void) -> i32);
 windows_link::link!("kernel32.dll" "system" fn CloseHandle(h: Handle) -> i32);
+windows_link::link!("user32.dll" "system" fn SetWindowRgn(h: Handle, rgn: Handle, redraw: i32) -> i32);
+windows_link::link!("gdi32.dll" "system" fn CreateRectRgn(l: i32, t: i32, r: i32, b: i32) -> Handle);
+windows_link::link!("ole32.dll" "system" fn CoCreateInstance(clsid: *const Guid, outer: Handle, ctx: u32, iid: *const Guid, out: *mut *mut c_void) -> i32);
 windows_link::link!("kernel32.dll" "system" fn MultiByteToWideChar(cp: u32, flags: u32, src: *const u8, cb: i32, dst: *mut u16, cch: i32) -> i32);
 
 const WM_SETFONT: u32 = 0x0030;
@@ -170,14 +174,108 @@ fn class_name(control_class: i32) -> &'static str {
     }
 }
 
+/// A COM `GUID`.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct Guid {
+    data1: u32,
+    data2: u16,
+    data3: u16,
+    data4: [u8; 8],
+}
+
+const CLSID_ACC_PROP_SERVICES: Guid = Guid {
+    data1: 0xb5f8_350b,
+    data2: 0x0548,
+    data3: 0x48b1,
+    data4: [0xa6, 0xee, 0x88, 0xbd, 0x00, 0xb4, 0xa5, 0xe7],
+};
+const IID_IACC_PROP_SERVICES: Guid = Guid {
+    data1: 0x6e26_e776,
+    data2: 0x04f0,
+    data3: 0x495d,
+    data4: [0x80, 0xe4, 0x33, 0x30, 0x35, 0x2e, 0x31, 0x69],
+};
+const PROPID_ACC_NAME: Guid = Guid {
+    data1: 0x608d_3df8,
+    data2: 0x8128,
+    data3: 0x4aa7,
+    data4: [0xa4, 0x28, 0xf5, 0x5e, 0x49, 0x26, 0x72, 0x91],
+};
+const CLSCTX_INPROC_SERVER: u32 = 1;
+const OBJID_CLIENT: u32 = 0xFFFF_FFFC;
+const CHILDID_SELF: u32 = 0;
+
+/// The `IAccPropServices` methods used here, in vtable order.
+#[repr(C)]
+struct AccPropServicesVtbl {
+    query_interface: usize,
+    add_ref: usize,
+    release: unsafe extern "system" fn(*mut c_void) -> u32,
+    set_prop_value: usize,
+    set_prop_server: usize,
+    clear_props: usize,
+    set_hwnd_prop: usize,
+    set_hwnd_prop_str: unsafe extern "system" fn(*mut c_void, Handle, u32, u32, Guid, *const u16) -> i32,
+    set_hwnd_prop_server: usize,
+    clear_hwnd_props: unsafe extern "system" fn(*mut c_void, Handle, u32, u32, *const Guid, i32) -> i32,
+}
+
+/// `CoCreateInstance(CLSID_AccPropServices)`: null without COM on the thread.
+fn acc_prop_services() -> *mut c_void {
+    let mut svc: *mut c_void = null_mut();
+    // SAFETY: valid GUIDs and out pointer.
+    let hr = unsafe {
+        CoCreateInstance(&CLSID_ACC_PROP_SERVICES, null_mut(), CLSCTX_INPROC_SERVER, &IID_IACC_PROP_SERVICES, &mut svc)
+    };
+    if hr < 0 {
+        null_mut()
+    } else {
+        svc
+    }
+}
+
+/// `SettingsChildren::Cpp::SetAccName`: the accessible name through dynamic
+/// annotation (phase 5b-14). `name` has no NUL.
+fn set_acc_name(h: Handle, name: &[u16]) -> bool {
+    let svc = acc_prop_services();
+    if svc.is_null() {
+        return false;
+    }
+    let text: Vec<u16> = name.iter().copied().chain(std::iter::once(0)).collect();
+    // SAFETY: `svc` is a live IAccPropServices; released once.
+    unsafe {
+        let vtbl = &**(svc as *mut *const AccPropServicesVtbl);
+        let hr = (vtbl.set_hwnd_prop_str)(svc, h, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_NAME, text.as_ptr());
+        (vtbl.release)(svc);
+        hr >= 0
+    }
+}
+
+/// `SettingsChildren::Cpp::ClearAccName`.
+fn clear_acc_name(h: Handle) {
+    let svc = acc_prop_services();
+    if svc.is_null() {
+        return;
+    }
+    let props = [PROPID_ACC_NAME];
+    // SAFETY: as above.
+    unsafe {
+        let vtbl = &**(svc as *mut *const AccPropServicesVtbl);
+        (vtbl.clear_hwnd_props)(svc, h, OBJID_CLIENT, CHILDID_SELF, props.as_ptr(), 1);
+        (vtbl.release)(svc);
+    }
+}
+
 /// Child controls forward the wheel to the content area so it scrolls.
+/// Reference data 1: the control has an accessible name to clear.
 unsafe extern "system" fn wheel_subclass_proc(
     h: Handle,
     msg: u32,
     w: usize,
     l: isize,
     id: usize,
-    _ref: usize,
+    named: usize,
 ) -> isize {
     // SAFETY: called by comctl32 for a subclassed child; plain user32 calls.
     unsafe {
@@ -185,6 +283,9 @@ unsafe extern "system" fn wheel_subclass_proc(
             return SendMessageW(GetParent(h), msg, w, l);
         }
         if msg == WM_NCDESTROY {
+            if named != 0 {
+                clear_acc_name(h);
+            }
             RemoveWindowSubclass(h, wheel_subclass_proc, id);
         }
         DefSubclassProc(h, msg, w, l)
@@ -354,10 +455,17 @@ pub fn create(host: &mut dyn ChildHost, ctx: &Context, specs: &[ControlSpec]) {
                 }
             }
         }
+        // A toggle's check box takes no pixels and no clicks: the content
+        // area paints the switch and handles the row click.
+        if !h.is_null() && spec.role == ROLE_TOGGLE {
+            // SAFETY: the system owns the region after SetWindowRgn.
+            unsafe { SetWindowRgn(h, CreateRectRgn(0, 0, 0, 0), 0) };
+        }
+        let named = !h.is_null() && spec.acc_name.as_ref().is_some_and(|n| !n.is_empty() && set_acc_name(h, n));
         host.added(spec.ctrl_id, h, spec.add, spec.vis_h);
         if !h.is_null() {
             // SAFETY: subclassing a window we created.
-            unsafe { SetWindowSubclass(h, wheel_subclass_proc, WHEEL_SUBCLASS_ID, 0) };
+            unsafe { SetWindowSubclass(h, wheel_subclass_proc, WHEEL_SUBCLASS_ID, usize::from(named)) };
         }
     }
 }
