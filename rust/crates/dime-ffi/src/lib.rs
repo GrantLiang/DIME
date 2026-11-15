@@ -37,6 +37,8 @@ mod page_layout;
 #[cfg(windows)]
 mod settings_app;
 #[cfg(windows)]
+mod settings_cli;
+#[cfg(windows)]
 mod settings_engine;
 mod settings_model;
 mod settings_window;

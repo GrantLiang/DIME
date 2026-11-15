@@ -1575,21 +1575,45 @@ bool ParseCLIArgs(_In_ const wchar_t* cmdLine, _Out_ CLIArgs& args, _In_ FILE* e
     return true;
 }
 
-int RunCLI(_In_ const wchar_t* cmdLine, _In_ FILE* out)
+// cppHost: the C++ host above (kCliVtbl) does everything; otherwise the Rust
+// host (dime-ffi settings_cli.rs, phase 5b-15e) does, and only the two
+// output streams come back here.
+static int RunCLIWith(const wchar_t* cmdLine, FILE* out, FILE* err, bool cppHost)
 {
     CliArgv split;
     if (!CliArgvSplit(cmdLine, &split)) return 1;
     CliRt rt = {};
     rt.out = out ? out : stdout;
-    rt.err = stderr;
+    rt.err = err ? err : stderr;
     DimeCliHost host;
     host.vtbl = &kCliVtbl;
     host.ctx = &rt;
-    int rc = (int)dime_cli_run(split.ptrs, split.lens, (size_t)split.argc, &host);
+    int rc;
+    if (cppHost) {
+        rc = (int)dime_cli_run(split.ptrs, split.lens, (size_t)split.argc, &host);
+    } else {
+        const uint16_t* appData = nullptr;
+#ifdef DIME_UNIT_TESTING
+        if (Global::testAppDataOverride[0]) appData = reinterpret_cast<const uint16_t*>(Global::testAppDataOverride);
+#endif
+        rc = (int)dime_cli_run_native(split.ptrs, split.lens, (size_t)split.argc, &host, appData);
+    }
     if (rt.engine) SettingsModel::DestroyEngine(rt.engine);
     CliArgvFree(&split);
     return rc;
 }
+
+int RunCLI(_In_ const wchar_t* cmdLine, _In_ FILE* out)
+{
+    return RunCLIWith(cmdLine, out, nullptr, false);
+}
+
+#ifdef DIME_UNIT_TESTING
+int RunCLIForTest(const wchar_t* cmdLine, FILE* out, FILE* err, bool cppHost)
+{
+    return RunCLIWith(cmdLine, out, err, cppHost);
+}
+#endif
 #endif // DIME_USE_RUST_CONFIG
 
 // ---------------------------------------------------------------------------

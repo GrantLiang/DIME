@@ -83,7 +83,7 @@ fn create_dir(path: &[u16]) -> bool {
 
 /// The process-wide settings, initialised for this machine when nobody has
 /// done so yet (`CConfig`'s static initialisers normally do).
-fn global() -> &'static mut DimeSettings {
+pub(crate) fn global() -> &'static mut DimeSettings {
     // SAFETY: the global object lives for the process; like the C++ statics
     // it replaces, the host serialises access (one UI thread).
     let g = unsafe { &mut *global_settings() };
@@ -136,7 +136,7 @@ impl ConfigStore {
     }
 
     /// `Global::GetAppDataPath(path, create)`.
-    fn app_data(&self, create: bool) -> Vec<u16> {
+    pub(crate) fn app_data(&self, create: bool) -> Vec<u16> {
         match &self.app_data_override {
             Some(p) => {
                 if create {

@@ -1151,6 +1151,11 @@ typedef struct DimeCliHostVtbl {
 struct DimeCliHost { const DimeCliHostVtbl* vtbl; void* ctx; };
 
 int32_t dime_cli_run(const uint16_t* const* argv, const size_t* lens, size_t argc, DimeCliHost* host);
+/* The same with the Rust host (phase 5b-15e, settings_cli.rs): only the
+ * write_out / write_err of streams are used. app_data: a folder used
+ * instead of %APPDATA% (tests), or NULL. */
+int32_t dime_cli_run_native(const uint16_t* const* argv, const size_t* lens, size_t argc, DimeCliHost* streams,
+    const uint16_t* app_data);
 
 /* ---- Settings model (phase 5b-1, dime-config::settings_model) ----------
  * Window-free SettingsModel functions. snapshot is a C++ SettingsSnapshot

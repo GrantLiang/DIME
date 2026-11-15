@@ -52,8 +52,8 @@ struct DimeCliHostVtbl {
     array_dest: Option<unsafe extern "C" fn(*mut DimeCliHost, i32, *mut u16, usize) -> usize>,
 }
 
-struct FfiHost {
-    host: *mut DimeCliHost,
+pub(crate) struct FfiHost {
+    pub(crate) host: *mut DimeCliHost,
 }
 
 impl FfiHost {
@@ -233,7 +233,7 @@ impl FfiHost {
     }
 }
 
-unsafe fn collect<'a>(argv: *const *const u16, lens: *const usize, argc: usize) -> Vec<&'a [u16]> {
+pub(crate) unsafe fn collect<'a>(argv: *const *const u16, lens: *const usize, argc: usize) -> Vec<&'a [u16]> {
     if argv.is_null() || lens.is_null() || argc == 0 {
         return Vec::new();
     }
