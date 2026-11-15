@@ -40,6 +40,8 @@ mod settings_app;
 mod settings_cli;
 #[cfg(windows)]
 mod settings_engine;
+#[cfg(windows)]
+pub mod settings_main;
 mod settings_model;
 mod settings_window;
 mod setup;

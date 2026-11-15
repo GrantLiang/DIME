@@ -7,9 +7,9 @@
 //! colour palettes and the six live colours, the reverse-conversion
 //! providers and selection, the snapshot, the paths, the dpi and the dark
 //! theme. The values are the process-wide settings object that `CConfig`
-//! also reads (`DIME_USE_RUST_CONFIG`), so the parts still in C++ (message
-//! box) see the same values; those calls go to the C++ host the app was
-//! made with. Table parsing (`CConfig::parseCINFile`) is
+//! also reads (`DIME_USE_RUST_CONFIG`). The message box goes to the C++ host
+//! the app was made with, or, in the Rust executable (phase 5b-15f, no C++
+//! host), to `msgboxwin::show_themed`. Table parsing (`CConfig::parseCINFile`) is
 //! `appenv::parse_cin_file` since phase 5b-15b, the engine
 //! `settings_engine.rs` since 5b-15c.
 //!
@@ -386,13 +386,21 @@ impl ConfigStore {
 /// The settings app: [`ConfigStore`] plus the C++ host for what is still in
 /// C++ (message box, table parsing, the composition engine).
 pub struct NativeApp {
-    fallback: VtblApp,
+    /// The C++ `SettingsApp::Host` the message box goes to; `None` in the
+    /// Rust executable (`dime_settings::msgboxwin::show_themed`).
+    fallback: Option<VtblApp>,
     store: RefCell<ConfigStore>,
     /// `ConfigHost::_engine` (phase 5b-15c).
     engine: RefCell<Option<SettingsEngine>>,
 }
 
 impl NativeApp {
+    /// The app of the Rust `DIMESettings.exe` (phase 5b-15f): no C++ host;
+    /// `app_data` replaces `%APPDATA%` (tests) when given.
+    pub fn new(app_data: Option<Vec<u16>>) -> Self {
+        NativeApp { fallback: None, store: RefCell::new(ConfigStore::new(app_data)), engine: RefCell::new(None) }
+    }
+
     fn s(&self) -> std::cell::RefMut<'_, ConfigStore> {
         self.store.borrow_mut()
     }
@@ -406,7 +414,10 @@ impl App for NativeApp {
         appenv::system_dark()
     }
     fn show_message(&self, parent: Handle, text: &[u16], caption: &[u16], mb_type: u32) -> i32 {
-        self.fallback.show_message(parent, text, caption, mb_type)
+        match &self.fallback {
+            Some(f) => f.show_message(parent, text, caption, mb_type),
+            None => dime_settings::msgboxwin::show_themed(parent, text, caption, mb_type),
+        }
     }
     fn load_config(&self, mode: i32) {
         self.s().load_config(mode);
@@ -685,7 +696,7 @@ pub unsafe extern "C" fn dime_settings_native_app_new(
         let override_dir = (!app_data.is_null()).then(|| wstr(app_data).to_vec());
         let a = Box::new(NativeApp {
             // SAFETY: the caller keeps the C++ host alive longer than the app.
-            fallback: VtblApp { v: unsafe { &*fallback }, ctx: fallback_ctx },
+            fallback: Some(VtblApp { v: unsafe { &*fallback }, ctx: fallback_ctx }),
             store: RefCell::new(ConfigStore::new(override_dir)),
             engine: RefCell::new(None),
         });

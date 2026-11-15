@@ -134,6 +134,20 @@ msbuild DIME.sln /p:Configuration=Release /p:Platform=ARM64EC /t:DIME
 msbuild DIME.sln /p:Configuration=Release /p:Platform=Win32 /t:DIMESettings
 ```
 
+**DIMESettings.exe 由 cargo 建置：** 預設（`DimeUseRustEngine=true`）DIMESettings 專案不編譯 C++，而是先更新 `src\BuildInfo.h`，再執行 `cargo build --release -p dime-settings-exe --target i686-pc-windows-msvc`，把 Rust 版 `DIMESettings.exe` 複製到 `src\Release\`（Debug 是 `src\Debug\`）。也可以直接用 cargo 建置（版本號取自現有的 `src\BuildInfo.h`）：
+
+**DIMESettings.exe is built by cargo:** by default (`DimeUseRustEngine=true`) the DIMESettings project compiles no C++; it refreshes `src\BuildInfo.h`, runs `cargo build --release -p dime-settings-exe --target i686-pc-windows-msvc` and copies the Rust `DIMESettings.exe` to `src\Release\` (`src\Debug\` for Debug). It can also be built with cargo alone (the version comes from the current `src\BuildInfo.h`):
+
+```bash
+cd rust
+cargo build --release --locked -p dime-settings-exe --target i686-pc-windows-msvc
+# → rust\target\i686-pc-windows-msvc\release\DIMESettings.exe
+# MSBuild 的 Release 另加 RUSTFLAGS=-C target-feature=+crt-static（靜態 CRT，不需要 VC 執行階段）
+# MSBuild Release also sets RUSTFLAGS=-C target-feature=+crt-static (static CRT, no VC runtime needed)
+```
+
+`/p:DimeUseRustEngine=false` 仍會建出全 C++ 的 `DIMESettings.exe`。/ `/p:DimeUseRustEngine=false` still builds the all-C++ `DIMESettings.exe`.
+
 ### 5. 建置輸出 / Build Output
 
 編譯完成後，輸出檔案位於：

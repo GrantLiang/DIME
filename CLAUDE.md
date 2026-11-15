@@ -17,7 +17,7 @@ msbuild DIME.sln /p:Configuration=Release /p:Platform=x64 /t:DIME              #
 msbuild DIME.sln /p:Configuration=Release /p:Platform=Win32 /t:DIMESettings    # 設定程式（僅 Win32）
 ```
 
-- `DIME` 專案 → `DIME.dll`（Win32 / x64 / ARM64 / ARM64EC）；`DIMESettings` 專案 → `DIMESettings.exe`（僅 Win32，所有平台共用）；`DIMETests` 專案 → 單元測試 DLL。
+- `DIME` 專案 → `DIME.dll`（Win32 / x64 / ARM64 / ARM64EC）；`DIMESettings` 專案 → `DIMESettings.exe`（僅 Win32，所有平台共用；預設由 cargo 建置 Rust 版，見下方 5b-15f）；`DIMETests` 專案 → 單元測試 DLL。
 - 每次建置的 PreBuildEvent 會執行 `src/buildInfo.cmd`，以 git commit 數與日期重新產生 **受版控的** `src/BuildInfo.h`（版號格式 `1.3.<commit數>.<日期>`）。建置後 `BuildInfo.h` 出現 diff 屬正常；除非是要發版，否則不要把它一起 commit。
 
 ## 測試
@@ -88,6 +88,7 @@ vstest.console.exe bin\x64\Debug\DIMETests.dll /TestCaseFilter:"FullyQualifiedNa
 - 碼表轉換（5b-15b）：`dime-config::cin_convert` ↔ `CConfig::parseCINFile`（設定程式用 Rust 版，CLI 暫時仍用 C++）。行為照 MSVC CRT 的文字模式讀寫與 `swscanf_s`，包含 UCRT 讀 UTF-8 時每 2048 位元組一段的處理；改 `parseCINFile` 時兩邊一起改，對拍：`CinConvertParityTest`。
 - 設定程式的組字引擎（5b-15c）：`dime-ffi` 的 `settings_engine.rs` ↔ `SettingsModel::CreateEngine` 加 `ValidateCompositionKeyCharFull`（`dime-core::engine_setup::setup_dictionary` 配 Rust 的 `SetupHost`）。改引擎設定或按鍵表時兩邊一起改；對拍：`SettingsAppParityTest::EngineKeys`。測試用的碼表要是轉換後的格式（tab 分隔、`%keyname` 的 key／value 加引號）。
 - 設定程式的 CLI host（5b-15e）：`dime-ffi` 的 `settings_cli.rs`（`NativeCli`）↔ `CLI.cpp` 的 `kCliVtbl`。Rust 設定組合的 `RunCLI` 用 Rust host，只有 stdout／stderr 仍經 C++ `FILE*`。改 CLI 的副作用時兩邊一起改；對拍：`CliHostParityTest`（每個指令都從新行程的初始狀態開始；`SettingsAppTestAccess.h` 重設 `CConfig` 靜態狀態）。PowerShell 腳本裡 `[IO.File]` 的相對路徑是以程序的工作目錄為準，讀檔失敗時不可再寫回（會寫出空檔）。
+- 設定程式的 `wWinMain`（5b-15f）：`DIMESettings.exe` 由 cargo 建置（`crates/dime-settings-exe`，bin `DIMESettings`），執行期沒有 C++。流程在 `dime-ffi` 的 `settings_main.rs`（↔ `src/DIMESettings/DIMESettings.cpp`，全 C++ 建置仍用它）；CLI 輸出串流在 `dime-settings::console`（照 CRT 在 "C" locale 文字模式：U+00FF 以上變 `?`、`\n` 變 `\r\n`、NUL 結束該次寫入、`stdout` 在管線／檔案上有 4,096 位元組緩衝）；沒有 C++ host 的 `NativeApp` 訊息框走 `msgboxwin::show_themed`。build.rs 自己寫 `.res`（圖示、版本取自 `src/BuildInfo.h`、manifest），不用 `rc.exe`。`DIMESettings.vcxproj` 在 `DimeUseRustEngine=true` 時是 Utility 專案（更新 `BuildInfo.h` → cargo → 複製到 `$(OutDir)`），`=false` 是全 C++ exe。MSBuild 裡呼叫 cargo 要清掉 `VSTEL_MSBuildProjectFullPath`／`VCINSTALLDIR`／`VSINSTALLDIR`／`LIB`／`LIBPATH`（`$(DimeCargoEnv)`），否則 x64 主機的 build script 會用 Win32 的 x86 `LIB` 連結。改 `wWinMain` 的行為時兩邊一起改；對拍：`SettingsMainParityTest`（`ExecutableCli` 執行真正的 exe，路徑是 `rust\target\<triple>\release\DIMESettings.exe`，由 `DIMETests` 的 cargo 步驟建置；只能用不讀 AppData 的命令，exe 沒有測試用的 AppData 覆寫）。
 - 連結 `dime_ffi.lib` 時要加 `synchronization.lib`（Rust 1.100 起標準庫用 `WaitOnAddress`）；Rust 需要的完整清單用 `cargo rustc -p dime-ffi --lib -- --print native-static-libs` 查。
 - 候選字選擇與翻頁：`dime-core::candidates` ↔ `CRustCandidateListModel`（`src/RustCandidateListModel.*`）。候選字串留在 C++ 的 `CCandidateListModel`；一律用 `CCandidateListModel::Create()` 建立（`CCandidateWindow` 已如此）。對拍：`RustCandidateListModelParityTest`。
 - 按鍵分類：`dime-core::keyclass` ↔ `CCompositionProcessorEngine::_IsVirtualKeyNeedRust`（`KeyProcesser.cpp`）。`IsVirtualKeyNeed` 在 `DIME_USE_RUST_ENGINE` 時改走 Rust，C++ 版保留為 `_IsVirtualKeyNeedCpp`。輸入是 `DimeKeyInput` 快照；`IsVirtualKeyNeed` 新增讀取的狀態或設定時，兩邊與快照都要一起改。對拍：`KeyClassifyParityTest`。

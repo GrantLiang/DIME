@@ -1157,6 +1157,15 @@ int32_t dime_cli_run(const uint16_t* const* argv, const size_t* lens, size_t arg
 int32_t dime_cli_run_native(const uint16_t* const* argv, const size_t* lens, size_t argc, DimeCliHost* streams,
     const uint16_t* app_data);
 
+/* ---- DIMESettings.exe in Rust (phase 5b-15f, settings_main.rs) ----------
+ * Test hooks. console_write: what the Rust executable writes for one
+ * WriteWide call on handle (buffered: stdout's 4,096-byte buffer, as on a
+ * pipe or file; flushed before returning). skip_program_name: the UCRT's
+ * lpCmdLine for a full command line into out (cap units with the NUL);
+ * returns the full length. */
+void dime_settings_console_write_for_test(void* handle, const uint16_t* text, size_t len, int32_t buffered);
+size_t dime_settings_skip_program_name_for_test(const uint16_t* cmd, uint16_t* out, size_t cap);
+
 /* ---- Settings model (phase 5b-1, dime-config::settings_model) ----------
  * Window-free SettingsModel functions. snapshot is a C++ SettingsSnapshot
  * (216 bytes). Returned strings are static NUL-terminated UTF-16, or NULL.

@@ -6,15 +6,17 @@
 //! settings app already uses: `ConfigStore` (INI load / write / reset and
 //! the custom table paths), the settings object for `--get` / `--set`,
 //! `SettingsEngine` for the custom table check, `appenv::parse_cin_file`
-//! for table conversion, and `children::load_text_file`. Only the two
-//! output streams still go to the C++ host (its CRT `FILE*`s), until
-//! `wWinMain` moves (5b-15f).
+//! for table conversion, and `children::load_text_file`. The two output
+//! streams go to the C++ host (its CRT `FILE*`s) when it calls
+//! `dime_cli_run_native`; the Rust executable (5b-15f) writes them with
+//! `dime_settings::console`, as the CRT would.
 
 use std::ptr::null_mut;
 
 use dime_config::cli::{self, CliHost, WriteUtf16};
 use dime_config::settings_model;
 use dime_config::{keys, ImeMode};
+use dime_settings::console::Stream;
 use dime_settings::{appenv, children};
 
 use crate::cli::{collect, DimeCliHost, FfiHost};
@@ -43,9 +45,31 @@ fn w(s: &str) -> Vec<u16> {
     s.encode_utf16().collect()
 }
 
-pub struct NativeCli {
+/// Where `write_out` / `write_err` go.
+pub(crate) enum Streams {
     /// The C++ host: only its `write_out` / `write_err` are used.
-    streams: FfiHost,
+    Ffi(FfiHost),
+    /// The Rust executable's `stdout` / `stderr`.
+    Console { out: Stream, err: Stream },
+}
+
+impl Streams {
+    fn write_out(&mut self, text: &[u16]) {
+        match self {
+            Streams::Ffi(h) => h.write_out(text),
+            Streams::Console { out, .. } => out.write_wide(text),
+        }
+    }
+    fn write_err(&mut self, text: &[u16]) {
+        match self {
+            Streams::Ffi(h) => h.write_err(text),
+            Streams::Console { err, .. } => err.write_wide(text),
+        }
+    }
+}
+
+pub struct NativeCli {
+    streams: Streams,
     store: ConfigStore,
     engine: Option<SettingsEngine>,
 }
@@ -228,7 +252,14 @@ pub unsafe extern "C" fn dime_cli_run_native(
                 std::slice::from_raw_parts(app_data, n).to_vec()
             }
         });
-        let mut host = NativeCli { streams: FfiHost { host: streams }, store: ConfigStore::new(override_dir), engine: None };
-        cli::run(&args, &mut host)
+        run(&args, Streams::Ffi(FfiHost { host: streams }), override_dir)
     })
 }
+
+/// `RunCLI` with the Rust host and `streams`; the streams are dropped
+/// (flushed) on return. `app_data` replaces `%APPDATA%` when given.
+pub(crate) fn run(args: &[&[u16]], streams: Streams, app_data: Option<Vec<u16>>) -> i32 {
+    let mut host = NativeCli { streams, store: ConfigStore::new(app_data), engine: None };
+    cli::run(args, &mut host)
+}
+

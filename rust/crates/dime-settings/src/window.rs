@@ -344,7 +344,7 @@ fn app<'a>(wd: *mut WindowData) -> &'a dyn App {
     unsafe { &*(&*(*wd).app as *const dyn App) }
 }
 
-fn theme_for(is_dark: bool) -> ThemeColors {
+pub(crate) fn theme_for(is_dark: bool) -> ThemeColors {
     // SAFETY: plain user32 calls (`ComputeThemeColors`).
     let sys = unsafe {
         SysColors {

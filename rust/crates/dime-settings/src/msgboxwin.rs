@@ -483,6 +483,23 @@ pub fn show(
     }
 }
 
+/// `SettingsMsgBox::kClassName`.
+pub const CLASS_NAME: &str = "DIMEThemedMsgBoxClass";
+
+unsafe extern "C" fn screen_dpi(hwnd: Handle) -> u32 {
+    crate::appenv::dpi_for_window(hwnd)
+}
+
+/// `SettingsMsgBox::Show` (phase 5b-15f): the system theme, its colours and
+/// the settings app's dpi rule (`appenv::dpi_for_window`, as
+/// `CConfig::GetDpiForHwnd` in the settings app), with `kClassName`.
+pub fn show_themed(parent: Handle, text: &[u16], caption: &[u16], mb_type: u32) -> i32 {
+    let is_dark = crate::appenv::system_dark();
+    let theme = crate::window::theme_for(is_dark);
+    let class: Vec<u16> = CLASS_NAME.encode_utf16().collect();
+    show(parent, text, caption, mb_type, &class, is_dark, &theme, screen_dpi)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

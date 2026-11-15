@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       rust_engine:
-        description: 'Build with the Rust core (DimeUseRustEngine); off builds the all-C++ DIME.dll'
+        description: 'Build with the Rust core (DimeUseRustEngine); off builds the all-C++ DIME.dll and DIMESettings.exe'
         type: boolean
         default: true
   push:

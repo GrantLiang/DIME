@@ -29,6 +29,8 @@
 pub mod appenv;
 #[cfg(windows)]
 pub mod children;
+#[cfg(windows)]
+pub mod console;
 pub mod command;
 pub mod controls;
 pub mod driver;

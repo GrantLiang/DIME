@@ -418,6 +418,7 @@
     <ClCompile Include="SettingsAppParityTest.cpp" />
     <ClCompile Include="CinConvertParityTest.cpp" />
     <ClCompile Include="CliHostParityTest.cpp" />
+    <ClCompile Include="SettingsMainParityTest.cpp" />
     <ClCompile Include="TestAppData.cpp" />
     <ClCompile Include="CandidatePaintParityTest.cpp" />
     <ClCompile Include="ScrollBarProcParityTest.cpp" />
@@ -1196,6 +1197,11 @@
     <DimeRustLibDir>$(DimeRustRoot)target\$(DimeRustTarget)\release\</DimeRustLibDir>
     <DimeCargo Condition="Exists('$(USERPROFILE)\.cargo\bin\cargo.exe')">"$(USERPROFILE)\.cargo\bin\cargo.exe"</DimeCargo>
     <DimeCargo Condition="'$(DimeCargo)'==''">cargo</DimeCargo>
+    <!-- The build script of dime-settings-exe is built for the x64 host. rustc (cc-rs) takes
+         VSTEL_MSBuildProjectFullPath or VCINSTALLDIR as a developer prompt and would link it with
+         this platform's link.exe and LIB (x86 for Win32); without them it finds MSVC and the
+         libraries for each target itself. -->
+    <DimeCargoEnv>set VSTEL_MSBuildProjectFullPath=&amp;&amp; set VCINSTALLDIR=&amp;&amp; set VSINSTALLDIR=&amp;&amp; set LIB=&amp;&amp; set LIBPATH=&amp;&amp; </DimeCargoEnv>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true'">
     <ClCompile>
@@ -1228,7 +1234,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <Target Name="BuildDimeRust" BeforeTargets="ClCompile" Condition="'$(DimeRustEnabled)'=='true'">
-    <Exec Command="$(DimeCargo) build --release --locked -p dime-ffi --target $(DimeRustTarget) --manifest-path &quot;$(DimeRustRoot)Cargo.toml&quot;" />
+    <Exec Command="$(DimeCargoEnv)$(DimeCargo) build --release --locked -p dime-ffi -p dime-settings-exe --target $(DimeRustTarget) --manifest-path &quot;$(DimeRustRoot)Cargo.toml&quot;" />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -18,15 +18,20 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>DIMESettings</ProjectName>
   </PropertyGroup>
+  <PropertyGroup Label="DimeRustDefault">
+    <DimeUseRustEngine Condition="'$(DimeUseRustEngine)'==''">true</DimeUseRustEngine>
+    <DimeSettingsType Condition="'$(DimeUseRustEngine)'=='true'">Utility</DimeSettingsType>
+    <DimeSettingsType Condition="'$(DimeUseRustEngine)'!='true'">Application</DimeSettingsType>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>$(DimeSettingsType)</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>$(DimeSettingsType)</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -182,37 +187,34 @@
     <Image Include="DIMESettings.ico" />
   </ItemGroup>
   <!--
-    Rust settings logic (rust/crates/dime-config via dime-ffi), on by default; the previous
-    all-C++ build: msbuild DIME.sln /t:DIMESettings /p:Configuration=Release /p:Platform=Win32 /p:DimeUseRustEngine=false
-    Defines DIME_USE_RUST_CONFIG: CConfig defaults / INI writing and the CLI's get/set
-    validation run in Rust. The dictionary engine stays C++ (DIME_USE_RUST_ENGINE is not defined).
-    Release links the static CRT build (matching /MT); Debug uses the dynamic CRT build.
+    DIMESettings.exe is built by cargo by default (phase 5b-15f): rust/crates/dime-settings-exe,
+    all Rust. The project is then a Utility project: the PreBuildEvent regenerates BuildInfo.h
+    (the executable's version and caption), cargo builds the executable, and it is copied to
+    $(OutDir) (src\Release\DIMESettings.exe for Release, where CI and the installer take it).
+    Release uses the static CRT (+crt-static, like /MT); Debug uses the dynamic CRT.
+    The all-C++ executable: msbuild DIME.sln /t:DIMESettings /p:Configuration=Release /p:Platform=Win32 /p:DimeUseRustEngine=false
+    The C++ sources with DIME_USE_RUST_CONFIG are still compiled by DIMETests (parity tests).
   -->
   <PropertyGroup Label="DimeRust">
-    <DimeUseRustEngine Condition="'$(DimeUseRustEngine)'==''">true</DimeUseRustEngine>
     <DimeRustRoot>$(ProjectDir)..\..\rust\</DimeRustRoot>
     <DimeRustTarget Condition="'$(Platform)'=='Win32'">i686-pc-windows-msvc</DimeRustTarget>
     <DimeRustEnabled Condition="'$(DimeUseRustEngine)'=='true' And '$(DimeRustTarget)'!=''">true</DimeRustEnabled>
     <DimeRustTargetDir Condition="'$(Configuration)'=='Release'">$(DimeRustRoot)target\crt-static\</DimeRustTargetDir>
     <DimeRustTargetDir Condition="'$(Configuration)'!='Release'">$(DimeRustRoot)target\</DimeRustTargetDir>
     <DimeRustFlags Condition="'$(Configuration)'=='Release'">-C target-feature=+crt-static</DimeRustFlags>
-    <DimeRustLibDir>$(DimeRustTargetDir)$(DimeRustTarget)\release\</DimeRustLibDir>
+    <DimeRustOutDir>$(DimeRustTargetDir)$(DimeRustTarget)\release\</DimeRustOutDir>
     <DimeCargo Condition="Exists('$(USERPROFILE)\.cargo\bin\cargo.exe')">"$(USERPROFILE)\.cargo\bin\cargo.exe"</DimeCargo>
     <DimeCargo Condition="'$(DimeCargo)'==''">cargo</DimeCargo>
+    <!-- The build script of dime-settings-exe is built for the x64 host. rustc (cc-rs) takes
+         VSTEL_MSBuildProjectFullPath or VCINSTALLDIR as a developer prompt and would link it with
+         this platform's link.exe and LIB (x86 for Win32); without them it finds MSVC and the
+         libraries for each target itself. -->
+    <DimeCargoEnv>set VSTEL_MSBuildProjectFullPath=&amp;&amp; set VCINSTALLDIR=&amp;&amp; set VSINSTALLDIR=&amp;&amp; set LIB=&amp;&amp; set LIBPATH=&amp;&amp; </DimeCargoEnv>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true'">
-    <ClCompile>
-      <AdditionalIncludeDirectories>$(DimeRustRoot)crates\dime-ffi\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DIME_RUST_AVAILABLE;DIME_USE_RUST_CONFIG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(DimeRustLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>dime_ffi.lib;ntdll.lib;userenv.lib;ws2_32.lib;dbghelp.lib;synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)'!='Release'">msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-    </Link>
-  </ItemDefinitionGroup>
-  <Target Name="BuildDimeRust" BeforeTargets="ClCompile" Condition="'$(DimeRustEnabled)'=='true'">
-    <Exec Command="$(DimeCargo) build --release --locked -p dime-ffi --target $(DimeRustTarget) --target-dir &quot;$(DimeRustTargetDir.TrimEnd('\'))&quot; --manifest-path &quot;$(DimeRustRoot)Cargo.toml&quot;" EnvironmentVariables="RUSTFLAGS=$(DimeRustFlags)" />
+  <Target Name="BuildDimeSettingsExe" AfterTargets="Build" Condition="'$(DimeRustEnabled)'=='true'">
+    <Exec Command="$(DimeCargoEnv)$(DimeCargo) build --release --locked -p dime-settings-exe --target $(DimeRustTarget) --target-dir &quot;$(DimeRustTargetDir.TrimEnd('\'))&quot; --manifest-path &quot;$(DimeRustRoot)Cargo.toml&quot;" EnvironmentVariables="RUSTFLAGS=$(DimeRustFlags)" />
+    <Copy SourceFiles="$(DimeRustOutDir)DIMESettings.exe;$(DimeRustOutDir)DIMESettings.pdb" DestinationFolder="$(OutDir)" />
+    <Message Importance="high" Text="DIMESettings -&gt; $(OutDir)DIMESettings.exe (cargo, $(DimeRustTarget))" />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

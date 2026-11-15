@@ -1613,6 +1613,11 @@ int RunCLIForTest(const wchar_t* cmdLine, FILE* out, FILE* err, bool cppHost)
 {
     return RunCLIWith(cmdLine, out, err, cppHost);
 }
+
+void WriteWideForTest(FILE* f, const wchar_t* text, size_t len)
+{
+    WriteWide(f, reinterpret_cast<const uint16_t*>(text), len);
+}
 #endif
 #endif // DIME_USE_RUST_CONFIG
 
