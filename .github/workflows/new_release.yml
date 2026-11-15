@@ -1,4 +1,6 @@
 name: New Release
+# Manual only: tags v<BUILD_VERSION_STR_SHORT> from src/BuildInfo.h (committed by the Build
+# workflow's bot) and uses docs/DRAFT_RELEASE.md as the release notes.
 
 on:
   workflow_dispatch:
