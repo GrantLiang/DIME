@@ -191,6 +191,7 @@
       - **5b-15e**：✅ CLI host 改 Rust（重用上面的元件；兩個輸出串流留給 5b-15f）。見下方進度。
       - **5b-15f**：✅ `wWinMain` 改 Rust（單一執行個體、深色模式、COM、啟動判斷、CLI 的主控台輸出），新的 `dime-settings-exe` crate 由 cargo 產出 `DIMESettings.exe`（圖示、manifest、版本資訊由 build.rs 嵌入），MSBuild、CI、安裝程式與 `HOW_TO_BUILD.md` 改用它。見下方進度。
     - 之後進入第 6 階段。
+  - **決定（2026-11-15）**：第 5b 階段完成後先不進第 6 階段。照第 2 階段的約定（C++ 刪除前至少經過一個 Rust 預設的正式版本），先把 `build/phase4a` 合併到 `master`、發一個 Rust 預設的版本並觀察，再刪 C++ 實作與開關。發版說明草稿在 `docs/DRAFT_RELEASE.md`。
   - **相關文件**：`NEW_DIME_SETTIGNS.md`、`DIME_SETTINGS_COMBO_FLOATING.md`、`RICHEDIT_VIEWPORT_VAL.md`、`CUSTOM_TABLE_VALIDATION.md`、`LIGHT_DARK_THEME.md`、`DPI_AWARE.md`。
   - **測試**：`SettingsDialogIntegrationTest`、`RichEditViewportTest` 改成對新 exe 的 UI 自動化測試（UIA），加上各頁面截圖比對與手動清單。
   - **清理**：舊版 `ConfigDialog.cpp` 與 `ShowConfig.cpp` 中的 legacy PropertySheet 分支直接刪除。
