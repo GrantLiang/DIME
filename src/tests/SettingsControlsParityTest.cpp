@@ -6,6 +6,9 @@
 * shipped tables and random synthetic cards, at several dpis, card widths, and
 * expand states, every spec field must match: id, HMENU, role, class, styles,
 * caption, create / AddControl rectangles, visible height, font, dark theme.
+*
+* Golden files (src/tests/golden/SettingsControls): a hash of the Rust specs
+* per shipped page case and per 50 synthetic ones.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -16,6 +19,7 @@
 
 #include "../DIMESettings/SettingsControls.h"
 #include "../DIMESettings/SettingsPageLayout.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SC = SettingsControls;
@@ -37,15 +41,17 @@ namespace
     }
 
     void Check(const SWL::PlanInput& in, int cardW, const LayoutCard* ime, int imeCount,
-        const LayoutCard* load, int loadCount, const std::wstring& what, int& total)
+        const LayoutCard* load, int loadCount, const std::wstring& what, int& total, Golden::Hash& hash)
     {
         std::vector<SC::ControlSpec> a = SC::Cpp::BuildSpecs(in, cardW, ime, imeCount, load, loadCount);
         std::vector<SC::ControlSpec> b = SC::BuildSpecsRust(in, cardW, ime, imeCount, load, loadCount);
         Assert::AreEqual(a.size(), b.size(), (what + L": count").c_str());
+        hash.Add(L"count " + std::to_wstring(b.size()));
         for (size_t i = 0; i < a.size(); i++) {
             std::wstring da = D(a[i]), db = D(b[i]);
             if (da != db)
                 Assert::Fail((what + L" spec " + std::to_wstring(i) + L"\nC++:  " + da + L"\nRust: " + db).c_str());
+            hash.Add(db);
         }
         total += (int)a.size();
     }
@@ -102,6 +108,7 @@ namespace DIMEUnitTests
             const LayoutCard* lt = GetLoadTablePageLayout(&ltCount);
             std::mt19937 rng(5);
             int total = 0;
+            Golden::Log golden;
             for (UINT dpi : { 96u, 120u, 144u, 192u }) {
                 for (int sel : { 0, 1, 2, 3, 5 }) {
                     for (int nav = 0; nav < 2; nav++) {
@@ -118,14 +125,18 @@ namespace DIMEUnitTests
                                 in.previewH = 150 + (int)(rng() % 150);
                                 for (bool& e : in.expanded) e = (rng() & 1) != 0;
                                 int cardW = MulDiv(500 + (int)(rng() % 400), dpi, 96);
-                                Check(in, cardW, ime, imeCount, lt, ltCount,
-                                    L"sel " + std::to_wstring(sel) + L" nav " + std::to_wstring(nav) + L" card " + std::to_wstring(card)
-                                        + L" dpi " + std::to_wstring(dpi), total);
+                                std::wstring what = L"sel " + std::to_wstring(sel) + L" nav " + std::to_wstring(nav)
+                                    + L" card " + std::to_wstring(card) + L" dpi " + std::to_wstring(dpi) + L" rep "
+                                    + std::to_wstring(rep);
+                                Golden::Hash hash;
+                                Check(in, cardW, ime, imeCount, lt, ltCount, what, total, hash);
+                                golden.Add(what + L" " + hash.Hex());
                             }
                         }
                     }
                 }
             }
+            Golden::Check(L"SettingsControls", L"ShippedPages", golden.lines);
             Assert::IsTrue(total > 2000, (L"specs checked: " + std::to_wstring(total)).c_str());
         }
 
@@ -133,6 +144,8 @@ namespace DIMEUnitTests
         {
             std::mt19937 rng(6);
             int total = 0;
+            Golden::Log golden;
+            Golden::Hash hash;
             for (int iter = 0; iter < 2000; iter++) {
                 Synthetic ime = RandomCards(rng, 4), lt = RandomCards(rng, 6);
                 SWL::PlanInput in = {};
@@ -147,8 +160,13 @@ namespace DIMEUnitTests
                 in.previewH = (int)(rng() % 300);
                 for (bool& e : in.expanded) e = (rng() & 1) != 0;
                 Check(in, 300 + (int)(rng() % 700), ime.cards.data(), (int)ime.cards.size(), lt.cards.data(),
-                    (int)lt.cards.size(), L"iter " + std::to_wstring(iter), total);
+                    (int)lt.cards.size(), L"iter " + std::to_wstring(iter), total, hash);
+                if (iter % 50 == 49) {
+                    golden.Add(L"iters " + std::to_wstring(iter - 49) + L".." + std::to_wstring(iter) + L" " + hash.Hex());
+                    hash = Golden::Hash();
+                }
             }
+            Golden::Check(L"SettingsControls", L"SyntheticPages", golden.lines);
             Assert::IsTrue(total > 3000, (L"specs checked: " + std::to_wstring(total)).c_str());
         }
     };

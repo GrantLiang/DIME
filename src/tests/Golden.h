@@ -25,6 +25,10 @@ std::wstring RepoRoot();
 // DIME_GOLDEN_RECORD=1.
 bool Recording();
 
+// "-x64" or "-x86": for golden files whose content depends on the pointer
+// size (WPARAM / LPARAM values, structure sizes). Record on both platforms.
+const wchar_t* PlatformSuffix();
+
 // Records `lines` as <group>/<name> when recording; otherwise compares them
 // with the file and fails at the first difference.
 void Check(const std::wstring& group, const std::wstring& name, const std::vector<std::wstring>& lines);

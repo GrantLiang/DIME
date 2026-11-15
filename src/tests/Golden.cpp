@@ -93,6 +93,11 @@ bool Recording()
     return GetEnvironmentVariableW(L"DIME_GOLDEN_RECORD", v, 8) && v[0] == L'1';
 }
 
+const wchar_t* PlatformSuffix()
+{
+    return sizeof(void*) == 8 ? L"-x64" : L"-x86";
+}
+
 void Check(const std::wstring& group, const std::wstring& name, const std::vector<std::wstring>& lines)
 {
     if (Recording()) Record(group, name, lines);

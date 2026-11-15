@@ -6,6 +6,9 @@
 * control. Command lines are hand-picked edge cases plus random token
 * sequences; expand defaults use the shipped tables and random synthetic
 * card lists; scroll plans use random controls, scroll positions, and dpis.
+*
+* Golden files (src/tests/golden/SettingsLifecycle): the Rust results, one
+* line per hand-picked command line and one hash per 50 random cases.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -16,6 +19,7 @@
 
 #include "../DIMESettings/SettingsLifecycle.h"
 #include "../DIMESettings/SettingsPageLayout.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SL = SettingsLifecycle;
@@ -28,7 +32,8 @@ namespace
             + L" newUi=" + std::to_wstring(a.newUi) + L" mode=" + std::to_wstring(a.guiMode);
     }
 
-    void CheckLine(const wchar_t* line, int& total)
+    // Returns the Rust side's result for the golden file.
+    std::wstring CheckLine(const wchar_t* line, int& total)
     {
         std::wstring what = line ? L"[" + std::wstring(line) + L"]" : L"null";
         std::wstring a = D(SL::Cpp::ParseLaunch(line)), b = D(SL::Rust::ParseLaunch(line));
@@ -38,6 +43,7 @@ namespace
         if (ma != mb)
             Assert::Fail((L"copydata " + what + L" C++=" + std::to_wstring(ma) + L" Rust=" + std::to_wstring(mb)).c_str());
         total++;
+        return what + L": " + b + L" copydata=" + std::to_wstring(mb);
     }
 
     std::wstring D(const SL::ScrollAction& a)
@@ -67,9 +73,10 @@ namespace DIMETests
                 L"--mode aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", L"--mode phoneticphoneticphoneticphoneticX",
                 L"--MODE dayi", L"--mode\tdayi",
             };
-            CheckLine(nullptr, total);
+            Golden::Log golden;
+            golden.Add(CheckLine(nullptr, total));
             for (const wchar_t* line : fixed)
-                CheckLine(line, total);
+                golden.Add(CheckLine(line, total));
 
             static const wchar_t* tokens[] = {
                 L"--mode ", L"--mode", L"dayi", L"DAYI", L"array", L"Phonetic", L"generic", L"nope", L" ", L"  ",
@@ -77,13 +84,19 @@ namespace DIMETests
                 L"--load", L"--list", L"--help", L"x", L"\t", L"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", L"\x5927\x6613",
             };
             std::mt19937 rng(20261112);
+            Golden::Hash hash;
             for (int n = 0; n < 20000; n++) {
                 std::wstring line;
                 int len = rng() % 7;
                 for (int t = 0; t < len; t++)
                     line += tokens[rng() % _countof(tokens)];
-                CheckLine(line.c_str(), total);
+                hash.Add(CheckLine(line.c_str(), total));
+                if (n % 50 == 49) {
+                    golden.Add(L"random " + std::to_wstring(n - 49) + L".." + std::to_wstring(n) + L" " + hash.Hex());
+                    hash = Golden::Hash();
+                }
             }
+            Golden::Check(L"SettingsLifecycle", L"LaunchAndCopyData", golden.lines);
             Assert::IsTrue(total > 20000, L"command lines");
         }
 
@@ -95,6 +108,8 @@ namespace DIMETests
             Assert::IsTrue(imeCount > 0 && ltCount > 0, L"tables");
             std::mt19937 rng(7);
             int cases = 0;
+            Golden::Log golden;
+            Golden::Hash hash;
             for (int n = 0; n < 3000; n++) {
                 std::vector<LayoutCard> a, b;
                 int na = n == 0 ? imeCount : (int)(rng() % 22);
@@ -119,8 +134,17 @@ namespace DIMETests
                         Assert::Fail((L"case " + std::to_wstring(n) + L" ime=" + std::to_wstring(na) + L" load="
                             + std::to_wstring(nb) + L" slot " + std::to_wstring(i)).c_str());
                 }
+                std::wstring bits;
+                for (bool e : er) bits += e ? L'1' : L'0';
+                if (n == 0) golden.Add(L"shipped tables: " + bits);
+                hash.Add(std::to_wstring(na) + L"," + std::to_wstring(nb) + L":" + bits);
+                if (n % 50 == 49) {
+                    golden.Add(L"cases " + std::to_wstring(n - 49) + L".." + std::to_wstring(n) + L" " + hash.Hex());
+                    hash = Golden::Hash();
+                }
                 cases++;
             }
+            Golden::Check(L"SettingsLifecycle", L"DefaultExpanded", golden.lines);
             Assert::AreEqual(3000, cases);
         }
 
@@ -128,6 +152,8 @@ namespace DIMETests
         {
             std::mt19937 rng(11);
             int actions = 0;
+            Golden::Log golden;
+            Golden::Hash hash;
             for (int n = 0; n < 5000; n++) {
                 std::vector<SL::ScrollItem> items(rng() % 30);
                 for (auto& it : items) {
@@ -150,8 +176,15 @@ namespace DIMETests
                         Assert::Fail((L"case " + std::to_wstring(n) + L" item " + std::to_wstring(i) + L"\nC++:  " + da
                             + L"\nRust: " + db).c_str());
                     actions += a[i].show != 0;
+                    hash.Add(db);
+                }
+                hash.Add(L"count " + std::to_wstring(b.size()));
+                if (n % 50 == 49) {
+                    golden.Add(L"cases " + std::to_wstring(n - 49) + L".." + std::to_wstring(n) + L" " + hash.Hex());
+                    hash = Golden::Hash();
                 }
             }
+            Golden::Check(L"SettingsLifecycle", L"PlanScroll", golden.lines);
             Assert::IsTrue(actions > 1000, L"show / hide coverage");
         }
     };

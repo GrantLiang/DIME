@@ -7,6 +7,10 @@
 * results); random messages, including unhandled ones, with random
 * wParam / lParam and real structures for the pointer messages, must produce
 * the same Host calls, return values, and MINMAXINFO.
+*
+* Golden files (src/tests/golden/SettingsProc): a hash per sequence of the
+* Rust side's Host calls (the test's own structure addresses replaced by
+* names), return values, and MINMAXINFO.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -17,6 +21,7 @@
 
 #include "../DIMESettings/SettingsProc.h"
 #include "../DIMESettings/SettingsEditor.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SP = SettingsProc;
@@ -100,9 +105,12 @@ namespace
         std::mt19937 rng(content ? 4242u : 1717u);
         static const wchar_t* lines[] = { L"--mode array", L"x --mode Phonetic y", L"--mode nope", L"", L"--mode", L"--MODE dayi" };
         int calls = 0;
+        Golden::Log golden;
         for (int n = 0; n < sequences; n++) {
             unsigned seed = rng();
             Recorder a(seed), b(seed);
+            Golden::Hash hash;
+            size_t logPos = 0;
             for (int step = 0; step < steps; step++) {
                 bool hasData = (rng() % 5) != 0, hasContent = (rng() % 4) != 0;
                 a.hasData = b.hasData = hasData;
@@ -146,9 +154,22 @@ namespace
                     Assert::Fail((what + L"\nC++:  " + a.log + L"\nRust: " + b.log).c_str());
                 Assert::AreEqual((long long)ra, (long long)rb, (what + L" result").c_str());
                 Assert::IsTrue(memcmp(&ma, &mb, sizeof(ma)) == 0, (what + L" MINMAXINFO").c_str());
+                std::wstring added = b.log.substr(logPos);
+                logPos = b.log.size();
+                const std::pair<const void*, const wchar_t*> names[] = {
+                    { &cs, L"<cs>" }, { &ma, L"<ma>" }, { &mb, L"<mb>" }, { &cds, L"<cds>" }, { &rc, L"<rc>" },
+                };
+                for (const auto& nm : names)
+                    added = Golden::Replace(added, std::to_wstring((long long)(intptr_t)nm.first), nm.second);
+                hash.Add(added + L" => " + std::to_wstring((long long)rb));
+                hash.Add(content ? &ma : &mb, sizeof(MINMAXINFO));
                 calls++;
             }
+            golden.Add(L"seq " + std::to_wstring(n) + L" " + hash.Hex());
         }
+        // WPARAM / LPARAM are 32 bits on Win32: the logged values differ by platform.
+        Golden::Check(L"SettingsProc", std::wstring(content ? L"ContentArea" : L"MainWindow") + Golden::PlatformSuffix(),
+            golden.lines);
         Assert::IsTrue(calls >= sequences * steps, L"messages");
     }
 }

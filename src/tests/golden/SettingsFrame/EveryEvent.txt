@@ -1,0 +1,727 @@
+kind=0 dark=0 sys=0 content=0 dpi=96 rect=0: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=96 rect=1: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=120 rect=0: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=120 rect=1: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=144 rect=0: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=144 rect=1: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=192 rect=0: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=192 rect=1: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=0 rect=0: dark=0
+kind=0 dark=0 sys=0 content=0 dpi=0 rect=1: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=96 rect=0: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=96 rect=1: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=120 rect=0: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=120 rect=1: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=144 rect=0: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=144 rect=1: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=192 rect=0: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=192 rect=1: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=0 rect=0: dark=0
+kind=0 dark=0 sys=0 content=1 dpi=0 rect=1: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=96 rect=0: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=96 rect=1: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=120 rect=0: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=120 rect=1: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=144 rect=0: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=144 rect=1: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=192 rect=0: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=192 rect=1: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=0 rect=0: dark=0
+kind=0 dark=0 sys=1 content=0 dpi=0 rect=1: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=96 rect=0: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=96 rect=1: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=120 rect=0: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=120 rect=1: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=144 rect=0: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=144 rect=1: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=192 rect=0: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=192 rect=1: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=0 rect=0: dark=0
+kind=0 dark=0 sys=1 content=1 dpi=0 rect=1: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=96 rect=0: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=96 rect=1: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=120 rect=0: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=120 rect=1: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=144 rect=0: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=144 rect=1: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=192 rect=0: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=192 rect=1: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=0 rect=0: dark=0
+kind=0 dark=0 sys=2 content=0 dpi=0 rect=1: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=96 rect=0: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=96 rect=1: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=120 rect=0: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=120 rect=1: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=144 rect=0: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=144 rect=1: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=192 rect=0: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=192 rect=1: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=0 rect=0: dark=0
+kind=0 dark=0 sys=2 content=1 dpi=0 rect=1: dark=0
+kind=0 dark=1 sys=0 content=0 dpi=96 rect=0: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=96 rect=1: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=120 rect=0: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=120 rect=1: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=144 rect=0: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=144 rect=1: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=192 rect=0: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=192 rect=1: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=0 rect=0: dark=1
+kind=0 dark=1 sys=0 content=0 dpi=0 rect=1: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=96 rect=0: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=96 rect=1: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=120 rect=0: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=120 rect=1: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=144 rect=0: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=144 rect=1: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=192 rect=0: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=192 rect=1: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=0 rect=0: dark=1
+kind=0 dark=1 sys=0 content=1 dpi=0 rect=1: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=96 rect=0: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=96 rect=1: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=120 rect=0: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=120 rect=1: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=144 rect=0: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=144 rect=1: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=192 rect=0: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=192 rect=1: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=0 rect=0: dark=1
+kind=0 dark=1 sys=1 content=0 dpi=0 rect=1: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=96 rect=0: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=96 rect=1: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=120 rect=0: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=120 rect=1: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=144 rect=0: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=144 rect=1: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=192 rect=0: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=192 rect=1: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=0 rect=0: dark=1
+kind=0 dark=1 sys=1 content=1 dpi=0 rect=1: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=96 rect=0: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=96 rect=1: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=120 rect=0: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=120 rect=1: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=144 rect=0: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=144 rect=1: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=192 rect=0: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=192 rect=1: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=0 rect=0: dark=1
+kind=0 dark=1 sys=2 content=0 dpi=0 rect=1: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=96 rect=0: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=96 rect=1: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=120 rect=0: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=120 rect=1: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=144 rect=0: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=144 rect=1: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=192 rect=0: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=192 rect=1: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=0 rect=0: dark=1
+kind=0 dark=1 sys=2 content=1 dpi=0 rect=1: dark=1
+kind=1 dark=0 sys=0 content=0 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780]
+kind=1 dark=0 sys=0 content=0 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780]
+kind=1 dark=0 sys=0 content=0 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780]
+kind=1 dark=0 sys=0 content=0 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780]
+kind=1 dark=0 sys=0 content=0 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780]
+kind=1 dark=0 sys=0 content=0 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780]
+kind=1 dark=0 sys=0 content=0 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780]
+kind=1 dark=0 sys=0 content=0 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780]
+kind=1 dark=0 sys=0 content=0 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780]
+kind=1 dark=0 sys=0 content=0 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780]
+kind=1 dark=0 sys=0 content=1 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780]
+kind=1 dark=0 sys=0 content=1 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780]
+kind=1 dark=0 sys=0 content=1 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780]
+kind=1 dark=0 sys=0 content=1 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780]
+kind=1 dark=0 sys=0 content=1 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780]
+kind=1 dark=0 sys=0 content=1 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780]
+kind=1 dark=0 sys=0 content=1 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780]
+kind=1 dark=0 sys=0 content=1 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780]
+kind=1 dark=0 sys=0 content=1 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780]
+kind=1 dark=0 sys=0 content=1 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780]
+kind=1 dark=0 sys=1 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=1 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=0 sys=2 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=0 content=0 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780]
+kind=1 dark=1 sys=0 content=0 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780]
+kind=1 dark=1 sys=0 content=0 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780]
+kind=1 dark=1 sys=0 content=0 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780]
+kind=1 dark=1 sys=0 content=0 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780]
+kind=1 dark=1 sys=0 content=0 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780]
+kind=1 dark=1 sys=0 content=0 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780]
+kind=1 dark=1 sys=0 content=0 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780]
+kind=1 dark=1 sys=0 content=0 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780]
+kind=1 dark=1 sys=0 content=0 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780]
+kind=1 dark=1 sys=0 content=1 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780]
+kind=1 dark=1 sys=0 content=1 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780]
+kind=1 dark=1 sys=0 content=1 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780]
+kind=1 dark=1 sys=0 content=1 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780]
+kind=1 dark=1 sys=0 content=1 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780]
+kind=1 dark=1 sys=0 content=1 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780]
+kind=1 dark=1 sys=0 content=1 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780]
+kind=1 dark=1 sys=0 content=1 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780]
+kind=1 dark=1 sys=0 content=1 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780]
+kind=1 dark=1 sys=0 content=1 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780]
+kind=1 dark=1 sys=1 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=1 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,280,0,820,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,350,0,750,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,420,0,680,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,560,0,540,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=1 dark=1 sys=2 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [11,0,0,0,1100,780] [8,1,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=0 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=0 content=1 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=1 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=0 sys=2 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=0 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=0 content=1 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=1 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=2 dark=1 sys=2 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0]
+kind=3 dark=0 sys=0 content=0 dpi=96 rect=0: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=96 rect=1: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=120 rect=0: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=120 rect=1: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=144 rect=0: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=144 rect=1: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=192 rect=0: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=192 rect=1: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=0 rect=0: dark=0
+kind=3 dark=0 sys=0 content=0 dpi=0 rect=1: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=96 rect=0: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=96 rect=1: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=120 rect=0: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=120 rect=1: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=144 rect=0: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=144 rect=1: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=192 rect=0: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=192 rect=1: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=0 rect=0: dark=0
+kind=3 dark=0 sys=0 content=1 dpi=0 rect=1: dark=0
+kind=3 dark=0 sys=1 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=1 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=0 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=96 rect=0: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=96 rect=1: dark=1 [3,0,0,0,0,0] [4,96,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=120 rect=0: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=120 rect=1: dark=1 [3,0,0,0,0,0] [4,120,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=144 rect=0: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=144 rect=1: dark=1 [3,0,0,0,0,0] [4,144,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=192 rect=0: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=192 rect=1: dark=1 [3,0,0,0,0,0] [4,192,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=0 rect=0: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=0 sys=2 content=1 dpi=0 rect=1: dark=1 [3,0,0,0,0,0] [4,0,0,0,0,0] [1,1,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,1,0,0,0,0] [2,35,0,0,0,0] [8,1,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=0 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=96 rect=0: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=96 rect=1: dark=0 [3,0,0,0,0,0] [4,96,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=120 rect=0: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=120 rect=1: dark=0 [3,0,0,0,0,0] [4,120,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=144 rect=0: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=144 rect=1: dark=0 [3,0,0,0,0,0] [4,144,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=192 rect=0: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=192 rect=1: dark=0 [3,0,0,0,0,0] [4,192,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=0 rect=0: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=0 content=1 dpi=0 rect=1: dark=0 [3,0,0,0,0,0] [4,0,0,0,0,0] [2,36,0,0,0,0] [6,0,0,0,0,0] [7,0,0,0,0,0] [1,0,0,0,0,0] [2,35,0,0,0,0] [8,0,0,0,0,0] [9,0,0,0,0,0]
+kind=3 dark=1 sys=1 content=0 dpi=96 rect=0: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=96 rect=1: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=120 rect=0: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=120 rect=1: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=144 rect=0: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=144 rect=1: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=192 rect=0: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=192 rect=1: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=0 rect=0: dark=1
+kind=3 dark=1 sys=1 content=0 dpi=0 rect=1: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=96 rect=0: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=96 rect=1: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=120 rect=0: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=120 rect=1: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=144 rect=0: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=144 rect=1: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=192 rect=0: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=192 rect=1: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=0 rect=0: dark=1
+kind=3 dark=1 sys=1 content=1 dpi=0 rect=1: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=96 rect=0: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=96 rect=1: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=120 rect=0: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=120 rect=1: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=144 rect=0: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=144 rect=1: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=192 rect=0: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=192 rect=1: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=0 rect=0: dark=1
+kind=3 dark=1 sys=2 content=0 dpi=0 rect=1: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=96 rect=0: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=96 rect=1: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=120 rect=0: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=120 rect=1: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=144 rect=0: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=144 rect=1: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=192 rect=0: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=192 rect=1: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=0 rect=0: dark=1
+kind=3 dark=1 sys=2 content=1 dpi=0 rect=1: dark=1
+kind=4 dark=0 sys=0 content=0 dpi=96 rect=0: dark=0 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=96 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=120 rect=0: dark=0 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=120 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=144 rect=0: dark=0 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=144 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=192 rect=0: dark=0 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=192 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=0 rect=0: dark=0 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=0 dpi=0 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=96 rect=0: dark=0 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=96 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=120 rect=0: dark=0 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=120 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=144 rect=0: dark=0 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=144 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=192 rect=0: dark=0 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=192 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=0 rect=0: dark=0 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=0 content=1 dpi=0 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=96 rect=0: dark=0 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=96 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=120 rect=0: dark=0 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=120 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=144 rect=0: dark=0 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=144 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=192 rect=0: dark=0 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=192 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=0 rect=0: dark=0 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=0 dpi=0 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=96 rect=0: dark=0 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=96 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=120 rect=0: dark=0 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=120 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=144 rect=0: dark=0 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=144 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=192 rect=0: dark=0 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=192 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=0 rect=0: dark=0 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=1 content=1 dpi=0 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=96 rect=0: dark=0 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=96 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=120 rect=0: dark=0 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=120 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=144 rect=0: dark=0 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=144 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=192 rect=0: dark=0 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=192 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=0 rect=0: dark=0 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=0 dpi=0 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=96 rect=0: dark=0 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=96 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=120 rect=0: dark=0 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=120 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=144 rect=0: dark=0 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=144 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=192 rect=0: dark=0 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=192 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=0 rect=0: dark=0 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=0 sys=2 content=1 dpi=0 rect=1: dark=0 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=96 rect=0: dark=1 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=96 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=120 rect=0: dark=1 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=120 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=144 rect=0: dark=1 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=144 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=192 rect=0: dark=1 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=192 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=0 rect=0: dark=1 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=0 dpi=0 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=96 rect=0: dark=1 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=96 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=120 rect=0: dark=1 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=120 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=144 rect=0: dark=1 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=144 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=192 rect=0: dark=1 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=192 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=0 rect=0: dark=1 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=0 content=1 dpi=0 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=96 rect=0: dark=1 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=96 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=120 rect=0: dark=1 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=120 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=144 rect=0: dark=1 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=144 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=192 rect=0: dark=1 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=192 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=0 rect=0: dark=1 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=0 dpi=0 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=96 rect=0: dark=1 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=96 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=120 rect=0: dark=1 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=120 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=144 rect=0: dark=1 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=144 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=192 rect=0: dark=1 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=192 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=0 rect=0: dark=1 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=1 content=1 dpi=0 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=96 rect=0: dark=1 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=96 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=120 rect=0: dark=1 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=120 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=144 rect=0: dark=1 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=144 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=192 rect=0: dark=1 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=192 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=0 rect=0: dark=1 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=0 dpi=0 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=96 rect=0: dark=1 [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=96 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,96,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=120 rect=0: dark=1 [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=120 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,120,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=144 rect=0: dark=1 [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=144 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,144,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=192 rect=0: dark=1 [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=192 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,192,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=0 rect=0: dark=1 [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=4 dark=1 sys=2 content=1 dpi=0 rect=1: dark=1 [10,0,100,50,1200,850] [5,0,0,0,0,0] [4,0,0,0,0,0] [9,0,0,0,0,0] [2,35,0,0,0,0] [6,0,0,0,0,0]
+kind=5 dark=0 sys=0 content=0 dpi=96 rect=0: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=96 rect=1: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=120 rect=0: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=120 rect=1: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=144 rect=0: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=144 rect=1: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=192 rect=0: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=192 rect=1: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=0 rect=0: dark=0
+kind=5 dark=0 sys=0 content=0 dpi=0 rect=1: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=96 rect=0: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=96 rect=1: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=120 rect=0: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=120 rect=1: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=144 rect=0: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=144 rect=1: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=192 rect=0: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=192 rect=1: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=0 rect=0: dark=0
+kind=5 dark=0 sys=0 content=1 dpi=0 rect=1: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=96 rect=0: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=96 rect=1: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=120 rect=0: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=120 rect=1: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=144 rect=0: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=144 rect=1: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=192 rect=0: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=192 rect=1: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=0 rect=0: dark=0
+kind=5 dark=0 sys=1 content=0 dpi=0 rect=1: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=96 rect=0: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=96 rect=1: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=120 rect=0: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=120 rect=1: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=144 rect=0: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=144 rect=1: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=192 rect=0: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=192 rect=1: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=0 rect=0: dark=0
+kind=5 dark=0 sys=1 content=1 dpi=0 rect=1: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=96 rect=0: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=96 rect=1: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=120 rect=0: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=120 rect=1: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=144 rect=0: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=144 rect=1: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=192 rect=0: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=192 rect=1: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=0 rect=0: dark=0
+kind=5 dark=0 sys=2 content=0 dpi=0 rect=1: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=96 rect=0: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=96 rect=1: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=120 rect=0: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=120 rect=1: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=144 rect=0: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=144 rect=1: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=192 rect=0: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=192 rect=1: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=0 rect=0: dark=0
+kind=5 dark=0 sys=2 content=1 dpi=0 rect=1: dark=0
+kind=5 dark=1 sys=0 content=0 dpi=96 rect=0: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=96 rect=1: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=120 rect=0: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=120 rect=1: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=144 rect=0: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=144 rect=1: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=192 rect=0: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=192 rect=1: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=0 rect=0: dark=1
+kind=5 dark=1 sys=0 content=0 dpi=0 rect=1: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=96 rect=0: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=96 rect=1: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=120 rect=0: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=120 rect=1: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=144 rect=0: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=144 rect=1: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=192 rect=0: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=192 rect=1: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=0 rect=0: dark=1
+kind=5 dark=1 sys=0 content=1 dpi=0 rect=1: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=96 rect=0: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=96 rect=1: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=120 rect=0: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=120 rect=1: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=144 rect=0: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=144 rect=1: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=192 rect=0: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=192 rect=1: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=0 rect=0: dark=1
+kind=5 dark=1 sys=1 content=0 dpi=0 rect=1: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=96 rect=0: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=96 rect=1: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=120 rect=0: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=120 rect=1: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=144 rect=0: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=144 rect=1: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=192 rect=0: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=192 rect=1: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=0 rect=0: dark=1
+kind=5 dark=1 sys=1 content=1 dpi=0 rect=1: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=96 rect=0: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=96 rect=1: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=120 rect=0: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=120 rect=1: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=144 rect=0: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=144 rect=1: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=192 rect=0: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=192 rect=1: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=0 rect=0: dark=1
+kind=5 dark=1 sys=2 content=0 dpi=0 rect=1: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=96 rect=0: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=96 rect=1: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=120 rect=0: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=120 rect=1: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=144 rect=0: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=144 rect=1: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=192 rect=0: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=192 rect=1: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=0 rect=0: dark=1
+kind=5 dark=1 sys=2 content=1 dpi=0 rect=1: dark=1
+initial size dpi=0: 0x0
+initial size dpi=96: 900x650
+initial size dpi=120: 1125x813
+initial size dpi=144: 1350x975
+initial size dpi=168: 1575x1138
+initial size dpi=192: 1800x1300
+initial size dpi=288: 2700x1950

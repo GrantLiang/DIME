@@ -6,6 +6,9 @@
 * snapshots, reverse-conversion lists, the 1809 flag, and controls missing
 * from the page; every combo's items, item data, and selection, every check
 * state, and the edit text must match.
+*
+* Golden file (src/tests/golden/SettingsPopulate): a hash of the Rust-filled
+* controls per iteration.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -16,6 +19,7 @@
 #include <vector>
 
 #include "../DIMESettings/SettingsPopulate.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SP = SettingsPopulate;
@@ -95,6 +99,7 @@ namespace DIMEUnitTests
             std::mt19937 rng(91);
             static const wchar_t* descs[] = { L"大易輸入法", L"行列輸入法", L"注音", L"Microsoft Bopomofo", L"" };
             size_t controlCount = _countof(kCombos) + _countof(kChecks) + 1;
+            Golden::Log golden;
             for (int iter = 0; iter < 300; iter++) {
                 SettingsSnapshot s = {};
                 BYTE* p = (BYTE*)&s;
@@ -126,6 +131,7 @@ namespace DIMEUnitTests
                 SP::Cpp::Populate(in, &Find, &a);
                 SP::PopulateRust(in, &Find, &b);
 
+                Golden::Hash hash;
                 for (auto& kv : a.controls) {
                     bool combo = false;
                     for (SettingsControlId id : kCombos) if ((int)id == kv.first) combo = true;
@@ -133,8 +139,11 @@ namespace DIMEUnitTests
                     if (da != db)
                         Assert::Fail((L"iter " + std::to_wstring(iter) + L" control " + std::to_wstring(kv.first)
                             + L"\nC++:  " + da + L"\nRust: " + db).c_str());
+                    hash.Add(std::to_wstring(kv.first) + L": " + db);
                 }
+                golden.Add(L"iter " + std::to_wstring(iter) + L" " + hash.Hex());
             }
+            Golden::Check(L"SettingsPopulate", L"RandomSnapshots", golden.lines);
         }
     };
 }
