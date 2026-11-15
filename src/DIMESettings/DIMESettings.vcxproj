@@ -18,15 +18,20 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>DIMESettings</ProjectName>
   </PropertyGroup>
+  <PropertyGroup Label="DimeRustDefault">
+    <DimeUseRustEngine Condition="'$(DimeUseRustEngine)'==''">true</DimeUseRustEngine>
+    <DimeSettingsType Condition="'$(DimeUseRustEngine)'=='true'">Utility</DimeSettingsType>
+    <DimeSettingsType Condition="'$(DimeUseRustEngine)'!='true'">Application</DimeSettingsType>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>$(DimeSettingsType)</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>$(DimeSettingsType)</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -69,6 +74,9 @@
       <PreprocessorDefinitions>DIMESettings;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <PreBuildEvent>
+      <Command>cd /d "$(ProjectDir).." &amp;&amp; call .\BuildInfo.cmd</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -91,6 +99,9 @@
       <PreprocessorDefinitions>DIMESettings;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <PreBuildEvent>
+      <Command>cd /d "$(ProjectDir).." &amp;&amp; call .\BuildInfo.cmd</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\CompositionProcessorEngine.h" />
@@ -103,6 +114,23 @@
     <ClInclude Include="SettingsWindow.h" />
     <ClInclude Include="SettingsPageLayout.h" />
     <ClInclude Include="SettingsGeometry.h" />
+    <ClInclude Include="SettingsWindowLayout.h" />
+    <ClInclude Include="SettingsWindowPaint.h" />
+    <ClInclude Include="SettingsMsgBox.h" />
+    <ClInclude Include="SettingsNav.h" />
+    <ClInclude Include="SettingsCommand.h" />
+    <ClInclude Include="SettingsEditor.h" />
+    <ClInclude Include="SettingsPopulate.h" />
+    <ClInclude Include="SettingsControls.h" />
+    <ClInclude Include="SettingsLifecycle.h" />
+    <ClInclude Include="SettingsFrame.h" />
+    <ClInclude Include="SettingsOwnerDraw.h" />
+    <ClInclude Include="SettingsWinHost.h" />
+    <ClInclude Include="SettingsProc.h" />
+    <ClInclude Include="SettingsDriver.h" />
+    <ClInclude Include="SettingsChildren.h" />
+    <ClInclude Include="SettingsShell.h" />
+    <ClInclude Include="SettingsApp.h" />
     <ClInclude Include="DIMESettings.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="DIMESettingsResource.h" />
@@ -112,7 +140,6 @@
     <ClCompile Include="..\BaseStructure.cpp" />
     <ClCompile Include="..\CompositionProcessorEngine.cpp" />
     <ClCompile Include="..\Config.cpp" />
-    <ClCompile Include="..\ConfigDialog.cpp" />
     <ClCompile Include="..\DictionaryParser.cpp" />
     <ClCompile Include="..\DictionarySearch.cpp" />
     <ClCompile Include="..\File.cpp" />
@@ -126,6 +153,23 @@
     <ClCompile Include="SettingsWindow.cpp" />
     <ClCompile Include="SettingsPageLayout.cpp" />
     <ClCompile Include="SettingsGeometry.cpp" />
+    <ClCompile Include="SettingsWindowLayout.cpp" />
+    <ClCompile Include="SettingsWindowPaint.cpp" />
+    <ClCompile Include="SettingsMsgBox.cpp" />
+    <ClCompile Include="SettingsNav.cpp" />
+    <ClCompile Include="SettingsCommand.cpp" />
+    <ClCompile Include="SettingsEditor.cpp" />
+    <ClCompile Include="SettingsPopulate.cpp" />
+    <ClCompile Include="SettingsControls.cpp" />
+    <ClCompile Include="SettingsLifecycle.cpp" />
+    <ClCompile Include="SettingsFrame.cpp" />
+    <ClCompile Include="SettingsOwnerDraw.cpp" />
+    <ClCompile Include="SettingsWinHost.cpp" />
+    <ClCompile Include="SettingsProc.cpp" />
+    <ClCompile Include="SettingsDriver.cpp" />
+    <ClCompile Include="SettingsChildren.cpp" />
+    <ClCompile Include="SettingsShell.cpp" />
+    <ClCompile Include="SettingsApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\DIME.rc" />
@@ -142,6 +186,36 @@
     <Image Include="..\image\TSFPhonetic.ico" />
     <Image Include="DIMESettings.ico" />
   </ItemGroup>
+  <!--
+    DIMESettings.exe is built by cargo by default (phase 5b-15f): rust/crates/dime-settings-exe,
+    all Rust. The project is then a Utility project: the PreBuildEvent regenerates BuildInfo.h
+    (the executable's version and caption), cargo builds the executable, and it is copied to
+    $(OutDir) (src\Release\DIMESettings.exe for Release, where CI and the installer take it).
+    Release uses the static CRT (+crt-static, like /MT); Debug uses the dynamic CRT.
+    The all-C++ executable: msbuild DIME.sln /t:DIMESettings /p:Configuration=Release /p:Platform=Win32 /p:DimeUseRustEngine=false
+    The C++ sources with DIME_USE_RUST_CONFIG are still compiled by DIMETests (parity tests).
+  -->
+  <PropertyGroup Label="DimeRust">
+    <DimeRustRoot>$(ProjectDir)..\..\rust\</DimeRustRoot>
+    <DimeRustTarget Condition="'$(Platform)'=='Win32'">i686-pc-windows-msvc</DimeRustTarget>
+    <DimeRustEnabled Condition="'$(DimeUseRustEngine)'=='true' And '$(DimeRustTarget)'!=''">true</DimeRustEnabled>
+    <DimeRustTargetDir Condition="'$(Configuration)'=='Release'">$(DimeRustRoot)target\crt-static\</DimeRustTargetDir>
+    <DimeRustTargetDir Condition="'$(Configuration)'!='Release'">$(DimeRustRoot)target\</DimeRustTargetDir>
+    <DimeRustFlags Condition="'$(Configuration)'=='Release'">-C target-feature=+crt-static</DimeRustFlags>
+    <DimeRustOutDir>$(DimeRustTargetDir)$(DimeRustTarget)\release\</DimeRustOutDir>
+    <DimeCargo Condition="Exists('$(USERPROFILE)\.cargo\bin\cargo.exe')">"$(USERPROFILE)\.cargo\bin\cargo.exe"</DimeCargo>
+    <DimeCargo Condition="'$(DimeCargo)'==''">cargo</DimeCargo>
+    <!-- The build script of dime-settings-exe is built for the x64 host. rustc (cc-rs) takes
+         VSTEL_MSBuildProjectFullPath or VCINSTALLDIR as a developer prompt and would link it with
+         this platform's link.exe and LIB (x86 for Win32); without them it finds MSVC and the
+         libraries for each target itself. -->
+    <DimeCargoEnv>set VSTEL_MSBuildProjectFullPath=&amp;&amp; set VCINSTALLDIR=&amp;&amp; set VSINSTALLDIR=&amp;&amp; set LIB=&amp;&amp; set LIBPATH=&amp;&amp; </DimeCargoEnv>
+  </PropertyGroup>
+  <Target Name="BuildDimeSettingsExe" AfterTargets="Build" Condition="'$(DimeRustEnabled)'=='true'">
+    <Exec Command="$(DimeCargoEnv)$(DimeCargo) build --release --locked -p dime-settings-exe --target $(DimeRustTarget) --target-dir &quot;$(DimeRustTargetDir.TrimEnd('\'))&quot; --manifest-path &quot;$(DimeRustRoot)Cargo.toml&quot;" EnvironmentVariables="RUSTFLAGS=$(DimeRustFlags)" />
+    <Copy SourceFiles="$(DimeRustOutDir)DIMESettings.exe;$(DimeRustOutDir)DIMESettings.pdb" DestinationFolder="$(OutDir)" />
+    <Message Importance="high" Text="DIMESettings -&gt; $(OutDir)DIMESettings.exe (cargo, $(DimeRustTarget))" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

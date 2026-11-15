@@ -47,6 +47,15 @@ enum class NOTIFY_WND
 
 typedef HRESULT (*NOTIFYWNDCALLBACK)(void *pv, enum NOTIFY_WND action, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
+#include "ShadowWindow.h"
+#include "RustShadowWindow.h"
+
+#if defined(DIME_UNIT_TESTING) && defined(DIME_USE_RUST_ENGINE)
+// The Rust build registers DIME.NotifyWindow with Rust's window procedure (dime-ui::notifywin);
+// C++ CNotifyWindow objects in tests are created with this class instead (WindowClassTestHelper.h).
+extern ATOM g_cppNotifyWindowAtomForTest;
+#endif
+
 class CNotifyWindow : public CBaseWindow
 {
 public:
@@ -54,6 +63,7 @@ public:
     virtual ~CNotifyWindow();
 
 	BOOL _Create(_In_ UINT fontHeight,  _In_opt_ HWND parentWndHandle, _In_opt_ CStringRange* notifytext=nullptr);
+    BOOL _IsCreated() { return _GetUIWnd() != nullptr; }   // _Create ran (also when no window could be made)
 
     void _Move(int x, int y);
     void _Show(BOOL isShowWnd, UINT delayShow = 0, UINT timeToHide = 0);
@@ -63,6 +73,12 @@ public:
 
     LRESULT CALLBACK _WindowProcCallback(_In_ HWND wndHandle, UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
     void _OnPaint(_In_ HDC dcHandle, _In_ PAINTSTRUCT *pps);
+#ifdef DIME_UNIT_TESTING
+    // NotifyParityTest compares this window with the Rust notify window.
+    struct StateForTest { int cxTitle; int cyTitle; int x; int y; UINT delayShow; UINT timeToHide; };
+    StateForTest _GetStateForTest() const { return { _cxTitle, _cyTitle, _x, _y, _delayShow, _timeToHide }; }
+    DimeShadowWindow* _GetShadowForTest() { return _pShadowWnd.get(); }
+#endif
 	virtual void _OnTimerID(UINT_PTR timerID);
     
 	void _OnLButtonDown(POINT pt);
@@ -119,7 +135,7 @@ private:
 
 	UINT _fontSize;
 
-    std::unique_ptr<CShadowWindow> _pShadowWnd;
+    std::unique_ptr<DimeShadowWindow> _pShadowWnd;
 
 	BYTE _animationStage;
 };

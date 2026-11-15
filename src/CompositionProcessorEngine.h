@@ -42,6 +42,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "BaseStructure.h"
 #include "File.h"
 #include "define.h"
+#if defined(DIME_RUST_AVAILABLE) && !defined(DIMESettings)
+#include "dime_ffi.h"
+#endif
 
 class CCompositionProcessorEngine
 {
@@ -82,6 +85,17 @@ public:
   
 
 #ifndef DIMESettings
+#ifdef DIME_RUST_AVAILABLE
+    // What IsVirtualKeyNeed reads, for dime_classify_key / dime_decide_key_eaten.
+    // The input points into the arrays, so keep the snapshot alive while it is used.
+    struct CKeyInputSnapshot
+    {
+        DimeKeyInput in;
+        uint32_t functions[MAX_RADICAL + 1];
+        DimeSelkey selkeys[MAX_CAND_SELKEY];
+    };
+    void FillKeyInput(_Out_ CKeyInputSnapshot& snapshot, UINT uCode, WCHAR wch, BOOL fComposing, CANDIDATE_MODE candidateMode, UINT candiCount, INT candiSelection, BOOL hasKeyState);
+#endif
 	BOOL IsVirtualKeyNeed(UINT uCode, _In_reads_(1) WCHAR *pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, BOOL hasCandidateWithWildcard, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE *pKeyState);
 
     BOOL AddVirtualKey(WCHAR wch);
@@ -187,6 +201,14 @@ private:
 
     CFile* GetDictionaryFile() const;
     void SetupBig5Engine(IME_MODE imeMode, LCID locale);
+    BOOL _SetupDictionaryFileCpp(IME_MODE imeMode, LCID locale);
+    void _SetupKeystrokeCpp(IME_MODE imeMode);
+#if defined(DIME_USE_RUST_ENGINE) || (defined(DIME_UNIT_TESTING) && defined(DIME_RUST_AVAILABLE))
+    BOOL _SetupDictionaryFileRust(IME_MODE imeMode, LCID locale);
+    void _SetupKeystrokeRust(IME_MODE imeMode);
+    friend struct CEngineSetupHost;
+    friend struct CLangBarHost;
+#endif
 
     BOOL _isKeystrokeSort;
     BOOL _isWildCardWordFreqSort;
@@ -201,6 +223,51 @@ private:
 
 #ifndef DIMESettings
 
+
+    // IsVirtualKeyNeed dispatches to one of these (Rust under DIME_USE_RUST_ENGINE).
+    BOOL _IsVirtualKeyNeedCpp(UINT uCode, _In_reads_(1) WCHAR *pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, BOOL hasCandidateWithWildcard, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE *pKeyState);
+#ifdef DIME_RUST_AVAILABLE
+    BOOL _IsVirtualKeyNeedRust(UINT uCode, _In_reads_(1) WCHAR *pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE *pKeyState);
+#endif
+#ifdef DIME_UNIT_TESTING
+    friend class KeyClassifyParityAccess;
+    friend class CompositionBufferParityAccess;
+    friend class CandidateGenParityAccess;
+    friend class EngineSetupParityAccess;
+    friend class LangBarParityAccess;
+#endif
+
+    void _SetupCandidateListRangeCpp(IME_MODE imeMode);
+    BOOL _SetupHanCovertTableCpp();
+    BOOL _SetupTCFreqTableCpp();
+    void _SetupPreservedCpp(_In_ ITfThreadMgr *pThreadMgr, TfClientId tfClientId);
+#if defined(DIME_USE_RUST_ENGINE) || (defined(DIME_UNIT_TESTING) && defined(DIME_RUST_AVAILABLE))
+    void _SetupCandidateListRangeRust(IME_MODE imeMode);
+    BOOL _SetupHanCovertTableRust();
+    BOOL _SetupTCFreqTableRust();
+    void _SetupPreservedRust(_In_ ITfThreadMgr *pThreadMgr, TfClientId tfClientId);
+#endif
+
+    // GetCandidateList dispatches to one of these (Rust plan under DIME_USE_RUST_ENGINE).
+    void _GetCandidateListCpp(_Inout_ CDIMEArray<CCandidateListItem> *pCandidateList, BOOL isIncrementalWordSearch, BOOL isWildcardSearch, BOOL isArrayPhraseEnding);
+#ifdef DIME_RUST_AVAILABLE
+    void _GetCandidateListRust(_Inout_ CDIMEArray<CCandidateListItem> *pCandidateList, BOOL isIncrementalWordSearch, BOOL isWildcardSearch, BOOL isArrayPhraseEnding);
+#endif
+
+    // Keystroke buffer: the public functions dispatch to these (Rust under
+    // DIME_USE_RUST_ENGINE). pBeep receives the BEEP_TYPE to sound, or -1.
+    BOOL _AddVirtualKeyCpp(WCHAR wch, _Out_ int* pBeep);
+    void _RemoveVirtualKeyCpp(DWORD_PTR dwIndex);
+    BOOL _IsEscapeInputCpp();
+    void _GetReadingStringCpp(_Inout_ CStringRange *pReadingString, _Inout_opt_ BOOL *pIsWildcardIncluded, _In_opt_ CStringRange *pKeyCode);
+    CStringRange _BuildKeyStrokesFromPhoneticSyllableCpp(UINT syllable);
+#ifdef DIME_RUST_AVAILABLE
+    BOOL _AddVirtualKeyRust(WCHAR wch, _Out_ int* pBeep);
+    void _RemoveVirtualKeyRust(DWORD_PTR dwIndex);
+    BOOL _IsEscapeInputRust();
+    void _GetReadingStringRust(_Inout_ CStringRange *pReadingString, _Inout_opt_ BOOL *pIsWildcardIncluded, _In_opt_ CStringRange *pKeyCode);
+    CStringRange _BuildKeyStrokesFromPhoneticSyllableRust(UINT syllable);
+#endif
 
     BOOL IsVirtualKeyKeystrokeComposition(UINT uCode, PWCH pwch, _Inout_opt_ _KEYSTROKE_STATE *pKeyState, KEYSTROKE_FUNCTION function);
     //BOOL IsVirtualKeyKeystrokeCandidate(UINT uCode, _In_ _KEYSTROKE_STATE *pKeyState, CANDIDATE_MODE candidateMode, _Out_ BOOL *pfRetCode, _In_ CDIMEArray<_KEYSTROKE> *pKeystrokeMetric);
@@ -262,6 +329,11 @@ private:
 	
 	CStringRange buildKeyStrokesFromPhoneticSyllable(UINT syllable);
 	WCHAR VPSymbolToStandardLayoutChar(UINT syllable);
+
+	void _OnPreservedKeyCpp(REFGUID rguid, _Out_ BOOL *pIsEaten, _In_ ITfThreadMgr *pThreadMgr, TfClientId tfClientId);
+#if defined(DIME_USE_RUST_ENGINE) || (defined(DIME_UNIT_TESTING) && defined(DIME_RUST_AVAILABLE))
+	void _OnPreservedKeyRust(REFGUID rguid, _Out_ BOOL *pIsEaten, _In_ ITfThreadMgr *pThreadMgr, TfClientId tfClientId);
+#endif
 
 #endif
 };

@@ -51,6 +51,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <dwmapi.h>
 #include <uxtheme.h>
+#ifdef DIME_RUST_AVAILABLE
+#include "dime_ffi.h"
+static_assert(sizeof(DimeConfigValues) == 308, "DimeConfigValues must match dime_config::ConfigValues");
+#endif
 
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "uxtheme.lib")
@@ -61,35 +65,67 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #pragma comment(lib, "Shlwapi.lib")
+
+#ifdef DIME_USE_RUST_CONFIG
+// The settings live in Rust (dime_settings_global()). The first use sets them to
+// the static initialisers (dime_config::ConfigValues::initial), which mirror the
+// C++ initial values given to DIME_CONFIG_DEFINE below.
+static DimeConfigEnv CurrentConfigEnv()
+{
+	DimeConfigEnv env = { GetSysColor(COLOR_3DHIGHLIGHT), Global::isWindows1809OrLater ? 1 : 0 };
+	return env;
+}
+
+static DimeConfigValues& RustConfigValues()
+{
+	static DimeConfigValues* values = []() {
+		DimeConfigEnv env = CurrentConfigEnv();
+		dime_settings_global_init(&env);
+		return dime_settings_values_ptr(dime_settings_global());
+	}();
+	return *values;
+}
+
+// type& CConfig::name refers to the matching DimeConfigValues field (same size and
+// representation: BOOL/enum <-> int32_t, UINT/COLORREF <-> uint32_t, GUID <-> 16 bytes).
+#define DIME_CONFIG_DEFINE(type, name, field, init) \
+	static_assert(sizeof(type) == sizeof(RustConfigValues().field), #name " size"); \
+	type& CConfig::name = reinterpret_cast<type&>(RustConfigValues().field)
+#else
+#define DIME_CONFIG_DEFINE(type, name, field, init) type CConfig::name = init
+#endif
+
 //static configuration settings initialization
 IME_MODE CConfig::_imeMode = IME_MODE::IME_MODE_NONE;
-BOOL CConfig::_loadTableMode = FALSE;
-ARRAY_SCOPE CConfig::_arrayScope = ARRAY_SCOPE::ARRAY30_UNICODE_EXT_A;
-NUMERIC_PAD CConfig::_numericPad = NUMERIC_PAD::NUMERIC_PAD_NUMERIC;
-BOOL CConfig::_clearOnBeep = TRUE;
-BOOL CConfig::_doBeep = TRUE;
-BOOL CConfig::_doBeepNotify = TRUE;
-BOOL CConfig::_doBeepOnCandi = FALSE;
-BOOL CConfig::_autoCompose = FALSE;
-BOOL CConfig::_customTablePriority = FALSE;
-BOOL CConfig::_arrayForceSP = FALSE;
-BOOL CConfig::_arrayNotifySP = TRUE;
-BOOL CConfig::_arrowKeySWPages = TRUE;
-BOOL CConfig::_spaceAsPageDown = FALSE;
-BOOL CConfig::_spaceAsFirstCandSelkey = FALSE;
-UINT CConfig::_fontSize = 12;
-UINT CConfig::_fontWeight = FW_NORMAL;
-BOOL CConfig::_fontItalic = FALSE;
-UINT CConfig::_maxCodes = 4;
-BOOL CConfig::_appPermissionSet = FALSE;
-BOOL CConfig::_activatedKeyboardMode = TRUE;
-BOOL CConfig::_makePhrase = TRUE;
-BOOL CConfig::_doHanConvert = FALSE;
-BOOL CConfig::_showNotifyDesktop = TRUE;
-BOOL CConfig::_dayiArticleMode = FALSE;  // Article mode: input full-shaped symbols with address keys
+DIME_CONFIG_DEFINE(BOOL, _loadTableMode, load_table_mode, FALSE);
+DIME_CONFIG_DEFINE(ARRAY_SCOPE, _arrayScope, array_scope, ARRAY_SCOPE::ARRAY30_UNICODE_EXT_A);
+DIME_CONFIG_DEFINE(NUMERIC_PAD, _numericPad, numeric_pad, NUMERIC_PAD::NUMERIC_PAD_NUMERIC);
+DIME_CONFIG_DEFINE(BOOL, _clearOnBeep, clear_on_beep, TRUE);
+DIME_CONFIG_DEFINE(BOOL, _doBeep, do_beep, TRUE);
+DIME_CONFIG_DEFINE(BOOL, _doBeepNotify, do_beep_notify, TRUE);
+DIME_CONFIG_DEFINE(BOOL, _doBeepOnCandi, do_beep_on_candi, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _sentenceMode, sentence_mode, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _autoCompose, auto_compose, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _customTablePriority, custom_table_priority, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _arrayForceSP, array_force_sp, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _arrayNotifySP, array_notify_sp, TRUE);
+DIME_CONFIG_DEFINE(BOOL, _arrowKeySWPages, arrow_key_sw_pages, TRUE);
+DIME_CONFIG_DEFINE(BOOL, _spaceAsPageDown, space_as_page_down, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _spaceAsFirstCandSelkey, space_as_first_cand_selkey, FALSE);
+DIME_CONFIG_DEFINE(UINT, _fontSize, font_size, 12);
+DIME_CONFIG_DEFINE(UINT, _fontWeight, font_weight, FW_NORMAL);
+DIME_CONFIG_DEFINE(BOOL, _fontItalic, font_italic, FALSE);
+DIME_CONFIG_DEFINE(UINT, _maxCodes, max_codes, 4);
+DIME_CONFIG_DEFINE(BOOL, _appPermissionSet, app_permission_set, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _activatedKeyboardMode, activated_keyboard_mode, TRUE);
+DIME_CONFIG_DEFINE(BOOL, _makePhrase, make_phrase, TRUE);
+DIME_CONFIG_DEFINE(BOOL, _doHanConvert, do_han_convert, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _showNotifyDesktop, show_notify_desktop, TRUE);
+DIME_CONFIG_DEFINE(BOOL, _dayiArticleMode, dayi_article_mode, FALSE);  // Article mode: input full-shaped symbols with address keys
+DIME_CONFIG_DEFINE(DAYI_SELKEY_MODE, _dayiSelkeyMode, dayi_selkey_mode, DAYI_SELKEY_MODE::DAYI_SELKEY_FROM_TABLE);
 BOOL CConfig::_customTableChanged = FALSE;
-BOOL CConfig::_arraySingleQuoteCustomPhrase = FALSE;
-BOOL CConfig::_big5Filter = FALSE;
+DIME_CONFIG_DEFINE(BOOL, _arraySingleQuoteCustomPhrase, array_single_quote_custom_phrase, FALSE);
+DIME_CONFIG_DEFINE(BOOL, _big5Filter, big5_filter, FALSE);
 
 UINT CConfig::_dpiY = 0;
 _T_GetDpiForMonitor CConfig::_GetDpiForMonitor = nullptr;
@@ -111,43 +147,45 @@ UINT CConfig::GetDpiForHwnd(HWND hWnd)
 	return dpi;
 }
 
-PHONETIC_KEYBOARD_LAYOUT CConfig::_phoneticKeyboardLayout = PHONETIC_KEYBOARD_LAYOUT::PHONETIC_STANDARD_KEYBOARD_LAYOUT;
-IME_SHIFT_MODE CConfig::_imeShiftMode = IME_SHIFT_MODE::IME_BOTH_SHIFT;
-DOUBLE_SINGLE_BYTE_MODE CConfig::_doubleSingleByteMode = DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_SINGLE;
-IME_SHIFT_ENGLISH_DIGIT_MODE CConfig::_shiftEnglishDigitMode = IME_SHIFT_ENGLISH_DIGIT_MODE::SHIFT_ENGLISH_DIGIT_CAPS_OFF_SYMBOL;
+DIME_CONFIG_DEFINE(PHONETIC_KEYBOARD_LAYOUT, _phoneticKeyboardLayout, phonetic_keyboard_layout, PHONETIC_KEYBOARD_LAYOUT::PHONETIC_STANDARD_KEYBOARD_LAYOUT);
+DIME_CONFIG_DEFINE(IME_SHIFT_MODE, _imeShiftMode, ime_shift_mode, IME_SHIFT_MODE::IME_BOTH_SHIFT);
+DIME_CONFIG_DEFINE(DOUBLE_SINGLE_BYTE_MODE, _doubleSingleByteMode, double_single_byte_mode, DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_SINGLE);
+DIME_CONFIG_DEFINE(IME_SHIFT_ENGLISH_DIGIT_MODE, _shiftEnglishDigitMode, shift_english_digit_mode, IME_SHIFT_ENGLISH_DIGIT_MODE::SHIFT_ENGLISH_DIGIT_CAPS_OFF_SYMBOL);
 
 CDIMEArray <LanguageProfileInfo>* CConfig::_reverseConvervsionInfoList = new (std::nothrow) CDIMEArray <LanguageProfileInfo>;
-CLSID CConfig::_reverseConverstionCLSID = CLSID_NULL;
-GUID CConfig::_reverseConversionGUIDProfile = CLSID_NULL;
+DIME_CONFIG_DEFINE(CLSID, _reverseConverstionCLSID, reverse_conversion_clsid, CLSID_NULL);
+DIME_CONFIG_DEFINE(GUID, _reverseConversionGUIDProfile, reverse_conversion_guid_profile, CLSID_NULL);
+#ifndef DIME_USE_RUST_CONFIG
 WCHAR* CConfig::_reverseConversionDescription = nullptr;
+#endif
 WCHAR CConfig::_pwzsDIMEProfile[] = L"\0";
 WCHAR CConfig::_pwszINIFileName[] = L"\0";
 IME_MODE CConfig::_configIMEMode = IME_MODE::IME_MODE_NONE;
-BOOL CConfig::_reloadReverseConversion = FALSE;
+DIME_CONFIG_DEFINE(BOOL, _reloadReverseConversion, reload_reverse_conversion, FALSE);
 
-WCHAR CConfig::_pFontFaceName[] = { L"微軟正黑體" };
+DIME_CONFIG_DEFINE(DimeFontFaceName, _pFontFaceName, font_face_name, { L"微軟正黑體" });
 WCHAR CConfig::_pMlFontFaceName[] = { L"細明體" };
 
-COLORREF CConfig::_itemColor = CANDWND_ITEM_COLOR;
-COLORREF CConfig::_itemBGColor = GetSysColor(COLOR_3DHIGHLIGHT);
-COLORREF CConfig::_selectedColor = CANDWND_SELECTED_ITEM_COLOR;
-COLORREF CConfig::_selectedBGColor = CANDWND_SELECTED_BK_COLOR;
-COLORREF CConfig::_phraseColor = CANDWND_PHRASE_COLOR;
-COLORREF CConfig::_numberColor = CANDWND_NUM_COLOR;
-COLORREF CConfig::_lightItemColor = CANDWND_ITEM_COLOR;
-COLORREF CConfig::_lightItemBGColor = GetSysColor(COLOR_3DHIGHLIGHT);
-COLORREF CConfig::_lightSelectedColor = CANDWND_SELECTED_ITEM_COLOR;
-COLORREF CConfig::_lightSelectedBGColor = CANDWND_SELECTED_BK_COLOR;
-COLORREF CConfig::_lightPhraseColor = CANDWND_PHRASE_COLOR;
-COLORREF CConfig::_lightNumberColor = CANDWND_NUM_COLOR;
-COLORREF CConfig::_darkItemColor = CANDWND_DARK_ITEM_COLOR;
-COLORREF CConfig::_darkItemBGColor = CANDWND_DARK_ITEM_BG_COLOR;
-COLORREF CConfig::_darkSelectedColor = CANDWND_DARK_SELECTED_COLOR;
-COLORREF CConfig::_darkSelectedBGColor = CANDWND_DARK_SELECTED_BG_COLOR;
-COLORREF CConfig::_darkPhraseColor = CANDWND_DARK_PHRASE_COLOR;
-COLORREF CConfig::_darkNumberColor = CANDWND_DARK_NUM_COLOR;
-IME_COLOR_MODE CConfig::_colorMode = IME_COLOR_MODE::IME_COLOR_MODE_SYSTEM;
-bool CConfig::_colorModeKeyFound = false;
+DIME_CONFIG_DEFINE(COLORREF, _itemColor, custom.item, CANDWND_ITEM_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _itemBGColor, custom.item_bg, GetSysColor(COLOR_3DHIGHLIGHT));
+DIME_CONFIG_DEFINE(COLORREF, _selectedColor, custom.selected, CANDWND_SELECTED_ITEM_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _selectedBGColor, custom.selected_bg, CANDWND_SELECTED_BK_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _phraseColor, custom.phrase, CANDWND_PHRASE_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _numberColor, custom.number, CANDWND_NUM_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _lightItemColor, light.item, CANDWND_ITEM_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _lightItemBGColor, light.item_bg, GetSysColor(COLOR_3DHIGHLIGHT));
+DIME_CONFIG_DEFINE(COLORREF, _lightSelectedColor, light.selected, CANDWND_SELECTED_ITEM_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _lightSelectedBGColor, light.selected_bg, CANDWND_SELECTED_BK_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _lightPhraseColor, light.phrase, CANDWND_PHRASE_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _lightNumberColor, light.number, CANDWND_NUM_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _darkItemColor, dark.item, CANDWND_DARK_ITEM_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _darkItemBGColor, dark.item_bg, CANDWND_DARK_ITEM_BG_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _darkSelectedColor, dark.selected, CANDWND_DARK_SELECTED_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _darkSelectedBGColor, dark.selected_bg, CANDWND_DARK_SELECTED_BG_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _darkPhraseColor, dark.phrase, CANDWND_DARK_PHRASE_COLOR);
+DIME_CONFIG_DEFINE(COLORREF, _darkNumberColor, dark.number, CANDWND_DARK_NUM_COLOR);
+DIME_CONFIG_DEFINE(IME_COLOR_MODE, _colorMode, color_mode, IME_COLOR_MODE::IME_COLOR_MODE_SYSTEM);
+DIME_CONFIG_DEFINE(BOOL, _colorModeKeyFound, color_mode_key_found, FALSE);
 ColorInfo CConfig::colors[6] =
 {
 	{ IDC_COL_FR, CANDWND_ITEM_COLOR },
@@ -324,6 +362,190 @@ COLORREF CConfig::GetActiveItemBGColor()
 	}
 }
 
+#ifdef DIME_RUST_AVAILABLE
+//+---------------------------------------------------------------------------
+//
+// Rust bridge (rust/crates/dime-config)
+//
+// The static members remain the storage. Rust logic runs on a snapshot taken
+// with CreateRustSettings() and is copied back with ImportRustSettings().
+//
+//----------------------------------------------------------------------------
+
+static void ToPalette(DimePalette& p, COLORREF item, COLORREF phrase, COLORREF number, COLORREF itemBG, COLORREF selected, COLORREF selectedBG)
+{
+	p.item = item; p.phrase = phrase; p.number = number;
+	p.item_bg = itemBG; p.selected = selected; p.selected_bg = selectedBG;
+}
+
+void CConfig::ExportValues(_Out_ DimeConfigValues* v)
+{
+	ZeroMemory(v, sizeof(*v));
+	v->auto_compose = _autoCompose;
+	v->space_as_page_down = _spaceAsPageDown;
+	v->space_as_first_cand_selkey = _spaceAsFirstCandSelkey;
+	v->arrow_key_sw_pages = _arrowKeySWPages;
+	v->clear_on_beep = _clearOnBeep;
+	v->do_beep = _doBeep;
+	v->do_beep_notify = _doBeepNotify;
+	v->do_beep_on_candi = _doBeepOnCandi;
+	v->sentence_mode = _sentenceMode;
+	v->activated_keyboard_mode = _activatedKeyboardMode;
+	v->make_phrase = _makePhrase;
+	v->show_notify_desktop = _showNotifyDesktop;
+	v->do_han_convert = _doHanConvert;
+	v->font_italic = _fontItalic;
+	v->custom_table_priority = _customTablePriority;
+	v->dayi_article_mode = _dayiArticleMode;
+	v->array_force_sp = _arrayForceSP;
+	v->array_notify_sp = _arrayNotifySP;
+	v->array_single_quote_custom_phrase = _arraySingleQuoteCustomPhrase;
+	v->big5_filter = _big5Filter;
+	v->reload_reverse_conversion = _reloadReverseConversion;
+	v->app_permission_set = _appPermissionSet;
+	v->load_table_mode = _loadTableMode;
+	v->color_mode_key_found = _colorModeKeyFound ? 1 : 0;
+	v->max_codes = _maxCodes;
+	v->font_size = _fontSize;
+	v->font_weight = _fontWeight;
+	v->ime_shift_mode = (int32_t)_imeShiftMode;
+	v->double_single_byte_mode = (int32_t)_doubleSingleByteMode;
+	v->shift_english_digit_mode = (int32_t)_shiftEnglishDigitMode;
+	v->color_mode = (int32_t)_colorMode;
+	v->numeric_pad = (int32_t)_numericPad;
+	v->array_scope = (int32_t)_arrayScope;
+	v->phonetic_keyboard_layout = (int32_t)_phoneticKeyboardLayout;
+	v->dayi_selkey_mode = (int32_t)_dayiSelkeyMode;
+	ToPalette(v->custom, _itemColor, _phraseColor, _numberColor, _itemBGColor, _selectedColor, _selectedBGColor);
+	ToPalette(v->light, _lightItemColor, _lightPhraseColor, _lightNumberColor, _lightItemBGColor, _lightSelectedColor, _lightSelectedBGColor);
+	ToPalette(v->dark, _darkItemColor, _darkPhraseColor, _darkNumberColor, _darkItemBGColor, _darkSelectedColor, _darkSelectedBGColor);
+	static_assert(sizeof(v->font_face_name) == sizeof(_pFontFaceName), "LF_FACESIZE");
+	memcpy(v->font_face_name, _pFontFaceName, sizeof(_pFontFaceName));
+	v->font_face_name[LF_FACESIZE - 1] = 0;
+	static_assert(sizeof(v->reverse_conversion_clsid) == sizeof(GUID), "GUID size");
+	memcpy(v->reverse_conversion_clsid, &_reverseConverstionCLSID, sizeof(GUID));
+	memcpy(v->reverse_conversion_guid_profile, &_reverseConversionGUIDProfile, sizeof(GUID));
+}
+
+void CConfig::ImportValues(_In_ const DimeConfigValues* v)
+{
+	_autoCompose = v->auto_compose;
+	_spaceAsPageDown = v->space_as_page_down;
+	_spaceAsFirstCandSelkey = v->space_as_first_cand_selkey;
+	_arrowKeySWPages = v->arrow_key_sw_pages;
+	_clearOnBeep = v->clear_on_beep;
+	_doBeep = v->do_beep;
+	_doBeepNotify = v->do_beep_notify;
+	_doBeepOnCandi = v->do_beep_on_candi;
+	_sentenceMode = v->sentence_mode;
+	_activatedKeyboardMode = v->activated_keyboard_mode;
+	_makePhrase = v->make_phrase;
+	_showNotifyDesktop = v->show_notify_desktop;
+	_doHanConvert = v->do_han_convert;
+	_fontItalic = v->font_italic;
+	_customTablePriority = v->custom_table_priority;
+	_dayiArticleMode = v->dayi_article_mode;
+	_arrayForceSP = v->array_force_sp;
+	_arrayNotifySP = v->array_notify_sp;
+	_arraySingleQuoteCustomPhrase = v->array_single_quote_custom_phrase;
+	_big5Filter = v->big5_filter;
+	_reloadReverseConversion = v->reload_reverse_conversion;
+	_appPermissionSet = v->app_permission_set;
+	_loadTableMode = v->load_table_mode;
+	_colorModeKeyFound = v->color_mode_key_found != 0;
+	_maxCodes = v->max_codes;
+	_fontSize = v->font_size;
+	_fontWeight = v->font_weight;
+	_imeShiftMode = (IME_SHIFT_MODE)v->ime_shift_mode;
+	_doubleSingleByteMode = (DOUBLE_SINGLE_BYTE_MODE)v->double_single_byte_mode;
+	_shiftEnglishDigitMode = (IME_SHIFT_ENGLISH_DIGIT_MODE)v->shift_english_digit_mode;
+	_colorMode = (IME_COLOR_MODE)v->color_mode;
+	_numericPad = (NUMERIC_PAD)v->numeric_pad;
+	_arrayScope = (ARRAY_SCOPE)v->array_scope;
+	_phoneticKeyboardLayout = (PHONETIC_KEYBOARD_LAYOUT)v->phonetic_keyboard_layout;
+	_dayiSelkeyMode = (DAYI_SELKEY_MODE)v->dayi_selkey_mode;
+	_itemColor = v->custom.item; _phraseColor = v->custom.phrase; _numberColor = v->custom.number;
+	_itemBGColor = v->custom.item_bg; _selectedColor = v->custom.selected; _selectedBGColor = v->custom.selected_bg;
+	_lightItemColor = v->light.item; _lightPhraseColor = v->light.phrase; _lightNumberColor = v->light.number;
+	_lightItemBGColor = v->light.item_bg; _lightSelectedColor = v->light.selected; _lightSelectedBGColor = v->light.selected_bg;
+	_darkItemColor = v->dark.item; _darkPhraseColor = v->dark.phrase; _darkNumberColor = v->dark.number;
+	_darkItemBGColor = v->dark.item_bg; _darkSelectedColor = v->dark.selected; _darkSelectedBGColor = v->dark.selected_bg;
+	memcpy(_pFontFaceName, v->font_face_name, sizeof(_pFontFaceName));
+	_pFontFaceName[LF_FACESIZE - 1] = L'\0';
+	memcpy(&_reverseConverstionCLSID, v->reverse_conversion_clsid, sizeof(GUID));
+	memcpy(&_reverseConversionGUIDProfile, v->reverse_conversion_guid_profile, sizeof(GUID));
+}
+
+DimeSettings* CConfig::CreateRustSettings()
+{
+	DimeConfigValues values;
+	ExportValues(&values);
+	DimeConfigEnv env = { GetSysColor(COLOR_3DHIGHLIGHT), Global::isWindows1809OrLater ? 1 : 0 };
+	DimeSettings* s = dime_settings_new(&values, &env);
+	const WCHAR* description = GetReverseConversionDescription();
+	if (s && description)
+		dime_settings_set_description(s, reinterpret_cast<const uint16_t*>(description), wcslen(description), 1);
+	return s;
+}
+
+void CConfig::ImportRustSettings(_In_ const DimeSettings* s)
+{
+	DimeConfigValues values;
+	if (!s || !dime_settings_get_values(s, &values)) return;
+	ImportValues(&values);
+
+	const uint16_t* text = nullptr;
+	size_t len = 0;
+	BOOL present = dime_settings_get_description(s, &text, &len);
+	const WCHAR* current = GetReverseConversionDescription();
+	if (present && current
+		&& wcsncmp(current, reinterpret_cast<const wchar_t*>(text), len) == 0 && current[len] == L'\0')
+		return; // unchanged: keep the pointer callers may hold
+	std::wstring copy(reinterpret_cast<const wchar_t*>(text), present ? len : 0);
+	SetReverseConversionDescriptionText(present ? copy.c_str() : nullptr);
+}
+
+CRustConfigScope::CRustConfigScope() : _pSettings(nullptr), _commit(false)
+{
+#ifdef DIME_USE_RUST_CONFIG
+	RustConfigValues(); // make sure the storage is initialised
+	_pSettings = dime_settings_global();
+	DimeConfigEnv env = CurrentConfigEnv();
+	dime_settings_set_env(_pSettings, &env);
+#else
+	_pSettings = CConfig::CreateRustSettings();
+#endif
+}
+
+CRustConfigScope::~CRustConfigScope()
+{
+#ifndef DIME_USE_RUST_CONFIG
+	if (_pSettings)
+	{
+		if (_commit) CConfig::ImportRustSettings(_pSettings);
+		dime_settings_free(_pSettings);
+	}
+#endif
+}
+
+#ifdef DIME_USE_RUST_CONFIG
+WCHAR* CConfig::GetReverseConversionDescription()
+{
+	RustConfigValues(); // make sure the storage is initialised
+	return const_cast<WCHAR*>(reinterpret_cast<const WCHAR*>(dime_settings_description_cstr(dime_settings_global())));
+}
+
+// Run one dime_settings_* operation on the settings.
+static void RunRustSettingsOp(void (*op)(DimeSettings*, int32_t), IME_MODE imeMode)
+{
+	CRustConfigScope scope;
+	if (!scope.Get()) return;
+	op(scope.Get(), (int32_t)imeMode);
+	scope.Commit();
+}
+#endif
+#endif // DIME_RUST_AVAILABLE
+
 #ifndef DIMESettings
 void CConfig::ApplyIMEColorSet(CUIPresenter* pPresenter, bool isPhraseMode)
 {
@@ -385,6 +607,27 @@ VOID CConfig::WriteConfig(IME_MODE imeMode, BOOL confirmUpdated)
 	}
 	if(!confirmUpdated || failed || !updated)
 	{
+#ifdef DIME_USE_RUST_CONFIG
+		DimeBuffer* text = nullptr;
+		{
+			CRustConfigScope scope;
+			if (scope.Get()) text = dime_settings_serialize_ini(scope.Get(), (int32_t)imeMode);
+		}
+		if (text)
+		{
+			size_t len = 0;
+			const uint16_t* data = dime_buffer_data(text, &len);
+			FILE* fp = nullptr;
+			if (_wfopen_s(&fp, _pwszINIFileName, L"wb") == 0 && fp) // overwrite the file
+			{
+				fwrite(data, sizeof(uint16_t), len, fp);
+				fclose(fp);
+			}
+			dime_buffer_free(text);
+			return;
+		}
+		// fall through to the C++ writer if Rust failed
+#endif
 		FILE* fp;
 		_wfopen_s(&fp, _pwszINIFileName, L"w, ccs=UTF-16LE"); // overwrite the file
 		if (fp)
@@ -398,6 +641,7 @@ VOID CConfig::WriteConfig(IME_MODE imeMode, BOOL confirmUpdated)
 			fwprintf_s(fp, L"DoBeep = %d\n", _doBeep ? 1 : 0);
 			fwprintf_s(fp, L"DoBeepNotify = %d\n", _doBeepNotify ? 1 : 0);
 			fwprintf_s(fp, L"DoBeepOnCandi = %d\n", _doBeepOnCandi ? 1 : 0);
+			fwprintf_s(fp, L"SentenceMode = %d\n", _sentenceMode ? 1 : 0);
 			fwprintf_s(fp, L"ActivatedKeyboardMode = %d\n", _activatedKeyboardMode ? 1 : 0);
 			fwprintf_s(fp, L"MakePhrase = %d\n", _makePhrase ? 1 : 0);
 			fwprintf_s(fp, L"MaxCodes = %d\n", _maxCodes);
@@ -442,13 +686,14 @@ VOID CConfig::WriteConfig(IME_MODE imeMode, BOOL confirmUpdated)
 				fwprintf_s(fp, L"ReverseConversionGUIDProfile = %s\n", pbstr);
 			}
 
-			fwprintf_s(fp, L"ReverseConversionDescription = %s\n", _reverseConversionDescription);
+			fwprintf_s(fp, L"ReverseConversionDescription = %s\n", GetReverseConversionDescription());
 			fwprintf_s(fp, L"AppPermissionSet = %d\n", _appPermissionSet ? 1 : 0);
 
 
 			if (imeMode == IME_MODE::IME_MODE_DAYI)
 			{
 				fwprintf_s(fp, L"DayiArticleMode = %d\n", _dayiArticleMode ? 1 : 0);
+				fwprintf_s(fp, L"DayiSelkeyMode = %d\n", (int)_dayiSelkeyMode);
 			}
 
 			if (imeMode == IME_MODE::IME_MODE_ARRAY)
@@ -483,7 +728,7 @@ void CConfig::SetIMEMode(IME_MODE imeMode)
 		_imeMode = imeMode;
 		GUID guidProfile = CLSID_NULL;
 		WCHAR wszAppData[MAX_PATH] = L"\0";
-		SHGetSpecialFolderPath(NULL, wszAppData, CSIDL_APPDATA, TRUE);
+		Global::GetAppDataPath(wszAppData, TRUE);
 
 		StringCchPrintf(_pwzsDIMEProfile, MAX_PATH, L"%s\\DIME", wszAppData);
 		if (!PathFileExists(_pwzsDIMEProfile))
@@ -546,6 +791,9 @@ void CConfig::SetIMEMode(IME_MODE imeMode)
 //----------------------------------------------------------------------------
 void CConfig::SetIMEModeDefaults(IME_MODE imeMode)
 {
+#ifdef DIME_USE_RUST_CONFIG
+	RunRustSettingsOp(dime_settings_set_mode_defaults, imeMode);
+#else
 	if (imeMode == IME_MODE::IME_MODE_ARRAY)
 	{
 		_arrayScope = ARRAY_SCOPE::ARRAY30_UNICODE_EXT_A;
@@ -578,6 +826,7 @@ void CConfig::SetIMEModeDefaults(IME_MODE imeMode)
 		_spaceAsFirstCandSelkey = 0;
 		_big5Filter = FALSE;
 	}
+#endif
 }
 
 //+---------------------------------------------------------------------------
@@ -592,11 +841,15 @@ void CConfig::SetIMEModeDefaults(IME_MODE imeMode)
 //----------------------------------------------------------------------------
 void CConfig::ResetAllDefaults(IME_MODE imeMode)
 {
+#ifdef DIME_USE_RUST_CONFIG
+	RunRustSettingsOp(dime_settings_reset_all_defaults, imeMode);
+#else
 	// Global defaults (mirrors the static-member initialisers in Config.cpp)
 	_clearOnBeep                  = TRUE;
 	_doBeep                       = TRUE;
 	_doBeepNotify                 = TRUE;
 	_doBeepOnCandi                = FALSE;
+	_sentenceMode                 = FALSE;
 	_autoCompose                  = FALSE;
 	_customTablePriority          = FALSE;
 	_arrayForceSP                 = FALSE;
@@ -614,6 +867,7 @@ void CConfig::ResetAllDefaults(IME_MODE imeMode)
 	_doHanConvert                 = FALSE;
 	_showNotifyDesktop            = TRUE;
 	_dayiArticleMode              = FALSE;
+	_dayiSelkeyMode               = DAYI_SELKEY_MODE::DAYI_SELKEY_FROM_TABLE;
 	_big5Filter                   = FALSE;
 	_numericPad                   = NUMERIC_PAD::NUMERIC_PAD_NUMERIC;
 	_phoneticKeyboardLayout       = PHONETIC_KEYBOARD_LAYOUT::PHONETIC_STANDARD_KEYBOARD_LAYOUT;
@@ -650,6 +904,73 @@ void CConfig::ResetAllDefaults(IME_MODE imeMode)
 	_reverseConversionGUIDProfile = CLSID_NULL;
 	// Apply mode-specific overrides on top of global defaults
 	SetIMEModeDefaults(imeMode);
+#endif
+}
+
+//+---------------------------------------------------------------------------
+//
+// LoadConfigFromFile
+//
+// The parsing part of LoadConfig: IME-specific defaults first (valid config
+// values override them; corrupted values are skipped, keeping the defaults),
+// then the [Config] entries, then the legacy ColorMode migration.
+// Returns FALSE when the file cannot be opened (only the defaults are applied).
+//
+//----------------------------------------------------------------------------
+
+BOOL CConfig::LoadConfigFromFile(IME_MODE imeMode, _In_ LPCWSTR pwszINIFileName)
+{
+	SetIMEModeDefaults(imeMode);
+
+	CFile* iniDictionaryFile = new (std::nothrow) CFile();
+	if (!iniDictionaryFile || !iniDictionaryFile->CreateFile(pwszINIFileName, GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ | FILE_SHARE_WRITE))
+	{
+		delete iniDictionaryFile;
+		return FALSE;
+	}
+
+	CTableDictionaryEngine* iniTableDictionaryEngine = CTableDictionaryEngine::Create(MAKELCID(1028, SORT_DEFAULT), iniDictionaryFile, DICTIONARY_TYPE::INI_DICTIONARY);//CHT:1028
+	if (iniTableDictionaryEngine)
+	{
+#ifdef DIME_USE_RUST_CONFIG
+		// _loadTableMode = TRUE, _colorModeKeyFound = false, _colorMode = SYSTEM
+		RunRustSettingsOp(dime_settings_begin_load, imeMode);
+#else
+		_loadTableMode = TRUE; // reset _loadTableMode first. If no _loadTableMode is exist we should not should load tables buttons
+		_colorModeKeyFound = false; // reset before parse so absence of key is detectable
+		_colorMode = IME_COLOR_MODE::IME_COLOR_MODE_SYSTEM;
+#endif
+		iniTableDictionaryEngine->ParseConfig(imeMode); //parse config first.
+		debugPrint(L"CConfig::LoadConfigFromFile() parsed. _loadTableMode = %d\n", _loadTableMode);
+
+		// Backward compat: old INI has no ColorMode key but may have the
+		// legacy 6 color keys (ItemColor etc.) from before Light/Dark/Custom
+		// palettes were introduced.  If the user had customized those colors,
+		// migrate to CUSTOM to preserve them.  If still factory defaults,
+		// migrate to SYSTEM (or LIGHT on pre-1809 Windows).
+#ifdef DIME_USE_RUST_CONFIG
+		RunRustSettingsOp([](DimeSettings* s, int32_t) { dime_settings_finish_load(s); }, imeMode);
+#else
+		if (!_colorModeKeyFound)
+		{
+			bool isDefault =
+				_itemColor       == CANDWND_ITEM_COLOR &&
+				_selectedColor   == CANDWND_SELECTED_ITEM_COLOR &&
+				_selectedBGColor == CANDWND_SELECTED_BK_COLOR &&
+				_phraseColor     == CANDWND_PHRASE_COLOR &&
+				_numberColor     == CANDWND_NUM_COLOR &&
+				_itemBGColor     == GetSysColor(COLOR_3DHIGHLIGHT);
+			_colorMode = isDefault
+				? (Global::isWindows1809OrLater
+					? IME_COLOR_MODE::IME_COLOR_MODE_SYSTEM
+					: IME_COLOR_MODE::IME_COLOR_MODE_LIGHT)
+				: IME_COLOR_MODE::IME_COLOR_MODE_CUSTOM;
+		}
+#endif
+	}
+	delete iniTableDictionaryEngine; // delete after config.ini config are parsed
+	delete iniDictionaryFile;
+	return TRUE;
 }
 
 //+---------------------------------------------------------------------------
@@ -681,47 +1002,8 @@ BOOL CConfig::LoadConfig(IME_MODE imeMode)
 		{
 			bRET = TRUE;
 
-			// Set IME-specific defaults before parsing
-			// Valid config values will override defaults; corrupted values are skipped keeping defaults
-			SetIMEModeDefaults(imeMode);
-
-			CFile* iniDictionaryFile;
-			iniDictionaryFile = new (std::nothrow) CFile();
-			if (iniDictionaryFile && (iniDictionaryFile)->CreateFile(_pwszINIFileName, GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ | FILE_SHARE_WRITE))
+			if (LoadConfigFromFile(imeMode, _pwszINIFileName))
 			{
-				CTableDictionaryEngine* iniTableDictionaryEngine;
-				iniTableDictionaryEngine = new (std::nothrow) CTableDictionaryEngine(MAKELCID(1028, SORT_DEFAULT), iniDictionaryFile, DICTIONARY_TYPE::INI_DICTIONARY);//CHT:1028
-				if (iniTableDictionaryEngine)
-				{
-					_loadTableMode = TRUE; // reset _loadTableMode first. If no _loadTableMode is exist we should not should load tables buttons
-					_colorModeKeyFound = false; // reset before parse so absence of key is detectable
-					_colorMode = IME_COLOR_MODE::IME_COLOR_MODE_SYSTEM;
-					iniTableDictionaryEngine->ParseConfig(imeMode); //parse config first.
-					debugPrint(L"CConfig::loadConfig() parsed. _loadTableMode = %d\n", _loadTableMode);
-
-					// Backward compat: old INI has no ColorMode key but may have the
-					// legacy 6 color keys (ItemColor etc.) from before Light/Dark/Custom
-					// palettes were introduced.  If the user had customized those colors,
-					// migrate to CUSTOM to preserve them.  If still factory defaults,
-					// migrate to SYSTEM (or LIGHT on pre-1809 Windows).
-					if (!_colorModeKeyFound)
-					{
-						bool isDefault =
-							_itemColor       == CANDWND_ITEM_COLOR &&
-							_selectedColor   == CANDWND_SELECTED_ITEM_COLOR &&
-							_selectedBGColor == CANDWND_SELECTED_BK_COLOR &&
-							_phraseColor     == CANDWND_PHRASE_COLOR &&
-							_numberColor     == CANDWND_NUM_COLOR &&
-							_itemBGColor     == GetSysColor(COLOR_3DHIGHLIGHT);
-						_colorMode = isDefault
-							? (Global::isWindows1809OrLater
-								? IME_COLOR_MODE::IME_COLOR_MODE_SYSTEM
-								: IME_COLOR_MODE::IME_COLOR_MODE_LIGHT)
-							: IME_COLOR_MODE::IME_COLOR_MODE_CUSTOM;
-					}
-				}
-				delete iniTableDictionaryEngine; // delete after config.ini config are parsed
-				delete iniDictionaryFile;
 				SetDefaultTextFont();
 				_initTimeStamp.st_mtime = initTimeStamp.st_mtime;
 				_configIMEMode = imeMode;
@@ -768,12 +1050,16 @@ BOOL CConfig::LoadConfig(IME_MODE imeMode)
 	else
 	{
 		// Config file doesn't exist - set IME-specific defaults
-		SetIMEModeDefaults(imeMode);
 		// Use SYSTEM only on Win10 1809+; fall back to LIGHT on older Windows
 		// so the combo shows the correct selection when settings first open.
+#ifdef DIME_USE_RUST_CONFIG
+		RunRustSettingsOp(dime_settings_load_missing, imeMode);
+#else
+		SetIMEModeDefaults(imeMode);
 		_colorMode = Global::isWindows1809OrLater
 			? IME_COLOR_MODE::IME_COLOR_MODE_SYSTEM
 			: IME_COLOR_MODE::IME_COLOR_MODE_LIGHT;
+#endif
 
 		if (imeMode != IME_MODE::IME_MODE_NONE)
 			WriteConfig(imeMode, FALSE); // config.ini is not there. create one.
@@ -885,29 +1171,39 @@ void CConfig::EnumerateReverseConversionProviders(LANGID langid)
 	if (profile) delete profile;
 }
 
+void CConfig::SetReverseConversionDescriptionText(_In_opt_ const WCHAR* text)
+{
+#ifdef DIME_USE_RUST_CONFIG
+	RustConfigValues(); // make sure the storage is initialised
+	dime_settings_set_description(dime_settings_global(), reinterpret_cast<const uint16_t*>(text),
+		text ? wcslen(text) : 0, text ? 1 : 0);
+#else
+	delete[] _reverseConversionDescription;
+	_reverseConversionDescription = nullptr;
+	if (text)
+	{
+		size_t len = wcslen(text) + 1;
+		_reverseConversionDescription = new (std::nothrow) WCHAR[len];
+		if (_reverseConversionDescription)
+			StringCchCopy(_reverseConversionDescription, len, text);
+	}
+#endif
+}
+
 void CConfig::SetReverseConversionSelection(UINT sel)
 {
-	if (_reverseConversionDescription)
-	{
-		delete[] _reverseConversionDescription;
-		_reverseConversionDescription = nullptr;
-	}
 	if (sel == 0)
 	{
 		_reverseConverstionCLSID = CLSID_NULL;
 		_reverseConversionGUIDProfile = CLSID_NULL;
-		_reverseConversionDescription = new (std::nothrow) WCHAR[4];
-		if(_reverseConversionDescription)
-			StringCchCopy(_reverseConversionDescription, 4, L"(無)");
+		SetReverseConversionDescriptionText(L"(無)");
 	}
 	else
 	{
 		sel--;
 		_reverseConverstionCLSID = _reverseConvervsionInfoList->GetAt(sel)->clsid;
 		_reverseConversionGUIDProfile = _reverseConvervsionInfoList->GetAt(sel)->guidProfile;
-		_reverseConversionDescription = new (std::nothrow) WCHAR[wcslen(_reverseConvervsionInfoList->GetAt(sel)->description) + 1];
-		if(_reverseConversionDescription)
-			StringCchCopy(_reverseConversionDescription, wcslen(_reverseConvervsionInfoList->GetAt(sel)->description) + 1, _reverseConvervsionInfoList->GetAt(sel)->description);
+		SetReverseConversionDescriptionText(_reverseConvervsionInfoList->GetAt(sel)->description);
 	}
 	// Completes REVERSE_CONV_REFACTOR.md item B: any selection change through
 	// this API must mark the IME-side _pITfReverseConversion[] cache for reload.

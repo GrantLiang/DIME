@@ -1,0 +1,20 @@
+[package]
+name = "dime-ffi"
+description = "C ABI over dime-core, linked into the existing C++ code as a static library."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "dime_ffi"
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+dime-config = { path = "../dime-config" }
+dime-core = { path = "../dime-core" }
+dime-settings = { path = "../dime-settings" }
+dime-ui = { path = "../dime-ui" }
+
+[target.'cfg(windows)'.dependencies]
+windows-link = "0.2.1"

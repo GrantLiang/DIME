@@ -50,7 +50,12 @@
   <ItemGroup>
     <ClInclude Include="BaseWindow.h" />
     <ClInclude Include="BuildInfo.h" />
-    <ClInclude Include="ButtonWindow.h" />
+    <ClInclude Include="CandidateListModel.h" />
+    <ClInclude Include="RustCandidateListModel.h" />
+    <ClInclude Include="RustSessionHost.h" />
+    <ClInclude Include="UILayout.h" />
+    <ClInclude Include="RustShadowWindow.h" />
+
     <ClInclude Include="CandidateWindow.h" />
     <ClInclude Include="Compartment.h" />
     <ClInclude Include="CompositionProcessorEngine.h" />
@@ -83,6 +88,8 @@
     <ClInclude Include="ShadowWindow.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TableDictionaryEngine.h" />
+    <ClInclude Include="RustTableDictionaryEngine.h" />
+    <ClInclude Include="SentenceBuffer.h" />
     <ClInclude Include="TfInputProcessorProfile.h" />
     <ClInclude Include="TfTextLayoutSink.h" />
     <ClInclude Include="TipCandidateList.h" />
@@ -95,12 +102,23 @@
     <ClCompile Include="ActiveLanguageProfileNotifySink.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Include="BaseWindow.cpp" />
-    <ClCompile Include="ButtonWindow.cpp" />
+    <!-- The C++ UI windows (CBaseWindow and its subclasses) are only in the C++ build: the Rust
+         build's windows are owned by dime-ui (docs/RUST_WINDOW_OWNERSHIP.md, 3c-5f). DIMETests
+         still compiles them for the parity tests. -->
+    <ClCompile Include="BaseWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="CandidateHandler.cpp" />
-    <ClCompile Include="CandidateWindow.cpp" />
+    <ClCompile Include="CandidateListModel.cpp" />
+    <ClCompile Include="RustCandidateListModel.cpp" />
+    <ClCompile Include="RustSessionHost.cpp" />
+    <!-- Layout math is dime-ui in the Rust build. UILayout.cpp stays for the C++ build
+         (CandidateWindow / ScrollBarWindow / DIME_CPP_PRESENTER). Tests compile their own. -->
+    <ClCompile Include="UILayout.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
+    <ClCompile Include="RustShadowWindow.cpp" />
+
+    <ClCompile Include="CandidateWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="Config.cpp" />
-    <ClCompile Include="ConfigDialog.cpp" />
+    <!-- The legacy PropertySheet (ConfigDialog.cpp) and its dialog resources were
+         removed in phase 5b-10; DIMESettings.exe is the only settings UI. -->
     <ClCompile Include="Compartment.cpp" />
     <ClCompile Include="Composition.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -108,8 +126,9 @@
     <ClCompile Include="CompositionProcessorEngine.cpp" />
     <ClCompile Include="EnumTfCandidates.cpp" />
     <ClCompile Include="KeyProcesser.cpp" />
-    <ClCompile Include="KeyStateCategory.cpp" />
-    <ClCompile Include="NotifyWindow.cpp" />
+    <!-- The key state routing is in Rust in the Rust build (dime-core::session::handle_key, phase 4a). -->
+    <ClCompile Include="KeyStateCategory.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
+    <ClCompile Include="NotifyWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="BaseStructure.cpp" />
     <ClCompile Include="ReverseConversion.cpp" />
     <ClCompile Include="ReverseConversionProvider.cpp" />
@@ -137,17 +156,22 @@
     <ClCompile Include="LanguageBar.cpp" />
     <ClCompile Include="Register.cpp" />
     <ClCompile Include="RegKey.cpp" />
-    <ClCompile Include="ScrollBarWindow.cpp" />
+    <ClCompile Include="ScrollBarWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="Server.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="SetupCompositionProcesseorEngine.cpp" />
-    <ClCompile Include="ShadowWindow.cpp" />
+    <ClCompile Include="ShadowWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="ShowConfig.cpp" />
     <ClCompile Include="StartComposition.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="TableDictionaryEngine.cpp" />
+    <ClCompile Include="RustTableDictionaryEngine.cpp" />
+    <ClCompile Include="SentenceBuffer.cpp" />
+    <ClCompile Include="SentenceHandler.cpp">
+      <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <ClCompile Include="DIME.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -341,6 +365,9 @@
       <AdditionalDependencies>Shlwapi.lib;Comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>DIME.def</ModuleDefinitionFile>
     </Link>
+    <PreBuildEvent>
+      <Command>call .\BuildInfo.cmd</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -359,6 +386,9 @@
       <AdditionalDependencies>shlwapi.lib;Comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>DIME.def</ModuleDefinitionFile>
     </Link>
+    <PreBuildEvent>
+      <Command>call .\BuildInfo.cmd</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
@@ -378,6 +408,9 @@
       <ModuleDefinitionFile>DIME.def</ModuleDefinitionFile>
       <TargetMachine>MachineARM64</TargetMachine>
     </Link>
+    <PreBuildEvent>
+      <Command>call .\BuildInfo.cmd</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64EC'">
     <ClCompile>
@@ -397,6 +430,9 @@
       <ModuleDefinitionFile>DIME.def</ModuleDefinitionFile>
       <TargetMachine>MachineARM64X</TargetMachine>
     </Link>
+    <PreBuildEvent>
+      <Command>call .\BuildInfo.cmd</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -424,7 +460,7 @@
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PreBuildEvent>
-      <Command>BuildInfo.cmd</Command>
+      <Command>call .\BuildInfo.cmd</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -455,7 +491,7 @@
       </ImageHasSafeExceptionHandlers>
     </Link>
     <PreBuildEvent>
-      <Command>BuildInfo.cmd</Command>
+      <Command>call .\BuildInfo.cmd</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -485,7 +521,7 @@
       <ImageHasSafeExceptionHandlers>true</ImageHasSafeExceptionHandlers>
     </Link>
     <PreBuildEvent>
-      <Command>BuildInfo.cmd</Command>
+      <Command>call .\BuildInfo.cmd</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64EC'">
@@ -517,9 +553,61 @@
       </ImageHasSafeExceptionHandlers>
     </Link>
     <PreBuildEvent>
-      <Command>BuildInfo.cmd</Command>
+      <Command>call .\BuildInfo.cmd</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
+  <!--
+    Rust core (rust/crates/dime-core via dime-ffi), on by default: the dictionary engine,
+    settings storage, composition, candidates and the key handler flow run in Rust, and the
+    static library dime_ffi.lib is built by cargo before compiling (needs a Rust toolchain
+    with the target of the platform). Release links the static CRT (matching /MT); Debug uses
+    the dynamic CRT build (matching /MDd). The previous all-C++ build is still available:
+      msbuild DIME.sln /t:DIME /p:Configuration=Release /p:Platform=x64 /p:DimeUseRustEngine=false
+  -->
+  <PropertyGroup Label="DimeRust">
+    <DimeUseRustEngine Condition="'$(DimeUseRustEngine)'==''">true</DimeUseRustEngine>
+    <DimeRustRoot>$(ProjectDir)..\rust\</DimeRustRoot>
+    <DimeRustTarget Condition="'$(Platform)'=='Win32'">i686-pc-windows-msvc</DimeRustTarget>
+    <DimeRustTarget Condition="'$(Platform)'=='x64'">x86_64-pc-windows-msvc</DimeRustTarget>
+    <DimeRustTarget Condition="'$(Platform)'=='ARM64'">aarch64-pc-windows-msvc</DimeRustTarget>
+    <DimeRustTarget Condition="'$(Platform)'=='ARM64EC'">arm64ec-pc-windows-msvc</DimeRustTarget>
+    <DimeRustEnabled Condition="'$(DimeUseRustEngine)'=='true' And '$(DimeRustTarget)'!=''">true</DimeRustEnabled>
+    <DimeRustTargetDir Condition="'$(Configuration)'=='Release'">$(DimeRustRoot)target\crt-static\</DimeRustTargetDir>
+    <DimeRustTargetDir Condition="'$(Configuration)'!='Release'">$(DimeRustRoot)target\</DimeRustTargetDir>
+    <DimeRustFlags Condition="'$(Configuration)'=='Release'">-C target-feature=+crt-static</DimeRustFlags>
+    <DimeRustLibDir>$(DimeRustTargetDir)$(DimeRustTarget)\release\</DimeRustLibDir>
+    <!-- ARM64X (ARM64EC with BuildAsX): the ARM64EC pass links the native ARM64 objects too, so it
+         also needs the aarch64 dime_ffi.lib; the linker takes each half's symbols from the library
+         of the matching machine type. -->
+    <DimeRustArm64XNativeLibDir Condition="'$(Platform)'=='ARM64EC' And '$(BuildAsX)'=='true'">$(DimeRustTargetDir)aarch64-pc-windows-msvc\release\</DimeRustArm64XNativeLibDir>
+    <DimeCargo Condition="Exists('$(USERPROFILE)\.cargo\bin\cargo.exe')">"$(USERPROFILE)\.cargo\bin\cargo.exe"</DimeCargo>
+    <DimeCargo Condition="'$(DimeCargo)'==''">cargo</DimeCargo>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(DimeRustRoot)crates\dime-ffi\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DIME_RUST_AVAILABLE;DIME_USE_RUST_ENGINE;DIME_USE_RUST_CONFIG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(DimeRustLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dime_ffi.lib;ntdll.lib;userenv.lib;ws2_32.lib;dbghelp.lib;synchronization.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)'!='Release'">msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <Target Name="BuildDimeRust" BeforeTargets="ClCompile" Condition="'$(DimeRustEnabled)'=='true'">
+    <Exec Command="$(DimeCargo) build --release --locked -p dime-ffi --target $(DimeRustTarget) --target-dir &quot;$(DimeRustTargetDir.TrimEnd('\'))&quot; --manifest-path &quot;$(DimeRustRoot)Cargo.toml&quot;" EnvironmentVariables="RUSTFLAGS=$(DimeRustFlags)" />
+  </Target>
+  <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true' And '$(DimeRustArm64XNativeLibDir)'!=''">
+    <Link>
+      <AdditionalDependencies>$(DimeRustArm64XNativeLibDir)dime_ffi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <Target Name="BuildDimeRustArm64XNative" AfterTargets="BuildDimeRust" Condition="'$(DimeRustEnabled)'=='true' And '$(DimeRustArm64XNativeLibDir)'!=''">
+    <Exec Command="$(DimeCargo) build --release --locked -p dime-ffi --target aarch64-pc-windows-msvc --target-dir &quot;$(DimeRustTargetDir.TrimEnd('\'))&quot; --manifest-path &quot;$(DimeRustRoot)Cargo.toml&quot;" EnvironmentVariables="RUSTFLAGS=$(DimeRustFlags)" />
+  </Target>
+  <Target Name="DimeRustUnsupportedPlatform" BeforeTargets="ClCompile" Condition="'$(DimeUseRustEngine)'=='true' And '$(DimeRustTarget)'==''">
+    <Error Text="DimeUseRustEngine=true is not supported for platform $(Platform)." />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

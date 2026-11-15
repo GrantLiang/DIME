@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "NotifyWindow.h"
 #include <memory> // Include for smart pointers
 //#define NO_WINDOW_SHADOW
+
 //+---------------------------------------------------------------------------
 //
 // ctor
@@ -123,11 +124,19 @@ Exit:
     return TRUE;
 }
 
+#if defined(DIME_UNIT_TESTING) && defined(DIME_USE_RUST_ENGINE)
+ATOM g_cppNotifyWindowAtomForTest = 0;
+#endif
+
 BOOL CNotifyWindow::_CreateMainWindow(_In_opt_ HWND parentWndHandle)
 {
     _SetUIWnd(this);
 
-	if (!CBaseWindow::_Create(Global::AtomNotifyWindow,
+    ATOM atom = Global::AtomNotifyWindow;
+#if defined(DIME_UNIT_TESTING) && defined(DIME_USE_RUST_ENGINE)
+    atom = g_cppNotifyWindowAtomForTest;
+#endif
+	if (!CBaseWindow::_Create(atom,
 		WS_EX_TOPMOST |
 		WS_EX_NOACTIVATE,
         WS_POPUP,
@@ -140,7 +149,7 @@ BOOL CNotifyWindow::_CreateMainWindow(_In_opt_ HWND parentWndHandle)
 
 BOOL CNotifyWindow::_CreateBackGroundShadowWindow()
 {
-    _pShadowWnd = std::make_unique<CShadowWindow>(this); // Use std::make_unique
+    _pShadowWnd = std::make_unique<DimeShadowWindow>(this); // Use std::make_unique
     if (!_pShadowWnd->_Create(Global::AtomNotifyShadowWindow,
         WS_EX_TOPMOST | 
         WS_EX_TOOLWINDOW | WS_EX_LAYERED,

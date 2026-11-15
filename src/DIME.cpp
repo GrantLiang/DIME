@@ -42,6 +42,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "TfInputProcessorProfile.h"
 #include <Prsht.h>
 #include <Psapi.h>
+#ifdef DIME_USE_RUST_ENGINE
+#include "dime_ffi.h"
+#endif
 //////////////////////////////////////////////////////////////////////
 //
 // CDIME implementation.
@@ -187,7 +190,17 @@ HRESULT CDIME::CreateInstance(_In_ IUnknown *pUnkOuter, REFIID riid, _Outptr_ vo
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_USE_RUST_ENGINE
+static_assert(sizeof(CANDIDATE_MODE) == sizeof(uint32_t), "CDIME::_candidateMode is bound to a u32");
+static_assert(sizeof(BOOL) == sizeof(int32_t), "CDIME::_isCandidateWithWildcard is bound to an i32");
+#endif
+
 CDIME::CDIME()
+#ifdef DIME_USE_RUST_ENGINE
+    : _pRustSession(dime_session_new()),
+      _candidateMode(*reinterpret_cast<CANDIDATE_MODE*>(dime_session_candidate_mode_ptr(_pRustSession))),
+      _isCandidateWithWildcard(*reinterpret_cast<BOOL*>(dime_session_candidate_with_wildcard_ptr(_pRustSession)))
+#endif
 {
 	debugPrint(L"CDIME:CDIME() constructor");
     DllAddRef();
@@ -320,6 +333,12 @@ CDIME::CDIME()
 
 	_newlyActivated = FALSE;
 
+	_pSentenceLexicon = nullptr;
+	_pSentenceUser = nullptr;
+	_pSentencePending = nullptr;
+	_sentenceLexiconLoaded = FALSE;
+	_sentenceEditPos = -1;
+	_sentencePinNext = FALSE;
 }
 
 //+---------------------------------------------------------------------------
@@ -331,6 +350,25 @@ CDIME::CDIME()
 CDIME::~CDIME()
 {
 	debugPrint(L"CDIME:~CDIME() destructor");
+#ifdef DIME_USE_RUST_ENGINE
+	dime_session_free(_pRustSession);
+	_pRustSession = nullptr;
+#endif
+	if (_pSentenceLexicon)
+	{
+		delete _pSentenceLexicon;
+		_pSentenceLexicon = nullptr;
+	}
+	if (_pSentenceUser)
+	{
+		delete _pSentenceUser;
+		_pSentenceUser = nullptr;
+	}
+	if (_pSentencePending)
+	{
+		delete _pSentencePending;
+		_pSentencePending = nullptr;
+	}
 	if (_pUIPresenter)
     {
         delete _pUIPresenter;
@@ -572,6 +610,49 @@ ExitError:
     Deactivate();
     return E_FAIL;
 }
+
+#ifdef DIME_UNIT_TESTING
+//+---------------------------------------------------------------------------
+//
+// _TestActivate
+//
+// ActivateEx for the key-flow tests: same engine setup, but no thread-manager,
+// key-event, profile, focus or function-provider sinks (the tests call
+// OnTestKeyDown / OnKeyDown themselves).
+//
+//----------------------------------------------------------------------------
+
+HRESULT CDIME::_TestActivate(_In_ ITfThreadMgr* pThreadMgr, TfClientId tfClientId, LANGID langid, REFGUID guidProfile)
+{
+	_pThreadMgr = pThreadMgr;
+	if (_pThreadMgr)
+		_pThreadMgr->AddRef();
+	_tfClientId = tfClientId;
+	_dwActivateFlags = 0;
+
+	if (!_InitDisplayAttributeGuidAtom())
+		return E_FAIL;
+	if (!_AddTextProcessorEngine(langid, guidProfile))
+		return E_FAIL;
+
+	// What OnActivated(DIMECLSID, guidProfile, TRUE) does next, except that it asks the
+	// system for the default profile; here the profile is the one given.
+	Global::imeMode = _pCompositionProcessorEngine->GetImeModeFromGuidProfile(guidProfile);
+	CConfig::SetIMEMode(Global::imeMode);
+	_LoadConfig(TRUE);
+	_pCompositionProcessorEngine->SetImeMode(guidProfile);
+	_lastKeyboardMode = CConfig::GetActivatedKeyboardMode();
+	_isChinese = _lastKeyboardMode;
+	_newlyActivated = TRUE;
+	ITfDocumentMgr* pDocMgr = nullptr;
+	if (SUCCEEDED(_pThreadMgr->GetFocus(&pDocMgr)) && pDocMgr)
+	{
+		OnSetFocus(pDocMgr, nullptr);
+		pDocMgr->Release();
+	}
+	return S_OK;
+}
+#endif
 
 //+---------------------------------------------------------------------------
 //

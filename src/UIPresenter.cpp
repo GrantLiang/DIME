@@ -42,6 +42,37 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CompositionProcessorEngine.h"
 #include "BaseStructure.h"
 #include <memory> // Include for smart pointers
+#ifdef DIME_RUST_AVAILABLE
+#include "dime_ffi.h"
+
+// The environment of the notify windows the Rust presenter makes.
+namespace PresenterEnv
+{
+    uint32_t Dpi(void* hwnd) { return CConfig::GetDpiForHwnd((HWND)hwnd); }
+    int32_t Dark() { return CConfig::GetEffectiveDarkMode() ? 1 : 0; }
+    int32_t AlwaysShow() { return CConfig::GetAlwaysShowScrollbars() ? 1 : 0; }
+    void* Font() { return Global::defaultlFontHandle; }
+    void SetFont(void* hwnd) { CConfig::SetDefaultTextFont((HWND)hwnd); }
+}
+
+// The candidate window's side of the Rust presenter (phase 4b-2b): its callback and the
+// selection keys, read live as CCandidateWindow read them.
+namespace PresenterCand
+{
+    void Invoke(void* ctx, int32_t action)
+    {
+        CUIPresenter::_CandWndCallbackForRust(ctx, action);
+    }
+    int32_t RangeCount(const void* range) { return range ? ((const CCandidateRange*)range)->Count() : -1; }
+    uint16_t RangeChar(const void* range, int32_t row)
+    {
+        CCandidateRange* r = (CCandidateRange*)range;
+        // GetAt throws out of range, and a callback must not throw.
+        if (!r || row < 0 || row >= r->Count()) return 0;
+        return (uint16_t)r->GetAt(row)->CandIndex;
+    }
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -54,7 +85,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //----------------------------------------------------------------------------
 
 CUIPresenter::CUIPresenter(_In_ CDIME *pTextService, CCompositionProcessorEngine *pCompositionProcessorEngine)
-    : CTfTextLayoutSink(pTextService), _pCandidateWnd(nullptr), _Category(KEYSTROKE_CATEGORY::CATEGORY_NONE), _pIndexRange(nullptr)
+    : CTfTextLayoutSink(pTextService), _Category(KEYSTROKE_CATEGORY::CATEGORY_NONE), _pIndexRange(nullptr)
 {
     debugPrint(L"CUIPresenter::CUIPresenter() constructor");
     _pTextService = pTextService;
@@ -70,11 +101,25 @@ CUIPresenter::CUIPresenter(_In_ CDIME *pTextService, CCompositionProcessorEngine
     _isShowMode = TRUE;
     _refCount = 1;
 
-    // Initialize locations off-screen
+    // Initialize locations off-screen (the C++ presenter; Rust keeps its own).
+#ifdef DIME_CPP_PRESENTER
     _candLocation = { UI::DEFAULT_WINDOW_X, UI::DEFAULT_WINDOW_Y };
     _notifyLocation = { UI::DEFAULT_WINDOW_X, UI::DEFAULT_WINDOW_Y };
     _rectCompRange = { UI::DEFAULT_WINDOW_X, UI::DEFAULT_WINDOW_Y, UI::DEFAULT_WINDOW_X, UI::DEFAULT_WINDOW_Y };
+#endif
     _inFocus = FALSE;
+#ifdef DIME_USE_RUST_ENGINE
+    _useRustPresenter = TRUE;
+#else
+    _useRustPresenter = FALSE;
+#endif
+    _rp = nullptr;
+#ifdef DIME_RUST_AVAILABLE
+    static const DimeCandEnv env = { PresenterEnv::Dpi, PresenterEnv::Dark, PresenterEnv::AlwaysShow, PresenterEnv::Font, PresenterEnv::SetFont };
+    const DimeNotifyCallback callback = { this, _NotifyWndInvoke };
+    const DimePresenterCandSource source = { this, PresenterCand::Invoke, PresenterCand::RangeCount, PresenterCand::RangeChar };
+    _rp = dime_ui_presenter_create(&env, &callback, &source);
+#endif
 }
 
 //+---------------------------------------------------------------------------
@@ -88,6 +133,10 @@ CUIPresenter::~CUIPresenter()
     debugPrint(L"CUIPresenter::~CUIPresenter() destructor");
     _EndCandidateList();
     DisposeNotifyWindow();
+#ifdef DIME_RUST_AVAILABLE
+    dime_ui_presenter_free(_rp);
+    _rp = nullptr;
+#endif
     if (_pTextService)
     {
         _pTextService->Release();
@@ -232,14 +281,14 @@ HRESULT CUIPresenter::ToShowUIWindows()
 {
 	debugPrint(L"CUIPresenter::ToShowUIWindows()");
     _MoveUIWindowsToTextExt();
-    if(_pCandidateWnd) _pCandidateWnd->_Show(TRUE);
+    _CandShow(TRUE);
 	// Re-show any compositional-hint slot that was created but is currently hidden.
 	// Mode-state slot (NOTIFY_CHN_ENG) is excluded — its visibility is driven by
 	// its own delay-/auto-hide timers, not by candidate-window UI cycling.
-	for (size_t i = 0; i < _pNotifyWnds.size(); ++i)
+	for (size_t i = 0; i < (size_t)NOTIFY_TYPE::NOTIFY_COUNT; ++i)
 	{
 		if (i == (size_t)NOTIFY_TYPE::NOTIFY_CHN_ENG) continue;
-		if (_pNotifyWnds[i]) _pNotifyWnds[i]->_Show(TRUE);
+		ShowNotify(TRUE, 0, 0, (NOTIFY_TYPE)i);   // nothing for a missing slot
 	}
 
 
@@ -249,7 +298,7 @@ HRESULT CUIPresenter::ToShowUIWindows()
 HRESULT CUIPresenter::ToHideUIWindows()
 {
 	debugPrint(L"CUIPresenter::ToHideUIWindows()");
-	if (_pCandidateWnd)	_pCandidateWnd->_Show(FALSE);
+	_CandShow(FALSE);
 	ClearNotify();
 
     _updatedFlags = TF_CLUIE_SELECTION | TF_CLUIE_CURRENTPAGE;
@@ -266,8 +315,8 @@ HRESULT CUIPresenter::ToHideUIWindows()
 
 STDAPI CUIPresenter::IsShown(BOOL *pIsShow)
 {
-	if(_pCandidateWnd)
-		*pIsShow = _pCandidateWnd->_IsWindowVisible();
+	if(_HasCand())
+		*pIsShow = _CandVisible();
     return S_OK;
 }
 
@@ -306,11 +355,18 @@ STDAPI CUIPresenter::GetDocumentMgr(ITfDocumentMgr **ppdim)
 
 STDAPI CUIPresenter::GetCount(UINT *pCandidateCount)
 {
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        *pCandidateCount = _HasCand() ? (UINT)dime_ui_presenter_cand_query(_rp, 3) : 0;
+    else
+#endif
+#ifdef DIME_CPP_PRESENTER
     if (_pCandidateWnd)
     {
         *pCandidateCount = _pCandidateWnd->_GetCount();
     }
     else
+#endif
     {
         *pCandidateCount = 0;
     }
@@ -326,9 +382,9 @@ STDAPI CUIPresenter::GetCount(UINT *pCandidateCount)
 
 STDAPI CUIPresenter::GetSelection(UINT *pSelectedCandidateIndex)
 {
-    if (_pCandidateWnd)
+    if (_HasCand())
     {
-		INT selection = _pCandidateWnd->_GetSelection();
+		INT selection = _GetCandidateSelection();
 		if(selection >= 0 )
 			*pSelectedCandidateIndex = selection;
 		else 
@@ -350,7 +406,9 @@ STDAPI CUIPresenter::GetSelection(UINT *pSelectedCandidateIndex)
 
 STDAPI CUIPresenter::GetString(UINT uIndex, BSTR *pbstr)
 {
-    if (_pCandidateWnd == nullptr || (uIndex > _pCandidateWnd->_GetCount()))
+    UINT count = 0;
+    GetCount(&count);
+    if (!_HasCand() || (uIndex > count))
     {
         return E_FAIL;
     }
@@ -358,7 +416,16 @@ STDAPI CUIPresenter::GetString(UINT uIndex, BSTR *pbstr)
     DWORD candidateLen = 0;
     const WCHAR* pCandidateString = nullptr;
 
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        candidateLen = dime_ui_presenter_cand_string(_rp, 0, (int32_t)uIndex, (const uint16_t**)&pCandidateString);
+    else
+#endif
+#ifdef DIME_CPP_PRESENTER
     candidateLen = _pCandidateWnd->_GetCandidateString(uIndex, &pCandidateString);
+#else
+    candidateLen = 0;
+#endif
 
     *pbstr = (candidateLen == 0) ? nullptr : SysAllocStringLen(pCandidateString, candidateLen);
 	//debugPrint(L"CUIPresenter::GetString(), uIndex = %d, pbstr = %s", uIndex, pbstr);  
@@ -374,7 +441,7 @@ STDAPI CUIPresenter::GetString(UINT uIndex, BSTR *pbstr)
 STDAPI CUIPresenter::GetPageIndex(UINT *pIndex, UINT uSize, UINT *puPageCnt)
 {
 	debugPrint(L"CUIPresenter::GetPageIndex()");
-    if (_pCandidateWnd == nullptr)
+    if (!_HasCand())
     {
         if (pIndex)
         {
@@ -383,8 +450,15 @@ STDAPI CUIPresenter::GetPageIndex(UINT *pIndex, UINT uSize, UINT *puPageCnt)
         *puPageCnt = 0;
         return S_OK;
     }
-	
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        return dime_ui_presenter_cand_get_page_index(_rp, pIndex, uSize, puPageCnt);
+#endif
+#ifdef DIME_CPP_PRESENTER
     return _pCandidateWnd->_GetPageIndex(pIndex, uSize, puPageCnt);
+#else
+    return E_FAIL;
+#endif
 }
 
 //+---------------------------------------------------------------------------
@@ -396,11 +470,22 @@ STDAPI CUIPresenter::GetPageIndex(UINT *pIndex, UINT uSize, UINT *puPageCnt)
 STDAPI CUIPresenter::SetPageIndex(UINT *pIndex, UINT uPageCnt)
 {
 	debugPrint(L"CUIPresenter::SetPageIndex(), index = %d, page count =%d", *pIndex, uPageCnt  );
-    if (_pCandidateWnd == nullptr)
+    if (!_HasCand())
     {
         return E_FAIL;
     }
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_cand_set_page_index(_rp, pIndex, uPageCnt);
+        return S_OK;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
     return _pCandidateWnd->_SetPageIndex(pIndex, uPageCnt);
+#else
+    return E_FAIL;
+#endif
 }
 
 //+---------------------------------------------------------------------------
@@ -411,13 +496,24 @@ STDAPI CUIPresenter::SetPageIndex(UINT *pIndex, UINT uPageCnt)
 
 STDAPI CUIPresenter::GetCurrentPage(UINT *puPage)
 {
-	debugPrint(L"CUIPresenter::GetCurrentPage(), puPage =%d", _pCandidateWnd->_GetCurrentPage(puPage) );
-    if (_pCandidateWnd == nullptr)
+	debugPrint(L"CUIPresenter::GetCurrentPage()");
+    if (!_HasCand())
     {
         *puPage = 0;
         return S_OK;
     }
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        if (puPage == nullptr) return E_INVALIDARG;
+        return dime_ui_presenter_cand_current_page(_rp, puPage);
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
     return _pCandidateWnd->_GetCurrentPage(puPage);
+#else
+    return E_FAIL;
+#endif
 }
 
 //+---------------------------------------------------------------------------
@@ -429,10 +525,19 @@ STDAPI CUIPresenter::GetCurrentPage(UINT *puPage)
 STDAPI CUIPresenter::SetSelection(UINT nIndex)
 {
 	debugPrint(L"CUIPresenter::SetSelection(), nIndex =%d", nIndex);
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_cand_select(_rp, 4, (int32_t)nIndex, 0);
+        return S_OK;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
     if (_pCandidateWnd)
     {
         _pCandidateWnd->_SetSelection(nIndex);
     }
+#endif
 
     return S_OK;
 }
@@ -551,7 +656,7 @@ HRESULT CUIPresenter::_StartCandidateList(TfClientId tfClientId, _In_ ITfDocumen
     BeginUIElement();
 
 
-    if (_pCandidateWnd)
+    if (_HasCand())
     {
         // Candidate window already exists (e.g. reusing for phrase candidates after
         // commit — _ClearCandidateList + _SetCandidateText repopulated it). Skip
@@ -582,7 +687,9 @@ HRESULT CUIPresenter::_StartCandidateList(TfClientId tfClientId, _In_ ITfDocumen
     {
         // No composition range (e.g. phrase candidates after commit).
         // Reuse the last saved composition rect — the caret hasn't moved.
-        _LayoutChangeNotification(&_rectCompRange, TRUE);
+        RECT comp = {};
+        _GetPlacement(nullptr, nullptr, &comp);
+        _LayoutChangeNotification(&comp, TRUE);
     }
 
 Exit:
@@ -643,13 +750,12 @@ void CUIPresenter::_SetCandidateText(_In_ CDIMEArray<CCandidateListItem> *pCandi
 	
     SetPageIndexWithScrollInfo(pCandidateList);
 
-	if(_pCandidateWnd)
-		_pCandidateWnd->_SetCandStringLength(candWidth);
+	_CandOp(4, (int)candWidth);   // _SetCandStringLength
 
 	Show(_isShowMode);
-    if (_isShowMode && _pCandidateWnd)
+    if (_isShowMode && _HasCand())
     {
-		_pCandidateWnd->_InvalidateRect();
+		_CandOp(3);   // _InvalidateRect
     }
     else
     {
@@ -666,20 +772,45 @@ void CUIPresenter::AddCandidateToUI(_In_ CDIMEArray<CCandidateListItem> *pCandid
 {
 
 	debugPrint(L"UIPresenter:AddCandidateToUI()");
-	if(pCandidateList == nullptr || _pCandidateWnd == nullptr) return;
+	if(pCandidateList == nullptr || !_HasCand()) return;
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		std::vector<DimeCandItem> items(pCandidateList->Count());
+		for (UINT index = 0; index < pCandidateList->Count(); index++)
+		{
+			CCandidateListItem* it = pCandidateList->GetAt(index);
+			items[index] = { (const uint16_t*)it->_ItemString.Get(), it->_ItemString.GetLength(),
+			                 (const uint16_t*)it->_FindKeyCode.Get(), it->_FindKeyCode.GetLength() };
+		}
+		dime_ui_presenter_cand_add_items(_rp, items.data(), items.size(), isAddFindKeyCode ? 1 : 0);
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
     for (UINT index = 0; index < pCandidateList->Count(); index++)
     {
 		_pCandidateWnd->_AddString(pCandidateList->GetAt(index), isAddFindKeyCode);
     }
+#endif
 
 }
 
 void CUIPresenter::SetPageIndexWithScrollInfo(_In_ CDIMEArray<CCandidateListItem> *pCandidateList)
 {
-    if (!_pIndexRange || !pCandidateList || !_pCandidateWnd)
+    if (!_pIndexRange || !pCandidateList || !_HasCand())
         return;
 
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        dime_ui_presenter_cand_set_index_range(_rp, _pIndexRange);
+    else
+#endif
+#ifdef DIME_CPP_PRESENTER
     _pCandidateWnd->_SetCandIndexRange(_pIndexRange);
+#else
+    return;
+#endif
 
     UINT candCntInPage = _pIndexRange->Count();
     UINT bufferSize = (pCandidateList->Count() + candCntInPage - 1) / candCntInPage;
@@ -690,8 +821,18 @@ void CUIPresenter::SetPageIndexWithScrollInfo(_In_ CDIMEArray<CCandidateListItem
         pageIndex[i] = i * candCntInPage;
     }
 
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_cand_set_page_index(_rp, pageIndex.data(), bufferSize);
+        _CandOp(9, (int)pCandidateList->Count(), (int)candCntInPage);   // _SetScrollInfo
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
     _pCandidateWnd->_SetPageIndex(pageIndex.data(), bufferSize);
     _pCandidateWnd->_SetScrollInfo(pCandidateList->Count(), candCntInPage);
+#endif
 }
 
 //+---------------------------------------------------------------------------
@@ -702,11 +843,21 @@ void CUIPresenter::SetPageIndexWithScrollInfo(_In_ CDIMEArray<CCandidateListItem
 
 void CUIPresenter::_ClearCandidateList()
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		dime_ui_presenter_cand_clear(_rp);
+		_CandOp(3);   // _InvalidateRect
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if(_pCandidateWnd)
 	{
 		_pCandidateWnd->_ClearList();
 		_pCandidateWnd->_InvalidateRect();
 	}
+#endif
 }
 
 //+---------------------------------------------------------------------------
@@ -717,6 +868,14 @@ void CUIPresenter::_ClearCandidateList()
 //----------------------------------------------------------------------------
 void CUIPresenter::_SetNotifyTextColor(COLORREF crColor, COLORREF crBkColor)
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		dime_ui_presenter_notify_set_text_color(_rp, crColor, crBkColor);
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	for (auto& w : _pNotifyWnds)
 	{
 		if (!w) continue;
@@ -724,33 +883,60 @@ void CUIPresenter::_SetNotifyTextColor(COLORREF crColor, COLORREF crBkColor)
 		w->_SetFillColor(crBkColor);
 		w->_InvalidateRect();
 	}
+#endif
 }
 
 
 void CUIPresenter::_SetCandidateNumberColor(COLORREF crColor, COLORREF crBkColor)
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		dime_ui_presenter_cand_set_color(_rp, 0, crColor, crBkColor);
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if(_pCandidateWnd)
 		_pCandidateWnd->_SetNumberColor(crColor, crBkColor);
+#endif
 }
 
 
 void CUIPresenter::_SetCandidateTextColor(COLORREF crColor, COLORREF crBkColor)
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		dime_ui_presenter_cand_set_color(_rp, 1, crColor, crBkColor);
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if(_pCandidateWnd)
 		_pCandidateWnd->_SetTextColor(crColor, crBkColor);
+#endif
 }
 
 void CUIPresenter::_SetCandidateSelectedTextColor(COLORREF crColor, COLORREF crBkColor)
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		dime_ui_presenter_cand_set_color(_rp, 2, crColor, crBkColor);
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if(_pCandidateWnd)
 		_pCandidateWnd->_SetSelectedTextColor(crColor, crBkColor);
+#endif
 }
 
 
 void CUIPresenter::_SetCandidateFillColor(COLORREF fiColor)
 {
-	if(_pCandidateWnd)
-		_pCandidateWnd->_SetFillColor(fiColor);
+	_CandOp(5, (int)fiColor);   // _SetFillColor
 }
 
 
@@ -762,10 +948,15 @@ void CUIPresenter::_SetCandidateFillColor(COLORREF fiColor)
 
 DWORD_PTR CUIPresenter::_GetSelectedCandidateKeyCode(_Inout_ const WCHAR **ppwchCandidateString)
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+		return _HasCand() ? dime_ui_presenter_cand_string(_rp, 2, 0, (const uint16_t**)ppwchCandidateString) : 0;
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if (_pCandidateWnd)
 		return _pCandidateWnd->_GetSelectedCandidateKeyCode(ppwchCandidateString);
-	else
-		return 0;
+#endif
+	return 0;
 }
 
 
@@ -777,10 +968,15 @@ DWORD_PTR CUIPresenter::_GetSelectedCandidateKeyCode(_Inout_ const WCHAR **ppwch
 
 DWORD_PTR CUIPresenter::_GetSelectedCandidateString(_Inout_ const WCHAR **ppwchCandidateString)
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+		return _HasCand() ? dime_ui_presenter_cand_string(_rp, 1, 0, (const uint16_t**)ppwchCandidateString) : 0;
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if(_pCandidateWnd)
 		return _pCandidateWnd->_GetSelectedCandidateString(ppwchCandidateString);
-	else
-		return 0;
+#endif
+	return 0;
 }
 
 //+---------------------------------------------------------------------------
@@ -791,13 +987,13 @@ DWORD_PTR CUIPresenter::_GetSelectedCandidateString(_Inout_ const WCHAR **ppwchC
 
 BOOL CUIPresenter::_MoveCandidateSelection(_In_ int offSet)
 {
-	if(_pCandidateWnd == nullptr) return FALSE;
-    BOOL ret = _pCandidateWnd->_MoveSelection(offSet, TRUE);
+	if(!_HasCand()) return FALSE;
+    BOOL ret = _CandSelect(0, offSet, TRUE);
     if (ret)
     {
         if (_isShowMode)
         {
-            _pCandidateWnd->_InvalidateRect();
+            _CandOp(3);
         }
         else
         {
@@ -817,13 +1013,13 @@ BOOL CUIPresenter::_MoveCandidateSelection(_In_ int offSet)
 BOOL CUIPresenter::_SetCandidateSelection(_In_ int selectedIndex, _In_opt_ BOOL isNotify)
 {
 	debugPrint(L"CUIPresenter::_SetCandidateSelection(), selectedIndex = %d, isNotify = %d", selectedIndex, isNotify);
-	if(_pCandidateWnd == nullptr) return FALSE;
-    BOOL ret = _pCandidateWnd->_SetSelection(selectedIndex, isNotify);
+	if(!_HasCand()) return FALSE;
+    BOOL ret = _CandSelect(1, selectedIndex, isNotify);
     if (ret)
     {
         if (_isShowMode)
         {
-            _pCandidateWnd->_InvalidateRect();
+            _CandOp(3);
         }
         else
         {
@@ -841,10 +1037,15 @@ BOOL CUIPresenter::_SetCandidateSelection(_In_ int selectedIndex, _In_opt_ BOOL 
 //----------------------------------------------------------------------------
 INT CUIPresenter::_GetCandidateSelection()
 {	
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+		return dime_ui_presenter_cand_query(_rp, 4);
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if (_pCandidateWnd)
 		return _pCandidateWnd->_GetSelection();
-	else
-		return -1;
+#endif
+	return -1;
 }
 
 //+---------------------------------------------------------------------------
@@ -856,13 +1057,13 @@ INT CUIPresenter::_GetCandidateSelection()
 BOOL CUIPresenter::_MoveCandidatePage(_In_ int offSet)
 {
 	debugPrint(L"CUIPresenter::_MoveCandidatePage(), offSet = %d", offSet);
-	if(_pCandidateWnd == nullptr) return FALSE;
-    BOOL ret = _pCandidateWnd->_MovePage(offSet, TRUE);
+	if(!_HasCand()) return FALSE;
+    BOOL ret = _CandSelect(2, offSet, TRUE);
     if (ret)
     {
         if (_isShowMode)
         {
-            _pCandidateWnd->_InvalidateRect();
+            _CandOp(3);
         }
         else
         {
@@ -891,7 +1092,11 @@ void CUIPresenter::_MoveUIWindowsToTextExt()
 		_LayoutChangeNotification(&compRect, true);
 	}
 	else
-		_LayoutChangeNotification(&_rectCompRange, true);
+	{
+		RECT comp = {};
+		_GetPlacement(nullptr, nullptr, &comp);
+		_LayoutChangeNotification(&comp, true);
+	}
 
 	
 	
@@ -908,21 +1113,24 @@ VOID CUIPresenter::_LayoutChangeNotification(_In_ RECT *lpRect)
 }
 VOID CUIPresenter::_LayoutChangeNotification(_In_ RECT *lpRect, BOOL firstCall)
 {
-	debugPrint(L"CUIPresenter::_LayoutChangeNotification(), top = %d, bottom = %d, right = %d, left = %d", lpRect->top, lpRect->bottom, lpRect->right, lpRect->left);
 	if(lpRect == nullptr) return;
+	debugPrint(L"CUIPresenter::_LayoutChangeNotification(), top = %d, bottom = %d, right = %d, left = %d", lpRect->top, lpRect->bottom, lpRect->right, lpRect->left);
+	PresenterLayoutFacts facts;
+	_ReadLayoutFacts(*lpRect, firstCall, facts);
+	_LayoutChangeApply(facts);
+}
 
-	RECT compRect = * lpRect;
-    RECT candRect = {0, 0, 0, 0};
-	RECT notifyRect = {0, 0, 0, 0};
-    POINT candPt = {0, 0};
-	POINT notifyPt = {0, 0};
+void CUIPresenter::_ReadLayoutFacts(const RECT& comp, BOOL firstCall, PresenterLayoutFacts& facts)
+{
+	facts = {};
+	facts.comp = comp;
+	facts.firstCall = firstCall;
 
 	ITfContext *pContext =  _GetContextDocument();
 	ITfContextView * pView = nullptr;
-	HWND parentWndHandle;
-	POINT caretPt = { 0, 0 };
-	
-	if (pContext && SUCCEEDED(pContext->GetActiveView(&pView)))
+	HWND parentWndHandle = nullptr;
+
+	if (pContext && SUCCEEDED(pContext->GetActiveView(&pView)) && pView)
 	{
 		debugPrint(L"parentWndHandle got from pContext");
 		pView->GetWnd(&parentWndHandle);
@@ -931,16 +1139,36 @@ VOID CUIPresenter::_LayoutChangeNotification(_In_ RECT *lpRect, BOOL firstCall)
 	{
 		parentWndHandle = GetForegroundWindow();
 	}
-		
+
 	if (parentWndHandle)
 	{
+		POINT caretPt = { 0, 0 };
 		GetCaretPos(&caretPt);
 		ClientToScreen(parentWndHandle, &caretPt);
 		debugPrint(L"current caret position from GetCaretPos, x = %d, y = %d", caretPt.x, caretPt.y);
 		// Recreate font for fitting current monitor resolution and font size
 		if (Global::isWindows8) CConfig::SetDefaultTextFont(parentWndHandle);
-
+		facts.hasParent = TRUE;
+		facts.caret = caretPt;
 	}
+}
+
+#ifdef DIME_CPP_PRESENTER
+void CUIPresenter::_LayoutChangeApplyCpp(const PresenterLayoutFacts& facts)
+{
+	const RECT* lpRect = &facts.comp;
+	BOOL firstCall = facts.firstCall;
+
+	RECT compRect = * lpRect;
+    RECT candRect = {0, 0, 0, 0};
+	RECT notifyRect = {0, 0, 0, 0};
+    POINT candPt = {0, 0};
+	POINT notifyPt = {0, 0};
+
+	// No parent: the caret stays (0, 0) and the first call cannot place at it.
+	BOOL hasParent = facts.hasParent;
+	POINT caretPt = facts.hasParent ? facts.caret : POINT{ 0, 0 };
+
 	if (_pCandidateWnd && lpRect)
 	{
 
@@ -956,7 +1184,7 @@ VOID CUIPresenter::_LayoutChangeNotification(_In_ RECT *lpRect, BOOL firstCall)
 			_candLocation.y = candPt.y;
 			debugPrint(L"move cand to x = %d, y = %d", candPt.x, candPt.y);
 		}
-		else if (firstCall && parentWndHandle)
+		else if (firstCall && hasParent)
 		{
 			_pCandidateWnd->_GetClientRect(&candRect);
 			compRect.left = caretPt.x;
@@ -975,7 +1203,7 @@ VOID CUIPresenter::_LayoutChangeNotification(_In_ RECT *lpRect, BOOL firstCall)
 	// Find the slot to use as the "anchor" for max-width calc and stack-vs-candidate
 	// positioning. Use the first visible slot (index order) — typically slot 0
 	// (CHN_ENG) when only mode-state is visible, otherwise the lowest hint slot.
-	CNotifyWindow* anchorWnd = nullptr;
+	DimeNotifyWindow* anchorWnd = nullptr;
 	UINT stackMaxWidth = 0;
 	for (auto& w : _pNotifyWnds)
 	{
@@ -1034,14 +1262,19 @@ VOID CUIPresenter::_LayoutChangeNotification(_In_ RECT *lpRect, BOOL firstCall)
 	}
 	_rectCompRange = compRect;
 }
+#endif
 
 void CUIPresenter::GetCandLocation(_Out_ POINT *lpPoint) const
 {
 	if(lpPoint)
-	{
-		lpPoint->x = _candLocation.x;
-		lpPoint->y = _candLocation.y;
-	}
+		_GetPlacement(lpPoint, nullptr, nullptr);
+}
+
+LONG CUIPresenter::GetCompRangeHeight() const
+{
+	RECT comp = {};
+	_GetPlacement(nullptr, nullptr, &comp);
+	return comp.bottom - comp.top;
 }
 
 //+---------------------------------------------------------------------------
@@ -1105,7 +1338,7 @@ HRESULT CUIPresenter::_NotifyChangeNotification(_In_ enum NOTIFY_WND action, _In
 					}
 				}
 			}
-			else if(isHintSlot || (_pCandidateWnd && !_pCandidateWnd->_IsWindowVisible()))
+			else if(isHintSlot || (_HasCand() && !_CandVisible()))
 				ShowNotify(TRUE, 0, (UINT) wParam, nt);
 			break;
 		}
@@ -1281,7 +1514,7 @@ HRESULT CUIPresenter::OnKillThreadFocus()
 	debugPrint(L"CUIPresenter::OnKillThreadFocus()");
 
 #ifdef CANCEL_CAND_ON_KILL_FOCUS
-	if (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible())
+	if (_CandVisible())
 		_CandidateChangeNotification(CANDWND_ACTION::CAND_CANCEL);
 #endif
 
@@ -1423,14 +1656,31 @@ Exit:
 
 HRESULT CUIPresenter::MakeNotifyWindow(_In_ ITfContext *pContextDocument, _In_ CStringRange * notifyText, _In_ enum NOTIFY_TYPE notifyType)
 {
-	HRESULT hr = S_OK;
 	size_t idx = (size_t)notifyType;
-	if (idx >= _pNotifyWnds.size()) return S_FALSE;
+	if (idx >= (size_t)NOTIFY_TYPE::NOTIFY_COUNT) return S_FALSE;
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		HWND parent = nullptr;
+		ITfContextView* pRustView = nullptr;
+		if (pContextDocument && SUCCEEDED(pContextDocument->GetActiveView(&pRustView)) && pRustView)
+			pRustView->GetWnd(&parent);
+		DimeNotifyClasses classes = { Global::AtomNotifyWindow, Global::AtomNotifyShadowWindow };
+#ifdef DIME_UNIT_TESTING
+		if (_notifyAtomForTest) classes = { _notifyAtomForTest, _notifyShadowAtomForTest };
+#endif
+		dime_ui_presenter_notify_make(_rp, (uint32_t)idx, Global::dllInstanceHandle, &classes, parent,
+		                              notifyText ? (const uint16_t*)notifyText->Get() : nullptr, notifyText ? notifyText->GetLength() : 0);
+		return S_OK;   // also when the window could not be created
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
+	HRESULT hr = S_OK;
 	auto& slot = _pNotifyWnds[idx];
 
 	if (nullptr == slot)
     {
-		slot = std::make_unique<CNotifyWindow>(_NotifyWndCallback, this, notifyType);
+		slot = std::make_unique<DimeNotifyWindow>(_NotifyWndCallback, this, notifyType);
 	}
 
     if (nullptr == slot)	return S_FALSE;
@@ -1442,7 +1692,7 @@ HRESULT CUIPresenter::MakeNotifyWindow(_In_ ITfContext *pContextDocument, _In_ C
         pView->GetWnd(&parentWndHandle);
     }
 
-	if (slot->_GetUIWnd() == nullptr)
+	if (!slot->_IsCreated())
 	{
 		if( !slot->_Create(CConfig::GetFontSize(), parentWndHandle, notifyText))
 		{
@@ -1452,6 +1702,9 @@ HRESULT CUIPresenter::MakeNotifyWindow(_In_ ITfContext *pContextDocument, _In_ C
 	}
 
 	return hr;
+#else
+	return S_FALSE;
+#endif
 
 }
 
@@ -1460,23 +1713,43 @@ void CUIPresenter::SetNotifyText(_In_ CStringRange *pNotifyText, _In_opt_ NOTIFY
 {
 	debugPrint(L"CUIPresenter::SetNotifyText()");
 	size_t idx = (size_t)notifyType;
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		if (idx < (size_t)NOTIFY_TYPE::NOTIFY_COUNT && pNotifyText)
+			dime_ui_presenter_notify_set_string(_rp, (uint32_t)idx, (const uint16_t*)pNotifyText->Get(), pNotifyText->GetLength());
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if (idx < _pNotifyWnds.size() && _pNotifyWnds[idx])
 	{
 		_pNotifyWnds[idx]->_SetString(pNotifyText);
 	}
+#endif
 }
 void CUIPresenter::ShowNotify(_In_ BOOL showMode,  _In_opt_ UINT delayShow, _In_opt_ UINT timeToHide, _In_opt_ NOTIFY_TYPE notifyType)
 {
 	debugPrint(L"CUIPresenter::ShowNotify(slot=%d)", (int)notifyType);
 	size_t idx = (size_t)notifyType;
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		if (idx < (size_t)NOTIFY_TYPE::NOTIFY_COUNT)
+			dime_ui_presenter_notify_show(_rp, (uint32_t)idx, showMode ? 1 : 0, delayShow, timeToHide);
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	if (idx < _pNotifyWnds.size() && _pNotifyWnds[idx])
 		_pNotifyWnds[idx]->_Show(showMode, delayShow, timeToHide);
+#endif
 }
 void CUIPresenter::ClearAll()
 {
 	debugPrint(L"CUIPresenter::ClearAll()");
 	ClearNotify();
-	if(_pCandidateWnd)
+	if(_HasCand())
 		_EndCandidateList();
 }
 
@@ -1484,13 +1757,11 @@ void CUIPresenter::ClearNotify()
 {
 	debugPrint(L"CUIPresenter::ClearNotify()");
 	BOOL anySlot = FALSE;
-	for (auto& w : _pNotifyWnds)
-	{
-		if (w) { anySlot = TRUE; break; }
-	}
+	for (size_t i = 0; i < (size_t)NOTIFY_TYPE::NOTIFY_COUNT && !anySlot; i++)
+		anySlot = _NotifySlotExists((NOTIFY_TYPE)i);
 	if (!anySlot) return;
 
-	if (_GetContextDocument() && _pCandidateWnd == nullptr) //cand is not here. the layoutsink was start by notify, and we need to end here.
+	if (_GetContextDocument() && !_HasCand()) //cand is not here. the layoutsink was start by notify, and we need to end here.
 		_EndLayout();
 
 	DisposeNotifyWindow();  // disposes all slots
@@ -1498,91 +1769,109 @@ void CUIPresenter::ClearNotify()
 
 BOOL CUIPresenter::_AnyHintSlotVisible() const
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+		return dime_ui_presenter_notify_query(_rp, (uint32_t)NOTIFY_TYPE::NOTIFY_COUNT, 2) ? TRUE : FALSE;
+#endif
+#ifdef DIME_CPP_PRESENTER
 	auto& rl = _pNotifyWnds[(size_t)NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP];
 	auto& sc = _pNotifyWnds[(size_t)NOTIFY_TYPE::NOTIFY_SPECIAL_CODE];
 	return ((rl && rl->_IsWindowVisible()) || (sc && sc->_IsWindowVisible())) ? TRUE : FALSE;
+#else
+	return FALSE;
+#endif
+}
+
+#ifdef DIME_CPP_PRESENTER
+// The notify slots as UILayout sees them (a missing window: not visible, height 0).
+template <typename Windows>
+static void _NotifySlots(const Windows& wnds, std::vector<UILayout::NotifySlot>& slots)
+{
+	slots.clear();
+	for (auto& w : wnds)
+	{
+		UILayout::NotifySlot slot = { 0, 0, 0 };
+		if (w)
+		{
+			slot.visible = w->_IsWindowVisible() ? 1 : 0;
+			slot.width = (int)w->_GetWidth();
+			slot.height = (int)w->_GetHeight();
+		}
+		slots.push_back(slot);
+	}
 }
 
 BOOL CUIPresenter::_DecideStackGrowUp() const
 {
-	if (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible())
-	{
-		RECT cr = { 0,0,0,0 };
+	BOOL candVisible = (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible());
+	RECT cr = { 0,0,0,0 };
+	if (candVisible)
 		_pCandidateWnd->_GetWindowRect(&cr);
-		return (cr.top < _notifyLocation.y) ? TRUE : FALSE;
-	}
-	// No candidate: only flip up if downward stack would overflow screen bottom.
-	int totalH = 0;
-	for (auto& w : _pNotifyWnds)
-	{
-		if (w && w->_IsWindowVisible())
-			totalH += w->_GetHeight() + SHADOW_SPREAD / 2;
-	}
-	int screenBottom = GetSystemMetrics(SM_CYSCREEN);
-	return (_notifyLocation.y + totalH > screenBottom) ? TRUE : FALSE;
+	std::vector<UILayout::NotifySlot> slots;
+	_NotifySlots(_pNotifyWnds, slots);
+	// Without a candidate: only flip up if the downward stack would overflow the screen bottom.
+	return UILayout::DecideStackGrowUp(candVisible, cr.top, _notifyLocation.y, slots.data(), slots.size(),
+		candVisible ? 0 : GetSystemMetrics(SM_CYSCREEN));
 }
 
 POINT CUIPresenter::_ComputeStackPosForNewSlot(_In_ NOTIFY_TYPE newSlot, _In_ BOOL growUp) const
 {
-	POINT p = _notifyLocation;
-	int offset = 0;
-	for (size_t i = 0; i < _pNotifyWnds.size(); ++i)
-	{
-		if (i == (size_t)newSlot) continue;
-		auto& w = _pNotifyWnds[i];
-		if (w && w->_IsWindowVisible())
-			offset += (int)w->_GetHeight() + SHADOW_SPREAD / 2;
-	}
-	auto& self = _pNotifyWnds[(size_t)newSlot];
-	int h = (self ? (int)self->_GetHeight() : 0);
-	p.y = growUp ? (_notifyLocation.y - h - offset)
-	             : (_notifyLocation.y + offset);
-	return p;
+	std::vector<UILayout::NotifySlot> slots;
+	_NotifySlots(_pNotifyWnds, slots);
+	return UILayout::ComputeStackPosForNewSlot(_notifyLocation, slots.data(), slots.size(), (size_t)newSlot, growUp);
 }
+#endif
 
 void CUIPresenter::_RestackVisibleSlots(_In_ BOOL growUp)
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		dime_ui_presenter_restack_visible_slots(_rp, growUp ? 1 : 0);
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	// X rule: candidate visible → each slot's RIGHT edge aligned to candidate's
 	// left edge (per-slot x). No candidate → all share _notifyLocation.x.
 	// Y rule (candidate visible):
 	//   growUp=false → first slot's TOP at candidate's TOP, stack grows down.
 	//   growUp=true  → first slot's BOTTOM at candidate's BOTTOM, stack grows up.
 	// Y rule (no candidate): anchor y is _notifyLocation.y as set by caller.
+	// Slots are placed in index order (0 → N): slot 0 (CHN_ENG) lands nearest the
+	// candidate / composition either way.
 	BOOL candVisible = (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible());
-	int candLeft = 0;
-	int anchorY = _notifyLocation.y;
+	RECT cr = { 0,0,0,0 };
 	if (candVisible)
-	{
-		RECT cr = { 0,0,0,0 };
 		_pCandidateWnd->_GetWindowRect(&cr);
-		candLeft = _candLocation.x - SHADOW_SPREAD / 2;
-		anchorY = growUp ? cr.bottom : _candLocation.y;
-	}
-
-	// Always iterate slots in index order (0 → N). When growing down, slot 0
-	// (CHN_ENG) lands at the top nearest the candidate/composition; when growing
-	// up (flipped), slot 0 lands at the bottom nearest the composition — the
-	// visual order reverses naturally, mirroring the candidate-flipped behaviour.
-	int offset = 0;
-	int n = (int)_pNotifyWnds.size();
-	for (int i = 0; i < n; ++i)
+	std::vector<UILayout::NotifySlot> slots;
+	_NotifySlots(_pNotifyWnds, slots);
+	std::vector<POINT> positions(slots.size());
+	std::vector<BOOL> placed(slots.size());
+	UILayout::RestackVisibleSlots(candVisible, cr, _candLocation, _notifyLocation, slots.data(), slots.size(), growUp,
+		positions.data(), placed.data());
+	for (size_t i = 0; i < slots.size(); ++i)
 	{
-		auto& w = _pNotifyWnds[i];
-		if (!w || !w->_IsWindowVisible()) continue;
-		int h = (int)w->_GetHeight();
-		int slotX = candVisible ? (candLeft - (int)w->_GetWidth())
-		                        : _notifyLocation.x;
-		int slotY = growUp ? (anchorY - h - offset)
-		                   : (anchorY + offset);
-		w->_Move(slotX, slotY);
-		offset += h + SHADOW_SPREAD / 2;
+		if (placed[i])
+			_pNotifyWnds[i]->_Move(positions[i].x, positions[i].y);
 	}
+#endif
 }
 void CUIPresenter::ResetCompRange()
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+	{
+		dime_ui_presenter_reset_comp_range(_rp);
+		debugPrint(L"ResetCompRange: _notifyLocation reset to DEFAULT_WINDOW");
+		return;
+	}
+#endif
+#ifdef DIME_CPP_PRESENTER
 	SetRect(&_rectCompRange, 0, 0, 0, 0);
 	_notifyLocation = { UI::DEFAULT_WINDOW_X, UI::DEFAULT_WINDOW_Y };
 	debugPrint(L"ResetCompRange: _notifyLocation reset to DEFAULT_WINDOW");
+#endif
 }
 void CUIPresenter::ShowNotifyText(_In_ CStringRange* pNotifyText, _In_opt_ UINT delayShow, _In_opt_ UINT timeToHide, _In_opt_ NOTIFY_TYPE notifyType)
 {
@@ -1592,7 +1881,7 @@ void CUIPresenter::ShowNotifyText(_In_ CStringRange* pNotifyText, _In_opt_ UINT 
 	ITfDocumentMgr* pDocumentMgr = nullptr;
 
 	size_t idx = (size_t)notifyType;
-	if (idx >= _pNotifyWnds.size()) return;
+	if (idx >= (size_t)NOTIFY_TYPE::NOTIFY_COUNT) return;
 
 	// Issue #127 / multi-notify: CHN_ENG (and other mode-state slots) must not
 	// clobber a visible compositional-hint slot. Generalised guard from the
@@ -1634,135 +1923,32 @@ void CUIPresenter::ShowNotifyText(_In_ CStringRange* pNotifyText, _In_opt_ UINT 
 			{
 				pView->GetWnd(&parentWndHandle);
 				debugPrint(L" parentWndHandle = %x , FocusHwnd = %x, ActiveHwnd =%x, ForeGroundHWnd = %x", parentWndHandle, GetFocus(), GetActiveWindow(), GetForegroundWindow());
-				GUITHREADINFO* guiInfo = new GUITHREADINFO;
-				if(guiInfo == nullptr) return;
-
-				POINT* pt = nullptr;
-				guiInfo->cbSize = sizeof(GUITHREADINFO);
-				GetGUIThreadInfo(NULL, guiInfo);
 				// Issue #127: for transient slots (compositional hints + BEEP),
 				// refresh _notifyLocation each show so a stale value from an earlier
-				// show does not stick. The probe call below (also widened) will
-				// overwrite with the precise caret rect when GetTextExt succeeds.
-				// Pre-multi-notify this matched the old NOTIFY_OTHERS bucket; without
-				// BEEP here the 錯誤組字 popup pinned to (0,0) in Firefox after the
-				// first show seeded _notifyLocation to a non-negative stale value.
-				BOOL refreshLocation = (notifyType == NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP
-				                        || notifyType == NOTIFY_TYPE::NOTIFY_SPECIAL_CODE
-				                        || notifyType == NOTIFY_TYPE::NOTIFY_BEEP);
-				// Track whether a valid caret position was actually written to _notifyLocation
-				// from GetGUIThreadInfo or GetCaretPos. When FALSE (e.g. Firefox always returns
-				// zero rcCaret), the _candLocation fallback below must cover the refreshLocation
-				// case too — not just the uninitialised case — to avoid reusing a stale
-				// _notifyLocation from a previous typing session at a different screen position.
-				BOOL caretUpdated = FALSE;
-				if(guiInfo && parentWndHandle)
+				// show does not stick (see _NotifyLocationForShowCpp).
+				PresenterShowFacts facts = {};
+				facts.refresh = (notifyType == NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP
+				                 || notifyType == NOTIFY_TYPE::NOTIFY_SPECIAL_CODE
+				                 || notifyType == NOTIFY_TYPE::NOTIFY_BEEP);
+				if (parentWndHandle)
 				{   //for ancient non TSF aware apps with a floating composition window.  The caret position we can get is always the caret in the floating composition window.
-					pt = new POINT;
-					if(pt == nullptr) return;
-					// Check raw rcCaret BEFORE ClientToScreen. Firefox/Chromium return
-					// rcCaret={0,0,0,0}; ClientToScreen then maps that to the window's
-					// screen origin (non-zero), which would wrongly overwrite a cached
-					// valid position with the browser window's top-left corner.
-					BOOL validCaretPos = (guiInfo->rcCaret.left   != 0 || guiInfo->rcCaret.top    != 0
-					                   || guiInfo->rcCaret.right  != 0 || guiInfo->rcCaret.bottom != 0);
-					pt->x = guiInfo->rcCaret.left;
-					pt->y = guiInfo->rcCaret.bottom;
-					ClientToScreen(parentWndHandle, pt);
-					debugPrint(L"current caret position from GetGUIThreadInfo, x = %d, y = %d", pt->x, pt->y);
-					// Only update when rcCaret is non-zero. When validCaretPos=FALSE,
-					// pt (after ClientToScreen) is the browser window's screen origin —
-					// not the caret — so we must not write it even for initialisation.
-					if (validCaretPos) {
-						if (refreshLocation || _notifyLocation.x < 0) _notifyLocation.x = pt->x;
-						if (refreshLocation || _notifyLocation.y < 0) _notifyLocation.y = pt->y;
-						caretUpdated = TRUE;
-					}
+					GUITHREADINFO guiInfo = {};
+					guiInfo.cbSize = sizeof(GUITHREADINFO);
+					if (!GetGUIThreadInfo(NULL, &guiInfo))
+						guiInfo.rcCaret = { 0, 0, 0, 0 };
+					POINT pt = { guiInfo.rcCaret.left, guiInfo.rcCaret.bottom };
+					ClientToScreen(parentWndHandle, &pt);
+					debugPrint(L"current caret position from GetGUIThreadInfo, x = %d, y = %d", pt.x, pt.y);
+					facts.hasParent = TRUE;
+					facts.rcCaret = guiInfo.rcCaret;
+					facts.guiCaret = pt;
 				}
-				else if(parentWndHandle)
-				{
-					POINT caretPt;
-					GetCaretPos(&caretPt);
-					// Check raw client-coords before ClientToScreen for the same reason.
-					BOOL validCaretPosAlt = (caretPt.x != 0 || caretPt.y != 0);
-					ClientToScreen(parentWndHandle, &caretPt);
-					debugPrint(L"current caret position from GetCaretPos, x = %d, y = %d", caretPt.x, caretPt.y);
-					if (validCaretPosAlt) {
-						if (refreshLocation || _notifyLocation.x < 0) _notifyLocation.x = caretPt.x;
-						if (refreshLocation || _notifyLocation.y < 0) _notifyLocation.y = caretPt.y;
-						caretUpdated = TRUE;
-					}
-				}
-				// Firefox fallback: when no valid caret was obtained from either path and
-				// _notifyLocation is uninitialised (reset on focus change by ResetCompRange),
-				// seed from the last known candidate position. Conditioned on _notifyLocation.x < 0
-				// only — not refreshLocation — so a freshly-set _notifyLocation from
-				// _LayoutChangeNotification during active composition is never overwritten by a
-				// stale _candLocation from a previous text field (e.g. Gmail compose box Y
-				// bleeding into the search bar).
-				debugPrint(L"ShowNotifyText pre-fallback: type=%d caretUpdated=%d notifyLoc=(%d,%d) candLoc=(%d,%d) rectComp=(%d,%d,%d,%d)",
-				           (int)notifyType, caretUpdated, _notifyLocation.x, _notifyLocation.y, _candLocation.x, _candLocation.y,
-				           _rectCompRange.left, _rectCompRange.top, _rectCompRange.right, _rectCompRange.bottom);
-				if (!caretUpdated && _notifyLocation.x < 0 && _candLocation.x >= 0)
-				{
-					_notifyLocation.x = _candLocation.x;
-					// If the candidate was flipped above the caret (candLocation.y < compRange.top),
-					// _notifyLocation.y is used directly as slot TOP in the no-candidate restack path,
-					// so place it below the composition text (not at candidate top or candidate bottom).
-					if (_rectCompRange.bottom > _rectCompRange.top && _candLocation.y < _rectCompRange.top)
-						_notifyLocation.y = _rectCompRange.bottom + SHADOW_SPREAD / 2;
-					else
-						_notifyLocation.y = _candLocation.y;
-				}
-				debugPrint(L"ShowNotifyText post-fallback: notifyLoc=(%d,%d)", _notifyLocation.x, _notifyLocation.y);
-
+				BOOL caretUpdated = _NotifyLocationForShow(facts);
 
 				ShowNotify(TRUE, delayShow, timeToHide, notifyType);
 
-				auto& slot = _pNotifyWnds[idx];
-				if(delayShow == 0 && slot)
-				{
-					{
-					// Restack ALL visible slots from the same _notifyLocation anchor
-					// so every slot — new or pre-existing — shares the same X edge.
-					// Using _ComputeStackPosForNewSlot+_Move for only the new slot
-					// caused X misalignment when _notifyLocation changed between the
-					// first and second ShowNotifyText calls (e.g. probe fired in between).
-					BOOL growUp = _DecideStackGrowUp();
-					if (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible())
-					{
-						// Set _notifyLocation.y above candidate top so _DecideStackGrowUp returns
-						// TRUE when the candidate is flipped. _RestackVisibleSlots then uses
-						// cr.bottom as the actual anchor (slots grow upward from candidate bottom).
-						if (_rectCompRange.top > 0 && _candLocation.y < _rectCompRange.top)
-						{
-							RECT _candWndRect = {};
-							_pCandidateWnd->_GetWindowRect(&_candWndRect);
-							_notifyLocation.y = _candLocation.y + (_candWndRect.bottom - _candWndRect.top);
-						}
-						else
-							_notifyLocation.y = _candLocation.y;
-					}
-					else if (!caretUpdated && _rectCompRange.bottom > _rectCompRange.top
-					         && _candLocation.y < _rectCompRange.top)
-					{
-						// Candidate was flipped above caret. Anchor = candidate window bottom,
-						// which _GetWindowExtent always places SHADOW_SPREAD/2 above comp top:
-						//   candBottom = _rectCompRange.top - SHADOW_SPREAD/2
-						// Using _rectCompRange.top directly lands the slot 7px too low.
-						// Also realign X to candidate left edge.
-						_notifyLocation.y = _rectCompRange.top - SHADOW_SPREAD / 2;
-						growUp = TRUE;
-						if (_candLocation.x >= 0)
-							_notifyLocation.x = _candLocation.x;
-					}
-					debugPrint(L"ShowNotifyText restack: notifyLoc=(%d,%d) candVisible=%d rectComp.top=%d candLoc.y=%d",
-					           _notifyLocation.x, _notifyLocation.y,
-					           (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible()) ? 1 : 0,
-					           _rectCompRange.top, _candLocation.y);
-					_RestackVisibleSlots(growUp);
-				}
-				}
+				if(delayShow == 0 && _NotifySlotExists(notifyType))
+					_RestackForShow(caretUpdated);
 				//means TextLayoutSink is not working. We need to ProbeComposition to start layout.
 				// Issue #127: also probe for compositional-hint slots and BEEP so they
 				// track the caret when ShowNotifyDesktop pref is OFF.
@@ -1783,17 +1969,435 @@ void CUIPresenter::ShowNotifyText(_In_ CStringRange* pNotifyText, _In_opt_ UINT 
 
 }
 
+//+---------------------------------------------------------------------------
+//
+// ShowNotifyText's location decisions (C++ originals)
+//
+//----------------------------------------------------------------------------
+
+#ifdef DIME_CPP_PRESENTER
+BOOL CUIPresenter::_NotifyLocationForShowCpp(const PresenterShowFacts& facts)
+{
+	BOOL refreshLocation = facts.refresh;
+	// Track whether a valid caret position was actually written to _notifyLocation
+	// from GetGUIThreadInfo. When FALSE (e.g. Firefox always returns
+	// zero rcCaret), the _candLocation fallback below must cover the refreshLocation
+	// case too — not just the uninitialised case — to avoid reusing a stale
+	// _notifyLocation from a previous typing session at a different screen position.
+	BOOL caretUpdated = FALSE;
+	if (facts.hasParent)
+	{
+		// Check raw rcCaret BEFORE ClientToScreen. Firefox/Chromium return
+		// rcCaret={0,0,0,0}; ClientToScreen then maps that to the window's
+		// screen origin (non-zero), which would wrongly overwrite a cached
+		// valid position with the browser window's top-left corner.
+		BOOL validCaretPos = (facts.rcCaret.left   != 0 || facts.rcCaret.top    != 0
+		                   || facts.rcCaret.right  != 0 || facts.rcCaret.bottom != 0);
+		// Only update when rcCaret is non-zero. When validCaretPos=FALSE,
+		// pt (after ClientToScreen) is the browser window's screen origin —
+		// not the caret — so we must not write it even for initialisation.
+		if (validCaretPos) {
+			if (refreshLocation || _notifyLocation.x < 0) _notifyLocation.x = facts.guiCaret.x;
+			if (refreshLocation || _notifyLocation.y < 0) _notifyLocation.y = facts.guiCaret.y;
+			caretUpdated = TRUE;
+		}
+	}
+	// (The original's GetCaretPos branch ran only when `new GUITHREADINFO` returned null,
+	// which a throwing new never does.)
+	// Firefox fallback: when no valid caret was obtained and
+	// _notifyLocation is uninitialised (reset on focus change by ResetCompRange),
+	// seed from the last known candidate position. Conditioned on _notifyLocation.x < 0
+	// only — not refreshLocation — so a freshly-set _notifyLocation from
+	// _LayoutChangeNotification during active composition is never overwritten by a
+	// stale _candLocation from a previous text field (e.g. Gmail compose box Y
+	// bleeding into the search bar).
+	if (!caretUpdated && _notifyLocation.x < 0 && _candLocation.x >= 0)
+	{
+		_notifyLocation.x = _candLocation.x;
+		// If the candidate was flipped above the caret (candLocation.y < compRange.top),
+		// _notifyLocation.y is used directly as slot TOP in the no-candidate restack path,
+		// so place it below the composition text (not at candidate top or candidate bottom).
+		if (_rectCompRange.bottom > _rectCompRange.top && _candLocation.y < _rectCompRange.top)
+			_notifyLocation.y = _rectCompRange.bottom + SHADOW_SPREAD / 2;
+		else
+			_notifyLocation.y = _candLocation.y;
+	}
+	debugPrint(L"ShowNotifyText post-fallback: notifyLoc=(%d,%d)", _notifyLocation.x, _notifyLocation.y);
+	return caretUpdated;
+}
+
+void CUIPresenter::_RestackForShowCpp(BOOL caretUpdated)
+{
+	// Restack ALL visible slots from the same _notifyLocation anchor
+	// so every slot — new or pre-existing — shares the same X edge.
+	// Using _ComputeStackPosForNewSlot+_Move for only the new slot
+	// caused X misalignment when _notifyLocation changed between the
+	// first and second ShowNotifyText calls (e.g. probe fired in between).
+	BOOL growUp = _DecideStackGrowUp();
+	if (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible())
+	{
+		// Set _notifyLocation.y above candidate top so _DecideStackGrowUp returns
+		// TRUE when the candidate is flipped. _RestackVisibleSlots then uses
+		// cr.bottom as the actual anchor (slots grow upward from candidate bottom).
+		if (_rectCompRange.top > 0 && _candLocation.y < _rectCompRange.top)
+		{
+			RECT _candWndRect = {};
+			_pCandidateWnd->_GetWindowRect(&_candWndRect);
+			_notifyLocation.y = _candLocation.y + (_candWndRect.bottom - _candWndRect.top);
+		}
+		else
+			_notifyLocation.y = _candLocation.y;
+	}
+	else if (!caretUpdated && _rectCompRange.bottom > _rectCompRange.top
+	         && _candLocation.y < _rectCompRange.top)
+	{
+		// Candidate was flipped above caret. Anchor = candidate window bottom,
+		// which _GetWindowExtent always places SHADOW_SPREAD/2 above comp top:
+		//   candBottom = _rectCompRange.top - SHADOW_SPREAD/2
+		// Using _rectCompRange.top directly lands the slot 7px too low.
+		// Also realign X to candidate left edge.
+		_notifyLocation.y = _rectCompRange.top - SHADOW_SPREAD / 2;
+		growUp = TRUE;
+		if (_candLocation.x >= 0)
+			_notifyLocation.x = _candLocation.x;
+	}
+	debugPrint(L"ShowNotifyText restack: notifyLoc=(%d,%d) candVisible=%d rectComp.top=%d candLoc.y=%d",
+	           _notifyLocation.x, _notifyLocation.y,
+	           (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible()) ? 1 : 0,
+	           _rectCompRange.top, _candLocation.y);
+	_RestackVisibleSlots(growUp);
+}
+#endif
+
+#ifdef DIME_RUST_AVAILABLE
+static_assert(sizeof(PresenterLayoutFacts) == sizeof(DimeLayoutFacts), "DimeLayoutFacts layout");
+static_assert(sizeof(PresenterShowFacts) == sizeof(DimeShowFacts), "DimeShowFacts layout");
+static_assert(sizeof(DimeRect) == sizeof(RECT) && sizeof(DimePoint) == sizeof(POINT), "RECT / POINT layout");
+
+// The candidate window's callback (as CRustCandidateWindowModel::Invoke): may destroy the window.
+void CUIPresenter::_CandWndCallbackForRust(void* ctx, int32_t action)
+{
+    _CandWndCallback(ctx, action == 0 ? CANDWND_ACTION::CAND_ITEM_SELECT : CANDWND_ACTION::CAND_CANCEL);
+}
+
+// The notify windows' callback (as CRustNotifyWindow::Invoke): may destroy the windows.
+void CUIPresenter::_NotifyWndInvoke(void* ctx, int32_t action, uintptr_t wParam, intptr_t lParam)
+{
+    _NotifyWndCallback(ctx, action == 0 ? NOTIFY_WND::SWITCH_CHN_ENG : NOTIFY_WND::SHOW_NOTIFY, (WPARAM)wParam, (LPARAM)lParam);
+}
+#else
+void CUIPresenter::_NotifyWndInvoke(void*, int32_t, uintptr_t, intptr_t) {}
+void CUIPresenter::_CandWndCallbackForRust(void*, int32_t) {}
+#endif
+
+//+---------------------------------------------------------------------------
+//
+// The presenter state: Rust or C++
+//
+//----------------------------------------------------------------------------
+
+BOOL CUIPresenter::_RustPresenter() const
+{
+    return (_useRustPresenter && _rp) ? TRUE : FALSE;
+}
+
+void CUIPresenter::_GetPlacement(_Out_opt_ POINT* cand, _Out_opt_ POINT* notify, _Out_opt_ RECT* comp) const
+{
+    POINT c = {}, n = {};
+    RECT r = {};
+#ifdef DIME_CPP_PRESENTER
+    c = _candLocation;
+    n = _notifyLocation;
+    r = _rectCompRange;
+#endif
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        DimePresenterState st = {};
+        dime_ui_presenter_get_state(_rp, &st);
+        c = { st.cand_location.x, st.cand_location.y };
+        n = { st.notify_location.x, st.notify_location.y };
+        r = { st.rect_comp_range.left, st.rect_comp_range.top, st.rect_comp_range.right, st.rect_comp_range.bottom };
+    }
+#endif
+    if (cand) *cand = c;
+    if (notify) *notify = n;
+    if (comp) *comp = r;
+}
+
+void CUIPresenter::_SetPlacement(POINT cand, POINT notify, RECT comp)
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        DimePresenterState st = {};
+        st.cand_location = { cand.x, cand.y };
+        st.notify_location = { notify.x, notify.y };
+        st.rect_comp_range = { comp.left, comp.top, comp.right, comp.bottom };
+        dime_ui_presenter_set_state(_rp, &st);
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
+    _candLocation = cand;
+    _notifyLocation = notify;
+    _rectCompRange = comp;
+#endif
+}
+
+BOOL CUIPresenter::_HasCand() const
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        return dime_ui_presenter_cand_query(_rp, 0) ? TRUE : FALSE;
+#endif
+#ifdef DIME_CPP_PRESENTER
+    return _pCandidateWnd ? TRUE : FALSE;
+#else
+    return FALSE;
+#endif
+}
+
+BOOL CUIPresenter::_CandVisible() const
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        return dime_ui_presenter_cand_query(_rp, 1) ? TRUE : FALSE;
+#endif
+#ifdef DIME_CPP_PRESENTER
+    return (_pCandidateWnd && _pCandidateWnd->_IsWindowVisible()) ? TRUE : FALSE;
+#else
+    return FALSE;
+#endif
+}
+
+void CUIPresenter::_CandShow(BOOL show)
+{
+    _CandOp(0, show ? 1 : 0);
+}
+
+// The candidate window operations of dime_ui_presenter_cand_op: 0 _Show(a), 3 _InvalidateRect,
+// 4 _SetCandStringLength(a), 5 _SetFillColor(a), 9 _SetScrollInfo(a, b). Nothing without a window.
+void CUIPresenter::_CandOp(UINT op, int a, int b)
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_cand_op(_rp, op, a, b);
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
+    if (!_pCandidateWnd) return;
+    switch (op)
+    {
+    case 0: _pCandidateWnd->_Show(a ? TRUE : FALSE); break;
+    case 3: _pCandidateWnd->_InvalidateRect(); break;
+    case 4: _pCandidateWnd->_SetCandStringLength((UINT)a); break;
+    case 5: _pCandidateWnd->_SetFillColor((COLORREF)a); break;
+    case 9: _pCandidateWnd->_SetScrollInfo(a, b); break;
+    default: break;
+    }
+#endif
+}
+
+// Selection: 0 _MoveSelection, 1 _SetSelection, 2 _MovePage (with notify), 3 _SetSelectionInPage.
+BOOL CUIPresenter::_CandSelect(UINT op, int a, BOOL notify)
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        return dime_ui_presenter_cand_select(_rp, op, a, notify ? 1 : 0) ? TRUE : FALSE;
+#endif
+#ifdef DIME_CPP_PRESENTER
+    if (!_pCandidateWnd) return FALSE;
+    switch (op)
+    {
+    case 0: return _pCandidateWnd->_MoveSelection(a, notify);
+    case 1: return _pCandidateWnd->_SetSelection(a, notify);
+    case 2: return _pCandidateWnd->_MovePage(a, notify);
+    case 3: return _pCandidateWnd->_SetSelectionInPage(a);
+    default: return FALSE;
+    }
+#else
+    return FALSE;
+#endif
+}
+
+HWND CUIPresenter::_CandWnd() const
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        return (HWND)dime_ui_presenter_cand_hwnd(_rp);
+#endif
+#ifdef DIME_CPP_PRESENTER
+    return _pCandidateWnd ? _pCandidateWnd->_GetWnd() : nullptr;
+#else
+    return nullptr;
+#endif
+}
+
+BOOL CUIPresenter::_NotifySlotExists(NOTIFY_TYPE notifyType) const
+{
+    size_t idx = (size_t)notifyType;
+    if (idx >= (size_t)NOTIFY_TYPE::NOTIFY_COUNT) return FALSE;
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        return dime_ui_presenter_notify_query(_rp, (uint32_t)idx, 0) ? TRUE : FALSE;
+#endif
+#ifdef DIME_CPP_PRESENTER
+    return _pNotifyWnds[idx] ? TRUE : FALSE;
+#else
+    return FALSE;
+#endif
+}
+
+HWND CUIPresenter::_NotifySlotWnd(NOTIFY_TYPE notifyType, _Out_opt_ UINT* width, _Out_opt_ UINT* height) const
+{
+    size_t idx = (size_t)notifyType;
+    if (width) *width = 0;
+    if (height) *height = 0;
+    if (idx >= (size_t)NOTIFY_TYPE::NOTIFY_COUNT) return nullptr;
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        int32_t cx = 0, cy = 0;
+        HWND h = (HWND)dime_ui_presenter_notify_window(_rp, (uint32_t)idx, &cx, &cy);
+        if (width) *width = (UINT)cx;
+        if (height) *height = (UINT)cy;
+        return h;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
+    auto& w = _pNotifyWnds[idx];
+    if (!w) return nullptr;
+    if (width) *width = w->_GetWidth();
+    if (height) *height = w->_GetHeight();
+    return w->_GetWnd();
+#else
+    return nullptr;
+#endif
+}
+
+#ifdef DIME_UNIT_TESTING
+void CUIPresenter::_PaintCandidateForTest(HDC dc, PAINTSTRUCT* ps)
+{
+#ifdef DIME_RUST_AVAILABLE
+    DimeRect pr = { ps->rcPaint.left, ps->rcPaint.top, ps->rcPaint.right, ps->rcPaint.bottom };
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_cand_paint(_rp, dc, &pr);
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
+    if (!_pCandidateWnd) return;
+    _pCandidateWnd->_OnPaint(dc, ps);
+#endif
+}
+
+BOOL CUIPresenter::_CandScrollInfoForTest(int* info)
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        return dime_ui_presenter_cand_sb_info(_rp, (int32_t*)info) ? TRUE : FALSE;
+#endif
+#ifdef DIME_CPP_PRESENTER
+    if (!_pCandidateWnd) return FALSE;
+    IDimeScrollBar* sb = _pCandidateWnd->_GetScrollBarForTest();
+    if (!sb) return FALSE;
+    SbStateForTest ss = sb->SbGetStateForTest();
+    info[0] = ss.si.nMax; info[1] = ss.si.nPage; info[2] = ss.si.nPos;
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+void CUIPresenter::_PaintNotifySlotForTest(NOTIFY_TYPE notifyType, HDC dc, PAINTSTRUCT* ps)
+{
+    size_t idx = (size_t)notifyType;
+    if (idx >= (size_t)NOTIFY_TYPE::NOTIFY_COUNT) return;
+#ifdef DIME_RUST_AVAILABLE
+    DimeRect pr = {};
+    if (ps) pr = { ps->rcPaint.left, ps->rcPaint.top, ps->rcPaint.right, ps->rcPaint.bottom };
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_notify_paint(_rp, (uint32_t)idx, dc, ps ? &pr : nullptr);
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
+    auto& w = _pNotifyWnds[idx];
+    if (!w) return;
+    w->_OnPaint(dc, ps);
+#endif
+}
+#endif
+
+//+---------------------------------------------------------------------------
+//
+// The dispatchers (the Rust branch first in each body; see CLAUDE.md)
+//
+//----------------------------------------------------------------------------
+
+void CUIPresenter::_LayoutChangeApply(const PresenterLayoutFacts& facts)
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_layout_change(_rp, (const DimeLayoutFacts*)&facts);
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
+    _LayoutChangeApplyCpp(facts);
+#endif
+}
+
+BOOL CUIPresenter::_NotifyLocationForShow(const PresenterShowFacts& facts)
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+        return dime_ui_presenter_notify_location_for_show(_rp, (const DimeShowFacts*)&facts) ? TRUE : FALSE;
+#endif
+#ifdef DIME_CPP_PRESENTER
+    return _NotifyLocationForShowCpp(facts);
+#else
+    return FALSE;
+#endif
+}
+
+void CUIPresenter::_RestackForShow(BOOL caretUpdated)
+{
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_restack_for_show(_rp, caretUpdated ? 1 : 0);
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
+    _RestackForShowCpp(caretUpdated);
+#endif
+}
+
 BOOL CUIPresenter::IsNotifyShown()
 {
+#ifdef DIME_RUST_AVAILABLE
+	if (_RustPresenter())
+		return dime_ui_presenter_notify_query(_rp, (uint32_t)NOTIFY_TYPE::NOTIFY_COUNT, 1) ? TRUE : FALSE;
+#endif
+#ifdef DIME_CPP_PRESENTER
 	for (auto& w : _pNotifyWnds)
 	{
 		if (w && w->_IsWindowVisible()) return TRUE;
 	}
+#endif
 	return FALSE;
 }
 BOOL CUIPresenter::IsCandShown()
 {
-	if(_pCandidateWnd && _pCandidateWnd->_IsWindowVisible())
+	if(_CandVisible())
 		return TRUE;
 	else
 		return FALSE;
@@ -1805,13 +2409,34 @@ HRESULT CUIPresenter::MakeCandidateWindow(_In_ ITfContext *pContextDocument, _In
 {
     HRESULT hr = S_OK;
 
-    if (nullptr != _pCandidateWnd || _pTextService == nullptr)
+    if (_HasCand() || _pTextService == nullptr)
     {
         hr = E_FAIL;
 		goto Exit;
     }
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        HWND parent = nullptr;
+        ITfContextView* pRustView = nullptr;
+        if (pContextDocument && SUCCEEDED(pContextDocument->GetActiveView(&pRustView)) && pRustView)
+            pRustView->GetWnd(&parent);
+        DimeCandClasses classes = { Global::AtomCandidateWindow, Global::AtomCandidateShadowWindow,
+                                    Global::AtomCandidateScrollBarWindow, Global::AtomNotifyWindow, Global::AtomNotifyShadowWindow };
+#ifdef DIME_UNIT_TESTING
+        if (_candClassesForTest.candidate) classes = _candClassesForTest;
+#endif
+        // Black text on the window color, the 3D highlight fill.
+        COLORREF text = CANDWND_ITEM_COLOR, bk = GetSysColor(COLOR_WINDOW);
+        const DimeCandColors colors = { text, bk, text, bk, text, bk };
+        dime_ui_presenter_cand_make(_rp, Global::dllInstanceHandle, &classes, parent, wndWidth, _pIndexRange, &colors,
+                                    GetSysColor(COLOR_3DHIGHLIGHT));
+        return S_OK;   // also when the window could not be created
+    }
+#endif
 
-	_pCandidateWnd = std::make_unique <CCandidateWindow>(_CandWndCallback, this, _pIndexRange, _pTextService->_IsStoreAppMode());
+#ifdef DIME_CPP_PRESENTER
+	_pCandidateWnd = std::make_unique <DimeCandidateWindow>(_CandWndCallback, this, _pIndexRange, _pTextService->_IsStoreAppMode());
     if (_pCandidateWnd == nullptr)
     {
         hr = E_OUTOFMEMORY;
@@ -1830,6 +2455,7 @@ HRESULT CUIPresenter::MakeCandidateWindow(_In_ ITfContext *pContextDocument, _In
         hr = E_OUTOFMEMORY;
         goto Exit;
     }
+#endif
 	
 Exit:
     return hr;
@@ -1837,15 +2463,32 @@ Exit:
 
 void CUIPresenter::DisposeCandidateWindow()
 {
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_cand_dispose(_rp);
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
     if (_pCandidateWnd)
     {
         _pCandidateWnd->_Destroy();
         _pCandidateWnd.reset(); // Automatically deletes the object
     }
+#endif
 }
 
 void CUIPresenter::DisposeNotifyWindow(_In_opt_ NOTIFY_TYPE notifyType)
 {
+#ifdef DIME_RUST_AVAILABLE
+    if (_RustPresenter())
+    {
+        dime_ui_presenter_notify_dispose(_rp, (uint32_t)notifyType);   // NOTIFY_COUNT: every slot
+        return;
+    }
+#endif
+#ifdef DIME_CPP_PRESENTER
     if (notifyType == NOTIFY_TYPE::NOTIFY_COUNT)
     {
         // Sentinel: dispose every slot.
@@ -1867,4 +2510,5 @@ void CUIPresenter::DisposeNotifyWindow(_In_opt_ NOTIFY_TYPE notifyType)
         slot->_Destroy();
         slot.reset();
     }
+#endif
 }

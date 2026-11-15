@@ -5,10 +5,80 @@
 // To rearrange: reorder lines here. Zero C++ renderer changes.
 
 #include <windows.h>
+#include <cstddef>
 #include "SettingsPageLayout.h"
 #include "SettingsController.h"
 #include "..\resource.h"
+#ifdef DIME_USE_RUST_CONFIG
+#include "dime_ffi.h"
+#endif
 
+// LayoutRow / LayoutCard / SidebarItemDef must match dime-config::page_layout.
+#ifdef _WIN64
+static_assert(sizeof(LayoutRow) == 48, "LayoutRow size");
+static_assert(alignof(LayoutRow) == 8, "LayoutRow align");
+static_assert(offsetof(LayoutRow, label) == 24, "LayoutRow label");
+static_assert(offsetof(LayoutRow, visibleModes) == 40, "LayoutRow visibleModes");
+static_assert(offsetof(LayoutRow, iconGlyph) == 46, "LayoutRow iconGlyph");
+static_assert(sizeof(LayoutCard) == 48, "LayoutCard size");
+static_assert(alignof(LayoutCard) == 8, "LayoutCard align");
+static_assert(offsetof(LayoutCard, rows) == 24, "LayoutCard rows");
+static_assert(offsetof(LayoutCard, defaultExpanded) == 42, "LayoutCard defaultExpanded");
+static_assert(sizeof(SidebarItemDef) == 16, "SidebarItemDef size");
+static_assert(offsetof(SidebarItemDef, iconResourceId) == 8, "SidebarItemDef icon");
+#else
+static_assert(sizeof(LayoutRow) == 36, "LayoutRow size");
+static_assert(alignof(LayoutRow) == 4, "LayoutRow align");
+static_assert(offsetof(LayoutRow, label) == 20, "LayoutRow label");
+static_assert(offsetof(LayoutRow, visibleModes) == 28, "LayoutRow visibleModes");
+static_assert(offsetof(LayoutRow, iconGlyph) == 34, "LayoutRow iconGlyph");
+static_assert(sizeof(LayoutCard) == 28, "LayoutCard size");
+static_assert(alignof(LayoutCard) == 4, "LayoutCard align");
+static_assert(offsetof(LayoutCard, rows) == 12, "LayoutCard rows");
+static_assert(offsetof(LayoutCard, defaultExpanded) == 26, "LayoutCard defaultExpanded");
+static_assert(sizeof(SidebarItemDef) == 8, "SidebarItemDef size");
+static_assert(offsetof(SidebarItemDef, iconResourceId) == 4, "SidebarItemDef icon");
+#endif
+static_assert(static_cast<int>(RowType::Toggle) == 0, "RowType::Toggle");
+static_assert(static_cast<int>(RowType::ComboBox) == 1, "RowType::ComboBox");
+static_assert(static_cast<int>(RowType::Edit) == 2, "RowType::Edit");
+static_assert(static_cast<int>(RowType::ColorGrid) == 3, "RowType::ColorGrid");
+static_assert(static_cast<int>(RowType::Clickable) == 4, "RowType::Clickable");
+static_assert(static_cast<int>(RowType::Button) == 5, "RowType::Button");
+static_assert(static_cast<int>(RowType::RichEditor) == 6, "RowType::RichEditor");
+static_assert(static_cast<int>(RowType::CandidatePreview) == 7, "RowType::CandidatePreview");
+static_assert(static_cast<int>(RowAction::None) == 0, "RowAction::None");
+static_assert(static_cast<int>(RowAction::ToggleValue) == 1, "RowAction::ToggleValue");
+static_assert(static_cast<int>(RowAction::OpenFontDialog) == 2, "RowAction::OpenFontDialog");
+static_assert(static_cast<int>(RowAction::OpenColorDialog) == 3, "RowAction::OpenColorDialog");
+static_assert(static_cast<int>(RowAction::ExpandSection) == 4, "RowAction::ExpandSection");
+static_assert(static_cast<int>(RowAction::NavigateToCard) == 5, "RowAction::NavigateToCard");
+static_assert(static_cast<int>(RowAction::LoadTable) == 6, "RowAction::LoadTable");
+static_assert(static_cast<int>(RowAction::SaveCustomTable) == 7, "RowAction::SaveCustomTable");
+static_assert(static_cast<int>(RowAction::ExportCustomTable) == 8, "RowAction::ExportCustomTable");
+static_assert(static_cast<int>(RowAction::ImportCustomTable) == 9, "RowAction::ImportCustomTable");
+static_assert(static_cast<int>(RowAction::ResetDefaults) == 10, "RowAction::ResetDefaults");
+static_assert(CTRL_NONE == 0, "CTRL_NONE");
+static_assert(CTRL_FONT_NAME == 1, "CTRL_FONT_NAME");
+static_assert(CTRL_COLOR_MODE == 4, "CTRL_COLOR_MODE");
+static_assert(CTRL_RESTORE_DEFAULT == 12, "CTRL_RESTORE_DEFAULT");
+static_assert(CTRL_ARRAY_SCOPE == 13, "CTRL_ARRAY_SCOPE");
+static_assert(CTRL_MAX_CODES == 18, "CTRL_MAX_CODES");
+static_assert(CTRL_REVERSE_CONVERSION == 33, "CTRL_REVERSE_CONVERSION");
+static_assert(CTRL_COLOR_GRID == 41, "CTRL_COLOR_GRID");
+static_assert(CTRL_CANDIDATE_PREVIEW == 42, "CTRL_CANDIDATE_PREVIEW");
+static_assert(CTRL_CUSTOM_TABLE_EDITOR == 200, "CTRL_CUSTOM_TABLE_EDITOR");
+static_assert(CTRL_CUSTOM_TABLE_EXPORT == 202, "CTRL_CUSTOM_TABLE_EXPORT");
+static_assert(CTRL_CUSTOM_TABLE_IMPORT == 203, "CTRL_CUSTOM_TABLE_IMPORT");
+static_assert(IDI_DIMESETTINGS == 10, "IDI_DIMESETTINGS");
+static_assert(IDI_DAYI == 11, "IDI_DAYI");
+static_assert(IDI_ARRAY == 12, "IDI_ARRAY");
+static_assert(IDI_PHONETIC == 13, "IDI_PHONETIC");
+static_assert(IDI_GENERIC == 14, "IDI_GENERIC");
+static_assert(SM_MODE_ALL == 0xF, "SM_MODE_ALL");
+static_assert(SM_MODE_NON_ARRAY == (SM_MODE_DAYI | SM_MODE_PHONETIC | SM_MODE_GENERIC), "SM_MODE_NON_ARRAY");
+
+#ifndef DIME_USE_RUST_CONFIG
 // ============================================================================
 // 外觀設定 sub-page (NavigateToCard >)
 // ============================================================================
@@ -58,6 +128,8 @@ static const LayoutRow s_inputSettingsRows[] = {
     { CTRL_REVERSE_CONVERSION,    RowType::ComboBox, RowAction::None,        CTRL_NONE, 0, L"反查輸入字根",         nullptr,                                SM_MODE_ALL,       false, L'\xE721' },
     // --- IME-specific ---
     { CTRL_DAYI_ARTICLE,          RowType::Toggle,   RowAction::ToggleValue, CTRL_NONE, 0, L"地址鍵輸入符號",       nullptr,                                SM_MODE_DAYI,      false, L'\xE8AC' },
+    { CTRL_DAYI_SELKEY_MODE,      RowType::ComboBox, RowAction::None,        CTRL_NONE, 0, L"選字鍵",               nullptr,                                SM_MODE_DAYI,      false, L'\xE8C4' },
+    { CTRL_SENTENCE_MODE,         RowType::Toggle,   RowAction::ToggleValue, CTRL_NONE, 0, L"整句輸入",             L"連續打字不選字，依上下文自動組成句子，按 Enter 送出", SM_MODE_DAYI, false, L'\xE8D2' },
     { CTRL_ARRAY_FORCE_SP,        RowType::Toggle,   RowAction::ToggleValue, CTRL_NONE, 0, L"僅接受輸入特別碼",     nullptr,                                SM_MODE_ARRAY,     false, L'\xE73E' },
     { CTRL_ARRAY_NOTIFY_SP,       RowType::Toggle,   RowAction::ToggleValue, CTRL_NONE, 0, L"特別碼提示",           nullptr,                                SM_MODE_ARRAY,     false, L'\xE7E7' },
     { CTRL_ARRAY_SINGLE_QUOTE,    RowType::Toggle,   RowAction::ToggleValue, CTRL_NONE, 0, L"以'鍵查詢自建詞庫",    nullptr,                                SM_MODE_ARRAY,     false, L'\xE848' },
@@ -152,6 +224,7 @@ static const SidebarItemDef s_sidebarItems[] = {
 
 static const int s_sidebarItemCount = COUNTOF(s_sidebarItems);
 #undef COUNTOF
+#endif
 
 // ============================================================================
 // Public accessors
@@ -159,18 +232,33 @@ static const int s_sidebarItemCount = COUNTOF(s_sidebarItems);
 
 const LayoutCard* GetIMEPageLayout(int* count)
 {
+#ifdef DIME_USE_RUST_CONFIG
+    return reinterpret_cast<const LayoutCard*>(
+        dime_settings_ime_page_layout(reinterpret_cast<int32_t*>(count)));
+#else
     if (count) *count = s_imePageLayoutCount;
     return s_imePageLayout;
+#endif
 }
 
 const LayoutCard* GetLoadTablePageLayout(int* count)
 {
+#ifdef DIME_USE_RUST_CONFIG
+    return reinterpret_cast<const LayoutCard*>(
+        dime_settings_load_table_page_layout(reinterpret_cast<int32_t*>(count)));
+#else
     if (count) *count = s_loadTablePageLayoutCount;
     return s_loadTablePageLayout;
+#endif
 }
 
 const SidebarItemDef* GetSidebarItems(int* count)
 {
+#ifdef DIME_USE_RUST_CONFIG
+    return reinterpret_cast<const SidebarItemDef*>(
+        dime_settings_sidebar_items(reinterpret_cast<int32_t*>(count)));
+#else
     if (count) *count = s_sidebarItemCount;
     return s_sidebarItems;
+#endif
 }

@@ -86,7 +86,7 @@
     <ClInclude Include="BaseWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ButtonWindow.h">
+    <ClInclude Include="CandidateListModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CandidateWindow.h">
@@ -144,6 +144,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TableDictionaryEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RustTableDictionaryEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SentenceBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TfInputProcessorProfile.h">
@@ -217,6 +223,9 @@
     <ClCompile Include="DictionarySearch.cpp">
       <Filter>Source Files\TextService\IMInterface\Dictionary</Filter>
     </ClCompile>
+    <ClCompile Include="CandidateListModel.cpp">
+      <Filter>Source Files\UI\Candidate</Filter>
+    </ClCompile>
     <ClCompile Include="CandidateWindow.cpp">
       <Filter>Source Files\UI\Candidate</Filter>
     </ClCompile>
@@ -231,6 +240,15 @@
     </ClCompile>
     <ClCompile Include="TableDictionaryEngine.cpp">
       <Filter>Source Files\TextService\IMInterface\Dictionary</Filter>
+    </ClCompile>
+    <ClCompile Include="RustTableDictionaryEngine.cpp">
+      <Filter>Source Files\TextService\IMInterface\Dictionary</Filter>
+    </ClCompile>
+    <ClCompile Include="SentenceBuffer.cpp">
+      <Filter>Source Files\TextService\IMInterface\Dictionary</Filter>
+    </ClCompile>
+    <ClCompile Include="SentenceHandler.cpp">
+      <Filter>Source Files\TextService\IMInterface\Handler</Filter>
     </ClCompile>
     <ClCompile Include="Compartment.cpp">
       <Filter>Source Files\TextService\LanguageBar</Filter>
@@ -293,9 +311,6 @@
       <Filter>Source Files\UI</Filter>
     </ClCompile>
     <ClCompile Include="ShadowWindow.cpp">
-      <Filter>Source Files\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="ButtonWindow.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
     <ClCompile Include="BaseStructure.cpp">
@@ -367,9 +382,7 @@
     <ClCompile Include="KeyProcesser.cpp">
       <Filter>Source Files\TextService\IMInterface\CompositionProcesserEngine</Filter>
     </ClCompile>
-    <ClCompile Include="ConfigDialog.cpp">
-      <Filter>Source Files\UI</Filter>
-    </ClCompile>
+
     <ClCompile Include="UIACaretTracker.cpp">
       <Filter>Source Files\TextService\IMInterface\Composition</Filter>
     </ClCompile>

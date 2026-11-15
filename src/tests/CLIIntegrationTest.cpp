@@ -21,7 +21,7 @@ namespace DIMEIntegratedTests
 static std::wstring GetConfigFilePath(IME_MODE mode)
 {
     WCHAR appData[MAX_PATH] = {};
-    SHGetSpecialFolderPath(NULL, appData, CSIDL_APPDATA, FALSE);
+    Global::GetAppDataPath(appData, TRUE);   // module temp folder (TestAppData.h)
     const wchar_t* name = L"GenericConfig.ini";
     switch (mode)
     {
@@ -449,7 +449,7 @@ public:
     {
         DeleteConfigFile(IME_MODE::IME_MODE_GENERIC);
         // Remove any existing custom table
-        WCHAR appData[MAX_PATH]; SHGetSpecialFolderPath(NULL, appData, CSIDL_APPDATA, FALSE);
+        WCHAR appData[MAX_PATH]; Global::GetAppDataPath(appData, TRUE);   // module temp folder (TestAppData.h)
         WCHAR customPath[MAX_PATH];
         StringCchPrintfW(customPath, MAX_PATH, L"%s\\DIME\\GENERIC-CUSTOM.txt", appData);
         DeleteFileW(customPath);
@@ -457,7 +457,7 @@ public:
     TEST_METHOD_CLEANUP(Teardown)
     {
         DeleteConfigFile(IME_MODE::IME_MODE_GENERIC);
-        WCHAR appData[MAX_PATH]; SHGetSpecialFolderPath(NULL, appData, CSIDL_APPDATA, FALSE);
+        WCHAR appData[MAX_PATH]; Global::GetAppDataPath(appData, TRUE);   // module temp folder (TestAppData.h)
         WCHAR customPath[MAX_PATH];
         StringCchPrintfW(customPath, MAX_PATH, L"%s\\DIME\\GENERIC-CUSTOM.txt", appData);
         DeleteFileW(customPath);
@@ -478,7 +478,7 @@ public:
         Assert::AreEqual(0, rc);
 
         // The GENERIC-CUSTOM.txt must now exist
-        WCHAR appData[MAX_PATH]; SHGetSpecialFolderPath(NULL, appData, CSIDL_APPDATA, FALSE);
+        WCHAR appData[MAX_PATH]; Global::GetAppDataPath(appData, TRUE);   // module temp folder (TestAppData.h)
         WCHAR customPath[MAX_PATH];
         StringCchPrintfW(customPath, MAX_PATH, L"%s\\DIME\\GENERIC-CUSTOM.txt", appData);
         Assert::IsTrue(PathFileExistsW(customPath) == TRUE);
@@ -580,6 +580,24 @@ public:
         Assert::AreEqual(0, rc);
         Assert::AreEqual(std::wstring(L"1"),
             ReadIniKey(IME_MODE::IME_MODE_DAYI, L"DayiArticleMode"));
+    }
+
+    TEST_METHOD(SetDayiSelkeyMode_InDayiMode_WrittenToINI)
+    {
+        FILE* nul = OpenNullOut();
+        RunCLI(L"--mode dayi --reset", nul);
+        Assert::AreEqual(std::wstring(L"0"),
+            ReadIniKey(IME_MODE::IME_MODE_DAYI, L"DayiSelkeyMode"), L"default is 0 (from table)");
+        int rc = RunCLI(L"--mode dayi --set DayiSelkeyMode 2", nul);
+        int rcOutOfRange = RunCLI(L"--mode dayi --set DayiSelkeyMode 3", nul);
+        int rcWrongMode = RunCLI(L"--mode array --set DayiSelkeyMode 1", nul);
+        fclose(nul);
+
+        Assert::AreEqual(0, rc);
+        Assert::AreEqual(1, rcOutOfRange);
+        Assert::AreEqual(3, rcWrongMode);
+        Assert::AreEqual(std::wstring(L"2"),
+            ReadIniKey(IME_MODE::IME_MODE_DAYI, L"DayiSelkeyMode"));
     }
 
     TEST_METHOD(SetBig5Filter_InGenericMode_WrittenToINI)
@@ -798,7 +816,7 @@ public:
 static std::wstring GetDimeFilePath(const wchar_t* filename)
 {
     WCHAR appData[MAX_PATH] = {};
-    SHGetSpecialFolderPath(NULL, appData, CSIDL_APPDATA, FALSE);
+    Global::GetAppDataPath(appData, TRUE);   // module temp folder (TestAppData.h)
     WCHAR path[MAX_PATH];
     StringCchPrintfW(path, MAX_PATH, L"%s\\DIME\\%s", appData, filename);
     return path;
@@ -1118,7 +1136,7 @@ public:
     TEST_METHOD_INITIALIZE(Setup)
     {
         DeleteConfigFile(IME_MODE::IME_MODE_GENERIC);
-        WCHAR appData[MAX_PATH]; SHGetSpecialFolderPath(NULL, appData, CSIDL_APPDATA, FALSE);
+        WCHAR appData[MAX_PATH]; Global::GetAppDataPath(appData, TRUE);   // module temp folder (TestAppData.h)
         WCHAR customPath[MAX_PATH];
         StringCchPrintfW(customPath, MAX_PATH, L"%s\\DIME\\GENERIC-CUSTOM.txt", appData);
         DeleteFileW(customPath);
@@ -1126,7 +1144,7 @@ public:
     TEST_METHOD_CLEANUP(Teardown)
     {
         DeleteConfigFile(IME_MODE::IME_MODE_GENERIC);
-        WCHAR appData[MAX_PATH]; SHGetSpecialFolderPath(NULL, appData, CSIDL_APPDATA, FALSE);
+        WCHAR appData[MAX_PATH]; Global::GetAppDataPath(appData, TRUE);   // module temp folder (TestAppData.h)
         WCHAR customPath[MAX_PATH];
         StringCchPrintfW(customPath, MAX_PATH, L"%s\\DIME\\GENERIC-CUSTOM.txt", appData);
         DeleteFileW(customPath);
@@ -1177,7 +1195,7 @@ TEST_CLASS(CLIImportCustomTableValidationTests)
 {
     static void GetCustomTablePaths(WCHAR* txtPath, WCHAR* cinPath, DWORD cch)
     {
-        WCHAR appData[MAX_PATH]; SHGetSpecialFolderPath(NULL, appData, CSIDL_APPDATA, FALSE);
+        WCHAR appData[MAX_PATH]; Global::GetAppDataPath(appData, TRUE);   // module temp folder (TestAppData.h)
         StringCchPrintfW(txtPath, cch, L"%s\\DIME\\DAYI-Custom.txt", appData);
         StringCchPrintfW(cinPath, cch, L"%s\\DIME\\DAYI-Custom.cin", appData);
     }

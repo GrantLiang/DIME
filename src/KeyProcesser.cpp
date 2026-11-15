@@ -47,7 +47,67 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 BOOL CCompositionProcessorEngine::AddVirtualKey(WCHAR wch)
 {
+	int beep = -1;
+#ifdef DIME_USE_RUST_ENGINE
+	BOOL ret = _AddVirtualKeyRust(wch, &beep);
+#else
+	BOOL ret = _AddVirtualKeyCpp(wch, &beep);
+#endif
+	if (beep >= 0 && _pTextService)
+		_pTextService->DoBeep((BEEP_TYPE)beep);
+	return ret;
+}
+
+#ifdef DIME_RUST_AVAILABLE
+// AddVirtualKey via dime_add_key (rust/crates/dime-core/src/composition.rs).
+// The buffer stays a C++ allocation, replaced on every change as before.
+BOOL CCompositionProcessorEngine::_AddVirtualKeyRust(WCHAR wch, _Out_ int* pBeep)
+{
+	DimeAddKeyInput in = {};
+	in.keys = (const uint16_t*)_keystrokeBuffer.Get();
+	in.len = _keystrokeBuffer.GetLength();
+	in.null = _keystrokeBuffer.Get() == nullptr ? 1 : 0;
+	in.ime_mode = (uint32_t)Global::imeMode;
+	in.array_scope = (uint32_t)CConfig::GetArrayScope();
+	in.phonetic_eten = CConfig::getPhoneticKeyboardLayout() == PHONETIC_KEYBOARD_LAYOUT::PHONETIC_ETEN_KEYBOARD_LAYOUT ? 1 : 0;
+	in.max_codes = CConfig::GetMaxCodes();
+	in.syllable = phoneticSyllable;
+
+	DimeAddKeyResult r = {};
+	dime_add_key(&in, wch, &r);
+	*pBeep = r.beep;
+	phoneticSyllable = r.syllable;
+
+	if (r.action != 0)
+	{
+		DWORD_PTR oldLen = _keystrokeBuffer.GetLength();
+		DWORD_PTR newLen = (r.action == 1) ? oldLen + 1 : r.replace_len;
+		PWCHAR pwch = new (std::nothrow) WCHAR[(r.action == 1) ? newLen : 5];
+		if (!pwch)
+			return FALSE;
+		if (r.action == 1)
+		{
+			if (oldLen)
+				memcpy(pwch, _keystrokeBuffer.Get(), oldLen * sizeof(WCHAR));
+			pwch[oldLen] = r.append;
+		}
+		else
+		{
+			memcpy(pwch, r.replace, newLen * sizeof(WCHAR));
+			pwch[newLen] = L'\0';
+		}
+		if (_keystrokeBuffer.Get())
+			delete[] _keystrokeBuffer.Get();
+		_keystrokeBuffer.Set(pwch, newLen);
+	}
+	return r.accepted ? TRUE : FALSE;
+}
+#endif
+
+BOOL CCompositionProcessorEngine::_AddVirtualKeyCpp(WCHAR wch, _Out_ int* pBeep)
+{
 	//debugPrint(L"CCompositionProcessorEngine::AddVirtualKey()");
+	*pBeep = -1;
 	if (!wch)
 	{
 		return FALSE;
@@ -74,7 +134,7 @@ BOOL CCompositionProcessorEngine::AddVirtualKey(WCHAR wch)
 		}
 		else
 		{
-			_pTextService->DoBeep(BEEP_TYPE::BEEP_COMPOSITION_ERROR);
+			*pBeep = (int)BEEP_TYPE::BEEP_COMPOSITION_ERROR;
 			return FALSE;
 		}
 
@@ -88,7 +148,7 @@ BOOL CCompositionProcessorEngine::AddVirtualKey(WCHAR wch)
 		UINT maxLen = IsEscapeInputLeading() ? MAX_KEY_LENGTH : CConfig::GetMaxCodes();
 		if ((UINT)_keystrokeBuffer.GetLength() >= maxLen)
 		{
-			_pTextService->DoBeep(BEEP_TYPE::BEEP_WARNING); // do not eat the key if keystroke buffer length >= _maxcodes
+			*pBeep = (int)BEEP_TYPE::BEEP_WARNING; // do not eat the key if keystroke buffer length >= _maxcodes
 			return FALSE;
 		}
 		//
@@ -126,6 +186,28 @@ BOOL CCompositionProcessorEngine::AddVirtualKey(WCHAR wch)
 //----------------------------------------------------------------------------
 
 void CCompositionProcessorEngine::RemoveVirtualKey(DWORD_PTR dwIndex)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	_RemoveVirtualKeyRust(dwIndex);
+#else
+	_RemoveVirtualKeyCpp(dwIndex);
+#endif
+}
+
+#ifdef DIME_RUST_AVAILABLE
+void CCompositionProcessorEngine::_RemoveVirtualKeyRust(DWORD_PTR dwIndex)
+{
+	DWORD_PTR srgKeystrokeBufLen = _keystrokeBuffer.GetLength();
+	size_t newLen = dime_remove_key((uint16_t*)_keystrokeBuffer.Get(), srgKeystrokeBufLen, dwIndex);
+	_keystrokeBuffer.Set(_keystrokeBuffer.Get(), newLen);
+	if (srgKeystrokeBufLen == 1)
+		_hasWildcardIncludedInKeystrokeBuffer = FALSE;
+	if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC)
+		phoneticSyllable = dime_phonetic_remove_last(phoneticSyllable);
+}
+#endif
+
+void CCompositionProcessorEngine::_RemoveVirtualKeyCpp(DWORD_PTR dwIndex)
 {
 	//debugPrint(L"CCompositionProcessorEngine::RemoveVirtualKey()");
 	DWORD_PTR srgKeystrokeBufLen = _keystrokeBuffer.GetLength();
@@ -318,6 +400,24 @@ BOOL CCompositionProcessorEngine::IsEscapeInputLeading()
 //----------------------------------------------------------------------------
 BOOL CCompositionProcessorEngine::IsEscapeInput()
 {
+#ifdef DIME_USE_RUST_ENGINE
+	return _IsEscapeInputRust();
+#else
+	return _IsEscapeInputCpp();
+#endif
+}
+
+#ifdef DIME_RUST_AVAILABLE
+BOOL CCompositionProcessorEngine::_IsEscapeInputRust()
+{
+	const WCHAR* p = _keystrokeBuffer.Get();
+	return dime_is_escape_input((const uint16_t*)p, _keystrokeBuffer.GetLength(), p ? 1 : 0, p ? *p : 0,
+		(uint32_t)Global::imeMode, (uint32_t)CConfig::GetArrayScope()) ? TRUE : FALSE;
+}
+#endif
+
+BOOL CCompositionProcessorEngine::_IsEscapeInputCpp()
+{
 	//debugPrint(L"CCompositionProcessorEngine::IsEscapeInput()");
 
 	if (_keystrokeBuffer.Get() == nullptr) 
@@ -500,6 +600,100 @@ BOOL CCompositionProcessorEngine::IsDoubleSingleByte(WCHAR wch)
 //----------------------------------------------------------------------------
 
 BOOL CCompositionProcessorEngine::IsVirtualKeyNeed(UINT uCode, _In_reads_(1) WCHAR* pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, BOOL hasCandidateWithWildcard, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE* pKeyState)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	hasCandidateWithWildcard;
+	return _IsVirtualKeyNeedRust(uCode, pwch, fComposing, candidateMode, candiCount, candiSelection, pKeyState);
+#else
+	return _IsVirtualKeyNeedCpp(uCode, pwch, fComposing, candidateMode, hasCandidateWithWildcard, candiCount, candiSelection, pKeyState);
+#endif
+}
+
+#ifdef DIME_RUST_AVAILABLE
+//+---------------------------------------------------------------------------
+//
+// _IsVirtualKeyNeedRust
+//
+// The same decision made by dime_classify_key (rust/crates/dime-core/src/keyclass.rs)
+// from a snapshot of the engine state, globals, config and the Win32 reads the
+// C++ version makes. Parity: KeyClassifyParityTest.
+//----------------------------------------------------------------------------
+
+void CCompositionProcessorEngine::FillKeyInput(_Out_ CKeyInputSnapshot& snapshot, UINT uCode, WCHAR wch, BOOL fComposing, CANDIDATE_MODE candidateMode, UINT candiCount, INT candiSelection, BOOL hasKeyState)
+{
+	snapshot = {};
+	UINT keystrokeCount = (UINT)min(_KeystrokeComposition.Count(), (size_t)ARRAYSIZE(snapshot.functions));
+	for (UINT i = 0; i < keystrokeCount; i++)
+		snapshot.functions[i] = (uint32_t)_KeystrokeComposition.GetAt(i)->Function;
+
+	UINT selkeyCount = 0;
+	if (_pActiveCandidateListIndexRange)
+	{
+		selkeyCount = (UINT)min(_pActiveCandidateListIndexRange->Count(), (int)ARRAYSIZE(snapshot.selkeys));
+		for (UINT i = 0; i < selkeyCount; i++)
+		{
+			const _KEYSTROKE* pKS = _pActiveCandidateListIndexRange->GetAt(i);
+			snapshot.selkeys[i].printable = pKS->Printable;
+			snapshot.selkeys[i].index = pKS->Index;
+			snapshot.selkeys[i].modifiers = pKS->Modifiers;
+		}
+	}
+
+	DimeKeyInput& in = snapshot.in;
+	in.code = uCode;
+	in.wch = wch;
+	in.base_char = (WCHAR)MapVirtualKey(uCode, MAPVK_VK_TO_CHAR);
+	in.wch_printable = iswprint(wch) ? 1 : 0;
+	in.composing = fComposing ? 1 : 0;
+	in.candidate_mode = (uint32_t)candidateMode;
+	in.candi_count = candiCount;
+	in.candi_selection = candiSelection;
+	in.has_key_state = hasKeyState ? 1 : 0;
+	in.modifiers = Global::ModifiersValue;
+	in.caps_on = (GetKeyState(VK_CAPITAL) & 0x0001) ? 1 : 0;
+	in.ime_mode = (uint32_t)Global::imeMode;
+	in.dictionary_available = IsDictionaryAvailable(_imeMode) ? 1 : 0;
+	in.array_scope = (uint32_t)CConfig::GetArrayScope();
+	in.numeric_pad = (uint32_t)CConfig::GetNumericPad();
+	in.space_as_page_down = CConfig::GetSpaceAsPageDown() ? 1 : 0;
+	in.shift_english_digit_mode = (uint32_t)CConfig::GetShiftEnglishDigitMode();
+	in.phonetic_eten = CConfig::getPhoneticKeyboardLayout() == PHONETIC_KEYBOARD_LAYOUT::PHONETIC_ETEN_KEYBOARD_LAYOUT ? 1 : 0;
+	in.candidate_page_size = _candidatePageSize;
+	in.has_wildcard_in_buffer = _hasWildcardIncludedInKeystrokeBuffer ? 1 : 0;
+	in.buffer_null = _keystrokeBuffer.Get() == nullptr ? 1 : 0;
+	in.buffer = (const uint16_t*)_keystrokeBuffer.Get();
+	in.buffer_len = (uint32_t)_keystrokeBuffer.GetLength();
+	in.keystroke_functions = snapshot.functions;
+	in.keystroke_count = keystrokeCount;
+	in.end_keys = (const uint16_t*)_pEndkey;
+	in.end_keys_len = _pEndkey ? (uint32_t)wcslen(_pEndkey) : 0;
+	in.selkeys = snapshot.selkeys;
+	in.selkey_count = selkeyCount;
+}
+
+BOOL CCompositionProcessorEngine::_IsVirtualKeyNeedRust(UINT uCode, _In_reads_(1) WCHAR* pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE* pKeyState)
+{
+	CKeyInputSnapshot snapshot;
+	FillKeyInput(snapshot, uCode, *pwch, fComposing, candidateMode, candiCount, candiSelection, pKeyState != nullptr);
+
+	uint32_t category = 0, function = 0;
+	BOOL eaten = dime_classify_key(&snapshot.in, &category, &function) ? TRUE : FALSE;
+	if (pKeyState)
+	{
+		pKeyState->Category = (KEYSTROKE_CATEGORY)category;
+		pKeyState->Function = (KEYSTROKE_FUNCTION)function;
+	}
+	return eaten;
+}
+#endif // DIME_RUST_AVAILABLE
+
+//+---------------------------------------------------------------------------
+//
+// _IsVirtualKeyNeedCpp
+//
+//----------------------------------------------------------------------------
+
+BOOL CCompositionProcessorEngine::_IsVirtualKeyNeedCpp(UINT uCode, _In_reads_(1) WCHAR* pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, BOOL hasCandidateWithWildcard, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE* pKeyState)
 {
 	hasCandidateWithWildcard;
 	//debugPrint(L"CCompositionProcessorEngine::IsVirtualKeyNeed() uCode = %d, pwch = %c, pKeyState = %d, fComposing = %d, candidateMode = %d, hasCandidateWithWildcard = %d, candiCount = %d", uCode, *pwch, pKeyState, fComposing, candidateMode, hasCandidateWithWildcard, candiCount);

@@ -248,21 +248,40 @@
   - `GetDimeFilePath(filename)` — builds `%APPDATA%\DIME\<file>` path
   - `BackupDimeFile`/`RestoreDimeFile` — preserve pre-existing `.cin` files during load-main/phrase/array tests
 
-#### IT-RE: RichEdit Viewport Integration Tests
+#### IT-RE: Custom Table Editor Integration Tests
 
-- **Tests:** 6 (IT_RE_01 through IT_RE_06)
-- **Status:** ✅ All Passing
+- **Tests:** 8 (IT_RE_01 through IT_RE_08)
+- **Status:** ✅ All Passing (2026-11-14: Debug x64, Win32, x64 all-C++)
 - **Files:** `RichEditViewportTest.cpp` (class `RichEditViewportTest`, namespace `DIMEIntegratedTests`)
-- **Coverage:** ~90% of RichEdit + TOM patterns used in `SettingsWindow.cpp`
-- **Setup:** `TEST_CLASS_INITIALIZE` loads `Msftedit.dll`, creates shared `RICHEDIT50W` window, raises limit to 100 MB via `EM_EXLIMITTEXT`
+- **Setup:** C++ and Rust settings windows side by side over `SettingsFakeApp` (one folder per side), both on the 自建詞庫 page; the same messages go to both editors and the results are compared (phase 5b-12)
 - **Key validations:**
-  - **IT_RE_01**: 200 K lines (~1.5 MB) loaded; `EM_REPLACESEL("X")` succeeds (text length grows) — proves `EM_EXLIMITTEXT(100 MB)` keeps control editable post-import
-  - **IT_RE_02**: Fresh control's default `EM_GETLIMITTEXT` < 100 MB; after `EM_EXLIMITTEXT(100 MB)` returned limit ≥ 100 MB — confirms the raise is necessary (issue #130 fix)
-  - **IT_RE_03**: TOM `ITextFont::SetForeColor` over chars 0–100 does not change `EM_EXGETSEL` result — caret stays at (5,5)
-  - **IT_RE_04**: Per-line `ValidateLine` + `PaintRangeColor`; `GetCharColor` confirms line 0 = `RGB(0,180,0)` (valid), line 4 = `RGB(200,0,0)` (error on `"foo bar baz"`)
-  - **IT_RE_05**: `EM_LINEINDEX(49)` → `EM_SETSEL` → `EM_SCROLLCARET`; `EM_EXGETSEL` returns exact `(cp, cp)`
-  - **IT_RE_06**: `ENM_CHANGE` set; mute bracket → TOM paint → restore; `EM_GETEVENTMASK` returns `ENM_CHANGE`
-- **Design note:** TOM helpers re-implemented locally (same `ITextDocument`/`ITextRange`/`ITextFont` API as production) — avoids pulling all of `SettingsWindow.cpp`'s Win32/dialog dependencies into the test project
+  - **IT_RE_01**: 200 K-line table loads; typing at the end still works (issue #130)
+  - **IT_RE_02**: text limit ≥ 100 MB, `ENM_CHANGE`, Save disabled, visible lines painted after loading
+  - **IT_RE_03**: repainting and scrolling keep the selection
+  - **IT_RE_04**: only visible lines painted; error lines in an error colour; scrolling paints the new lines
+  - **IT_RE_05**: Save with an error jumps to line 50 and does not write the file
+  - **IT_RE_06**: no `EN_CHANGE` while painting, one per typed character, mask restored
+  - **IT_RE_07**: typing repaints the edited line (error, then valid after Backspace)
+  - **IT_RE_08**: Save of a valid table writes a UTF-16 BOM file, compiles it, disables Save
+- **Mutation check:** removing the Rust editor's event-mask restore after painting fails IT_RE_01, 02, 06 and 07
+
+#### Settings Screenshot Tests
+
+- **Tests:** 8 (`Light96`, `Light120`, `Light144`, `Light192`, `Dark96`, `Dark120`, `Dark144`, `Dark192`), 26 pages × wide and narrow each
+- **Status:** ✅ All Passing (2026-11-14: Debug x64, Win32, x64 all-C++)
+- **Files:** `SettingsScreenshotTest.cpp` (class `SettingsScreenshotTest`, namespace `DIMEUnitTests`)
+- **Setup:** C++ and Rust settings windows side by side over `SettingsFakeApp`; pictures composed from each window's `WM_PAINT` body and `WM_PRINT` of the child controls (phase 5b-13)
+- **Mutation check (all-C++ build):** the Rust owner-drawn button dropping its last character fails Dark96 and Light144 on every page with a button, with the difference exactly on the buttons
+- **Manual checklist:** `docs/SETTINGS_MANUAL_CHECKLIST.md`
+
+#### Settings UI Automation Tests
+
+- **Tests:** 2 (`PagesMatch`, `PatternsMatch`)
+- **Status:** ✅ All Passing (2026-11-14: Debug x64, Win32, x64 all-C++)
+- **Files:** `SettingsUiaTest.cpp` (class `SettingsUiaTest`, namespace `DIMEUnitTests`)
+- **Setup:** C++ and Rust settings windows side by side over `SettingsFakeApp`, walked by a UIA client on an MTA thread (phase 5b-11)
+- **Key validations:** the two UIA trees match on every page; combo and edit boxes have names (phase 5b-14); every toggle row has a named check box in the tree (77); toggling each through UIA applies the setting on both sides with the same app calls
+- **Mutation check:** the Rust command handler ignoring toggle rows fails `PatternsMatch` and `SettingsCommandParityTest::RandomCommands`
 
 #### UT-09: CMemoryFile Filter + Cache Tests
 
@@ -547,7 +566,7 @@ All **new non-TSF code** should target ≥90% coverage (as demonstrated by CLI.c
    - `CustomTableValidationIntegrationTest` (IT-CV + IT-PT, 23 tests)
 9. `CMemoryFileIntegrationTest.cpp` — 6 tests (IT-MF-01 through IT-MF-06: filter, TTS, cache line count, cache invalidation, DAYI TTS cache)
 10. `CLIIntegrationTest.cpp` — CLI end-to-end tests (IT-CLI, 54 tests, 20 test classes, incl. CLIImportCustomTableValidationTests)
-11. `RichEditViewportTest.cpp` — in-process RichEdit viewport tests (IT-RE, 6 tests, `RichEditViewportTest` class)
+11. `RichEditViewportTest.cpp` — custom table editor of the real settings window, C++ vs Rust (IT-RE, 8 tests, `RichEditViewportTest` class)
 
 **Total Test Files:** 21 (10 unit, 11 integration)
 **Total Test Methods:** 611 (all running)

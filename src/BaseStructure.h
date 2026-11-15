@@ -97,7 +97,8 @@ enum class KEYSTROKE_CATEGORY
     CATEGORY_CANDIDATE,
     CATEGORY_PHRASE,
     CATEGORY_PHRASEFROMKEYSTROKE,
-    CATEGORY_INVOKE_COMPOSITION_EDIT_SESSION
+    CATEGORY_INVOKE_COMPOSITION_EDIT_SESSION,
+    CATEGORY_SENTENCE           // sentence mode: keys acting on the pending sentence
 };
 
 enum class PHONETIC_KEYBOARD_LAYOUT
@@ -242,6 +243,14 @@ enum class NUMERIC_PAD
     NUMERIC_PAD_NUMERIC_COMPOSITION,
     NUMERIC_PAD_NUMERIC_COMPOSITION_ONLY,
 
+};
+
+// Candidate select keys for Dayi (DayiSelkeyMode)
+enum class DAYI_SELKEY_MODE
+{
+    DAYI_SELKEY_FROM_TABLE = 0,   // %selkey of the loaded table (space selects the first candidate)
+    DAYI_SELKEY_NUMERIC,          // 1234567890
+    DAYI_SELKEY_DAYI,             // ' [ ] - \ then Shift+' [ ] - (the Dayi manual's layout)
 };
 
 enum class PROCESS_INTEGRITY_LEVEL

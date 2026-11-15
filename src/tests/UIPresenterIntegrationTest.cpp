@@ -15,9 +15,11 @@
 #include "../DIME.h"
 #include "../Globals.h"
 #include "../Config.h"
+#include "../UIConstants.h"
 #include "../CompositionProcessorEngine.h"
 #include "../UIPresenter.h"
 #include "../DisplayAttributeInfo.h"
+#include "WindowClassTestHelper.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -512,6 +514,8 @@ namespace DIMEIntegratedTests
 
         TEST_METHOD(IT06_03_ShowNotify)
         {
+            // Real windows: the Rust notify window has no "virtual window" fallback for an unregistered class.
+            EnsureWindowClassesRegistered();
             Logger::WriteMessage("Test: IT06_03_ShowNotify\n");
 
             // Arrange
@@ -534,6 +538,8 @@ namespace DIMEIntegratedTests
 
         TEST_METHOD(IT06_03_HideNotify)
         {
+            // Real windows: the Rust notify window has no "virtual window" fallback for an unregistered class.
+            EnsureWindowClassesRegistered();
             Logger::WriteMessage("Test: IT06_03_HideNotify\n");
 
             // Arrange
@@ -557,6 +563,8 @@ namespace DIMEIntegratedTests
 
         TEST_METHOD(IT06_03_ClearNotify)
         {
+            // Real windows: the Rust notify window has no "virtual window" fallback for an unregistered class.
+            EnsureWindowClassesRegistered();
             Logger::WriteMessage("Test: IT06_03_ClearNotify\n");
 
             // Arrange
@@ -606,6 +614,8 @@ namespace DIMEIntegratedTests
 
         TEST_METHOD(IT06_04_HideUIWindows)
         {
+            // Real windows: the Rust notify window has no "virtual window" fallback for an unregistered class.
+            EnsureWindowClassesRegistered();
             Logger::WriteMessage("Test: IT06_04_HideUIWindows\n");
 
             // Arrange
@@ -634,6 +644,8 @@ namespace DIMEIntegratedTests
 
         TEST_METHOD(IT06_04_QueryNotificationVisibility)
         {
+            // Real windows: the Rust notify window has no "virtual window" fallback for an unregistered class.
+            EnsureWindowClassesRegistered();
             Logger::WriteMessage("Test: IT06_04_QueryNotificationVisibility\n");
 
             // Arrange
@@ -713,6 +725,138 @@ namespace DIMEIntegratedTests
 
             // Cleanup
             pUIPresenter->Release(); // UIPresenter destructor will release pStubDIME
+        }
+
+        // The candidate window UIPresenter makes is a real window of the build's implementation
+        // (the Rust window under DIME_USE_RUST_ENGINE, phase 3c-5d-2): shown, sized for the
+        // page, and its messages reach UIPresenter's candidate list.
+        TEST_METHOD(IT06_04_CandidateWindowIsReal)
+        {
+            EnsureWindowClassesRegistered();
+            StubCDIME* pStubDIME = new StubCDIME();
+            CUIPresenter* pUIPresenter = new CUIPresenter(pStubDIME, nullptr);
+            Assert::IsTrue(SUCCEEDED(pUIPresenter->MakeCandidateWindow(nullptr, 200)));
+            HWND h = pUIPresenter->_CandWnd();
+            Assert::IsNotNull(h, L"a real window");
+            Assert::AreEqual((int)Global::AtomCandidateWindow, (int)GetClassWord(h, GCW_ATOM), L"the DIME.CandidateWindow class");
+
+            const wchar_t keys[] = L"12345";
+            CCandidateRange range;
+            for (int r = 0; r < 5; r++) range.Append()->CandIndex = keys[r];
+            CDIMEArray<CCandidateListItem> list;
+            const wchar_t* texts[] = { L"一", L"二", L"三", L"四", L"五", L"六", L"七", L"八", L"九", L"十", L"百", L"千" };
+            for (const wchar_t* t : texts) list.Append()->_ItemString.Set(t, 1);
+            pUIPresenter->_SetCandidateText(&list, &range, FALSE, 3);
+            pUIPresenter->_SetCandidateSelection(0, FALSE);
+            pUIPresenter->Show(TRUE);
+
+            Assert::IsTrue(pUIPresenter->IsCandShown() != FALSE, L"IsCandShown");
+            Assert::IsTrue(IsWindowVisible(h) != FALSE, L"the window is visible");
+            RECT rc = { 0, 0, 0, 0 };
+            GetClientRect(h, &rc);
+            Assert::IsTrue(rc.right > 0 && rc.bottom > 0, L"sized");
+            UINT count = 0;
+            pUIPresenter->GetCount(&count);
+            Assert::AreEqual(12u, count);
+
+            // The wheel moves the selection in UIPresenter's list (through the window's message handling).
+            SendMessage(h, WM_MOUSEWHEEL, MAKEWPARAM(0, (WORD)(SHORT)-WHEEL_DELTA), 0);
+            Assert::AreEqual(1, (int)pUIPresenter->_GetCandidateSelection(), L"wheel down");
+            // Paging keeps the row; the page index may be realigned to the selection (CCandidateListModel).
+            UINT pageBefore = 0, page = 0;
+            pUIPresenter->GetCurrentPage(&pageBefore);
+            Assert::IsTrue(pUIPresenter->_MoveCandidatePage(1) != FALSE);
+            Assert::AreEqual(6, (int)pUIPresenter->_GetCandidateSelection(), L"next page, same row");
+            pUIPresenter->GetCurrentPage(&page);
+            Assert::AreEqual(pageBefore + 1, page, L"the next page");
+
+            pUIPresenter->Show(FALSE);
+            Assert::IsFalse(pUIPresenter->IsCandShown() != FALSE, L"hidden");
+            pUIPresenter->DisposeCandidateWindow();
+            Assert::IsFalse(IsWindow(h) != FALSE, L"destroyed");
+            pUIPresenter->Release();
+        }
+
+        // The notify windows UIPresenter makes (the Rust presenter in the Rust build) are real
+        // windows of DIME.NotifyWindow: shown, sized from their text, stacked by UIPresenter,
+        // hidden by their own auto-hide timer, destroyed per slot and all together.
+        TEST_METHOD(IT06_04_NotifyWindowIsReal)
+        {
+            EnsureWindowClassesRegistered();
+            StubCDIME* pStubDIME = new StubCDIME();
+            CUIPresenter* pUIPresenter = new CUIPresenter(pStubDIME, nullptr);
+            const NOTIFY_TYPE types[] = { NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP, NOTIFY_TYPE::NOTIFY_SPECIAL_CODE };
+            const wchar_t* texts[] = { L"反查：一二三", L"特別碼 ABCD" };
+            HWND h[2] = {};
+            for (int i = 0; i < 2; i++)
+            {
+                CStringRange text;
+                text.Set(texts[i], wcslen(texts[i]));
+                Assert::IsTrue(SUCCEEDED(pUIPresenter->MakeNotifyWindow(nullptr, &text, types[i])));
+                Assert::IsTrue(pUIPresenter->_NotifySlotExists(types[i]) != FALSE, L"the slot exists");
+                h[i] = pUIPresenter->_NotifySlotWnd(types[i]);
+                Assert::IsNotNull(h[i], L"a real window");
+                Assert::AreEqual((int)Global::AtomNotifyWindow, (int)GetClassWord(h[i], GCW_ATOM), L"the DIME.NotifyWindow class");
+                // MakeNotifyWindow again keeps the window.
+                Assert::IsTrue(SUCCEEDED(pUIPresenter->MakeNotifyWindow(nullptr, &text, types[i])));
+                Assert::IsTrue(h[i] == pUIPresenter->_NotifySlotWnd(types[i]), L"the same window");
+            }
+            pUIPresenter->_SetNotifyTextColor(RGB(0, 0, 0), RGB(255, 255, 255));
+#ifdef DIME_USE_RUST_ENGINE
+            Assert::IsTrue(pUIPresenter->_RustPresenter() != FALSE, L"the stack is the Rust presenter's");
+#endif
+            Assert::IsFalse(pUIPresenter->IsNotifyShown() != FALSE, L"hidden at first");
+
+            for (int i = 0; i < 2; i++) pUIPresenter->ShowNotify(TRUE, 0, 0, types[i]);
+            Assert::IsTrue(pUIPresenter->IsNotifyShown() != FALSE, L"IsNotifyShown");
+            UINT width[2] = {};
+            for (int i = 0; i < 2; i++)
+            {
+                Assert::IsTrue(IsWindowVisible(h[i]) != FALSE, L"the window is visible");
+                UpdateWindow(h[i]);   // WM_PAINT: the text is measured again
+                UINT height = 0;
+                pUIPresenter->_NotifySlotWnd(types[i], &width[i], &height);
+                Assert::IsTrue(width[i] > 0 && height > 0, L"title size from the text");
+                RECT rc = { 0, 0, 0, 0 };
+                GetClientRect(h[i], &rc);
+                Assert::AreEqual((LONG)width[i], rc.right, L"window width = title width");
+                Assert::AreEqual((LONG)height, rc.bottom, L"window height = title height");
+            }
+            Assert::IsTrue(width[0] != width[1], L"sized from each text");
+
+            // UIPresenter stacks the visible slots from _notifyLocation (no candidate window): same left
+            // edge, no overlap.
+            pUIPresenter->_SetPlacement({ UI::DEFAULT_WINDOW_X, UI::DEFAULT_WINDOW_Y }, { 200, 150 }, { 0, 0, 0, 0 });
+            pUIPresenter->_RestackVisibleSlots(FALSE);
+            RECT r0 = {}, r1 = {}, overlap = {};
+            GetWindowRect(h[0], &r0);
+            GetWindowRect(h[1], &r1);
+            Assert::AreEqual(200L, r0.left, L"first slot at the anchor");
+            Assert::AreEqual(r0.left, r1.left, L"same left edge");
+            Assert::IsFalse(IntersectRect(&overlap, &r0, &r1) != FALSE, L"stacked, not overlapping");
+            Assert::IsTrue(r0.top == 150 || r1.top == 150, L"a slot at the anchor's y");
+
+            // The auto-hide timer of the window hides it (real WM_TIMER through the message loop).
+            pUIPresenter->ShowNotify(TRUE, 0, 30, types[0]);
+            DWORD start = GetTickCount();
+            while (IsWindowVisible(h[0]) && GetTickCount() - start < 3000)
+            {
+                MSG msg;
+                while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&msg); DispatchMessage(&msg); }
+                Sleep(5);
+            }
+            Assert::IsFalse(IsWindowVisible(h[0]) != FALSE, L"hidden by the auto-hide timer");
+            Assert::IsTrue(IsWindowVisible(h[1]) != FALSE, L"the other slot stays");
+            Assert::IsTrue(pUIPresenter->IsNotifyShown() != FALSE);
+
+            pUIPresenter->DisposeNotifyWindow(types[0]);
+            Assert::IsFalse(pUIPresenter->_NotifySlotExists(types[0]) != FALSE, L"slot gone");
+            Assert::IsFalse(IsWindow(h[0]) != FALSE, L"slot destroyed");
+            Assert::IsTrue(IsWindow(h[1]) != FALSE, L"the other slot kept");
+            pUIPresenter->ClearNotify();
+            Assert::IsFalse(IsWindow(h[1]) != FALSE, L"all destroyed");
+            Assert::IsFalse(pUIPresenter->IsNotifyShown() != FALSE);
+            pUIPresenter->Release();
         }
 
         // ===================================================================

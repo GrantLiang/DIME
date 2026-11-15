@@ -38,6 +38,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // SHADOW_SPREAD is defined in Define.h
 
+// The shadow color and image (C++ originals; the Rust port is dime-ui::shadow, whose
+// windows are CRustShadowWindow in the Rust build).
+namespace ShadowCpp
+{
+    void Color(bool dark, COLORREF sysWndColor, _Out_ BYTE* pGray, _Out_ BYTE* pMaxAlpha);
+    void FillPixels(_Out_writes_bytes_(cx * cy * 4) void* bits, int cx, int cy, int spread, int ownerRadius, BYTE gray, BYTE maxAlpha);
+}
+
 class CShadowWindow : public CBaseWindow
 {
 public:
@@ -63,6 +71,12 @@ public:
 
     void _OnSettingChange();
     void _OnOwnerWndMoved(BOOL isResized);
+#ifdef DIME_UNIT_TESTING
+    // The state (ShadowParityTest compares it with the Rust-owned shadow).
+    COLORREF _GetColorForTest() const { return _color; }
+    SIZE _GetSizeShiftForTest() const { return _sizeShift; }
+    BOOL _IsGradientForTest() const { return _isGradient; }
+#endif
 
 private:
     BOOL _Initialize();

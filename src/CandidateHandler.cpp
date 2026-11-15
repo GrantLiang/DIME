@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "BaseStructure.h"
 #include "UIPresenter.h"
 #include "CompositionProcessorEngine.h"
+#include "RustSessionHost.h"
 
 
 //+---------------------------------------------------------------------------
@@ -70,6 +71,16 @@ HRESULT CDIME::_HandleCandidateConvert(TfEditCookie ec, _In_ ITfContext *pContex
 //----------------------------------------------------------------------------
 
 HRESULT CDIME::_HandleCandidateWorker(TfEditCookie ec, _In_ ITfContext *pContext)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_candidate_finalize(host.Get());
+#else
+	return _HandleCandidateWorkerCpp(ec, pContext);
+#endif
+}
+
+HRESULT CDIME::_HandleCandidateWorkerCpp(TfEditCookie ec, _In_ ITfContext *pContext)
 {
 
 	debugPrint(L"CDIME::_HandleCandidateWorker() _IsComposing()= %d", _IsComposing());
@@ -117,6 +128,18 @@ HRESULT CDIME::_HandleCandidateWorker(TfEditCookie ec, _In_ ITfContext *pContext
 			goto Exit;
 		}
     }
+	// Sentence mode: the chosen candidate joins (or edits) the pending sentence instead of
+	// being committed.  It is pinned when the user picked it explicitly.
+	if (_IsSentenceMode() && _candidateMode != CANDIDATE_MODE::CANDIDATE_PHRASE)
+	{
+		std::wstring selected(pCandidateString, candidateLen);
+		BOOL isExplicit = _sentencePinNext || _isCandidateWithWildcard ||
+			_pUIPresenter->_GetCandidateSelection() > 0 ||
+			_pCompositionProcessorEngine->IsEscapeInputLeading();
+		_sentencePinNext = FALSE;
+		return _SentenceSelectCandidate(ec, pContext, selected, isExplicit);
+	}
+
 	if (_pCompositionProcessorEngine->IsArrayShortCode() && candidateLen == 1 && *pCandidateString == 0x2394) // empty position in arry short code table.
 	{
 		hr = S_FALSE;
@@ -259,7 +282,19 @@ Exit:
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCandidateArrowKey(TfEditCookie ec, _In_ ITfContext *pContext, _In_ KEYSTROKE_FUNCTION keyFunction)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_candidate_arrow_key(host.Get(), (uint32_t)keyFunction);
+#else
+	return _HandleCandidateArrowKeyCpp(ec, pContext, keyFunction);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCandidateArrowKeyCpp(TfEditCookie ec, _In_ ITfContext *pContext, _In_ KEYSTROKE_FUNCTION keyFunction)
 {
 	debugPrint(L"CDIME::_HandleCandidateArrowKey()");
     ec;
@@ -276,7 +311,19 @@ HRESULT CDIME::_HandleCandidateArrowKey(TfEditCookie ec, _In_ ITfContext *pConte
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCandidateSelectByNumber(TfEditCookie ec, _In_ ITfContext *pContext, _In_ UINT uCode,_In_ WCHAR wch)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_candidate_select_by_number(host.Get(), uCode, wch);
+#else
+	return _HandleCandidateSelectByNumberCpp(ec, pContext, uCode, wch);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCandidateSelectByNumberCpp(TfEditCookie ec, _In_ ITfContext *pContext, _In_ UINT uCode,_In_ WCHAR wch)
 {
 	debugPrint(L"CDIME::_HandleCandidateSelectByNumber() \n");
 
@@ -292,7 +339,10 @@ HRESULT CDIME::_HandleCandidateSelectByNumber(TfEditCookie ec, _In_ ITfContext *
     {
         if (_pUIPresenter->_SetCandidateSelectionInPage(iSelectAsNumber))
         {
-            return _HandleCandidateConvert(ec, pContext);
+            _sentencePinNext = TRUE;  // sentence mode: a select key pins the character
+            HRESULT hr = _HandleCandidateConvert(ec, pContext);
+            _sentencePinNext = FALSE;
+            return hr;
         }
     }
 
@@ -306,6 +356,16 @@ HRESULT CDIME::_HandleCandidateSelectByNumber(TfEditCookie ec, _In_ ITfContext *
 //----------------------------------------------------------------------------
 
 HRESULT CDIME::_HandlePhraseFinalize(TfEditCookie ec, _In_ ITfContext *pContext)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_phrase_finalize(host.Get());
+#else
+	return _HandlePhraseFinalizeCpp(ec, pContext);
+#endif
+}
+
+HRESULT CDIME::_HandlePhraseFinalizeCpp(TfEditCookie ec, _In_ ITfContext *pContext)
 {
 	debugPrint(L"CDIME::_HandlePhraseFinalize() ");
     HRESULT hr = S_OK;
@@ -338,7 +398,19 @@ HRESULT CDIME::_HandlePhraseFinalize(TfEditCookie ec, _In_ ITfContext *pContext)
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandlePhraseArrowKey(TfEditCookie ec, _In_ ITfContext *pContext, _In_ KEYSTROKE_FUNCTION keyFunction)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_candidate_arrow_key(host.Get(), (uint32_t)keyFunction);
+#else
+	return _HandlePhraseArrowKeyCpp(ec, pContext, keyFunction);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandlePhraseArrowKeyCpp(TfEditCookie ec, _In_ ITfContext *pContext, _In_ KEYSTROKE_FUNCTION keyFunction)
 {
 	debugPrint(L"CDIME::_HandlePhraseArrowKey() ");
     ec;
@@ -355,7 +427,19 @@ HRESULT CDIME::_HandlePhraseArrowKey(TfEditCookie ec, _In_ ITfContext *pContext,
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandlePhraseSelectByNumber(TfEditCookie ec, _In_ ITfContext *pContext, _In_ UINT uCode, _In_ WCHAR wch)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_phrase_select_by_number(host.Get(), uCode, wch);
+#else
+	return _HandlePhraseSelectByNumberCpp(ec, pContext, uCode, wch);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandlePhraseSelectByNumberCpp(TfEditCookie ec, _In_ ITfContext *pContext, _In_ UINT uCode, _In_ WCHAR wch)
 {
 	debugPrint(L"CDIME::_HandlePhraseSelectByNumber() ");
 	int iSelectAsNumber = _pCompositionProcessorEngine->GetCandidateListIndexRange()->GetIndex(uCode, wch, Global::ModifiersValue, _candidateMode);

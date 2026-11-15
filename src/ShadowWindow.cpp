@@ -223,11 +223,50 @@ void CShadowWindow::_AdjustWindowPos()
 
 //+---------------------------------------------------------------------------
 //
-// _InitShadow
+// ShadowCpp: the shadow color and image (moved verbatim from _InitShadow).
+// The Rust port is dime-ui::shadow; parity: ShadowParityTest.
 //
 //----------------------------------------------------------------------------
 
-void CShadowWindow::_InitShadow()
+namespace ShadowCpp
+{
+void Color(bool dark, COLORREF sysWndColor, _Out_ BYTE* pGray, _Out_ BYTE* pMaxAlpha)
+{
+    // Sample background at 4 corners of the shadow window to determine shadow color.
+    // The shadow window is visible but UpdateLayeredWindow hasn't been called yet,
+    // so the screen shows the true background.
+    // Shadow color adapts to background: dark shadow on light bg, light shadow on dark bg.
+    // Alpha is boosted only when IME theme mismatches background (e.g. dark IME on light bg).
+    BOOL isDarkMode = dark ? TRUE : FALSE;
+    BYTE shadowR = isDarkMode ? 200 : 0;
+    BYTE shadowG = isDarkMode ? 200 : 0;
+    BYTE shadowB = isDarkMode ? 200 : 0;
+    BYTE maxAlpha = SHADOW_MAX_ALPHA;
+    {
+        // Detect background luminance from system window color (instant, no DWM flush).
+        // COLOR_WINDOW reflects the system theme. Legacy apps that don't support dark mode
+        // keep COLOR_WINDOW light even when system is dark — exactly the mismatch case.
+        int lum = (299 * GetRValue(sysWndColor) + 587 * GetGValue(sysWndColor) + 114 * GetBValue(sysWndColor)) / 1000;
+        BOOL bgIsLight = (lum > 128);
+        if (isDarkMode && bgIsLight)
+        {
+            // Dark IME on light bg: flip to dark shadow with boosted alpha
+            shadowR = 0; shadowG = 0; shadowB = 0;
+            maxAlpha = SHADOW_MAX_ALPHA_DARK;
+        }
+        else if (!isDarkMode && !bgIsLight)
+        {
+            // Light IME on dark bg: flip to light shadow (keep original alpha)
+            shadowR = 200; shadowG = 200; shadowB = 200;
+        }
+    }
+
+    *pGray = shadowR;   // R == G == B
+    (void)shadowG; (void)shadowB;
+    *pMaxAlpha = maxAlpha;
+}
+
+void FillPixels(_Out_writes_bytes_(cx * cy * 4) void* bits, int cx, int cy, int spread, int ownerRadius, BYTE gray, BYTE maxAlpha)
 {
     typedef struct _RGBAPLHA {
         BYTE rgbBlue;
@@ -236,6 +275,111 @@ void CShadowWindow::_InitShadow()
         BYTE rgbAlpha;
     } RGBALPHA;
 
+    BYTE shadowR = gray, shadowG = gray, shadowB = gray;
+    // All-around soft shadow with proper rounded-corner masking.
+    int sp = spread;
+    int iL = sp, iT = sp, iR = cx - sp, iB = cy - sp;
+    int ownerW = iR - iL;
+    int ownerH = iB - iT;
+
+    // Rounded-rect SDF: gives true distance from the owner's rounded boundary at every pixel,
+    // including corner cutout areas where the old PtInRegion+dx/dy code zeroed alpha.
+    double r      = ownerRadius * 0.5;   // arc radius (CreateRoundRectRgn takes ellipse size)
+    double half_w = ownerW * 0.5;
+    double half_h = ownerH * 0.5;
+    double inner_rx = half_w - r;
+    double inner_ry = half_h - r;
+
+    // Border band bounds: shadow pixels only exist within SHADOW_SPREAD+1 of the owner edges.
+    // Skip the interior to avoid evaluating SDF for ~80% of pixels.
+    int bandT = iT + 2;  // first interior row (no shadow)
+    int bandB = iB - 2;  // last interior row (no shadow)
+    int bandL = iL + 2;  // first interior column
+    int bandR = iR - 2;  // last interior column
+
+    for (int y = 0; y < cy; y++) {
+        // Skip interior rows (only left+right bands needed)
+        if (y >= bandT && y <= bandB)
+        {
+            // Left band + right band only
+            for (int x = 0; x < bandL; x++) {
+                double ox = x - iL;
+                double oy = y - iT;
+                double qx = fabs(ox - half_w) - inner_rx;
+                double qy = fabs(oy - half_h) - inner_ry;
+                double len = sqrt(max(qx, 0.0) * max(qx, 0.0) + max(qy, 0.0) * max(qy, 0.0));
+                double sdf = len + min(max(qx, qy), 0.0) - r;
+                if (sdf <= -1.0) continue;
+                double dist = max(0.0, sdf) / (double)sp;
+                if (dist > 1.0) continue;
+                double f = 1.0 - dist;
+                BYTE alpha = (BYTE)(maxAlpha * f * f);
+                if (alpha == 0) continue;
+                RGBALPHA* ppxl = (RGBALPHA*)bits + ((size_t)y * cx + x);
+                ppxl->rgbRed   = (BYTE)((DWORD)shadowR * alpha / 255);
+                ppxl->rgbGreen = (BYTE)((DWORD)shadowG * alpha / 255);
+                ppxl->rgbBlue  = (BYTE)((DWORD)shadowB * alpha / 255);
+                ppxl->rgbAlpha = alpha;
+            }
+            for (int x = max(bandR, bandL); x < cx; x++) {
+                double ox = x - iL;
+                double oy = y - iT;
+                double qx = fabs(ox - half_w) - inner_rx;
+                double qy = fabs(oy - half_h) - inner_ry;
+                double len = sqrt(max(qx, 0.0) * max(qx, 0.0) + max(qy, 0.0) * max(qy, 0.0));
+                double sdf = len + min(max(qx, qy), 0.0) - r;
+                if (sdf <= -1.0) continue;
+                double dist = max(0.0, sdf) / (double)sp;
+                if (dist > 1.0) continue;
+                double f = 1.0 - dist;
+                BYTE alpha = (BYTE)(maxAlpha * f * f);
+                if (alpha == 0) continue;
+                RGBALPHA* ppxl = (RGBALPHA*)bits + ((size_t)y * cx + x);
+                ppxl->rgbRed   = (BYTE)((DWORD)shadowR * alpha / 255);
+                ppxl->rgbGreen = (BYTE)((DWORD)shadowG * alpha / 255);
+                ppxl->rgbBlue  = (BYTE)((DWORD)shadowB * alpha / 255);
+                ppxl->rgbAlpha = alpha;
+            }
+            continue;
+        }
+        for (int x = 0; x < cx; x++) {
+            double ox = x - iL;
+            double oy = y - iT;
+
+            // Signed distance from rounded rect boundary: negative = inside, positive = outside
+            double qx = fabs(ox - half_w) - inner_rx;
+            double qy = fabs(oy - half_h) - inner_ry;
+            double len = sqrt(max(qx, 0.0) * max(qx, 0.0) + max(qy, 0.0) * max(qy, 0.0));
+            double sdf = len + min(max(qx, qy), 0.0) - r;
+
+            if (sdf <= -1.0) continue; // extend shadow 1px under candidate edge to close boundary gap
+
+            double dist = max(0.0, sdf) / (double)sp;
+            if (dist > 1.0) dist = 1.0;
+
+            double f = 1.0 - dist;
+            BYTE alpha = (BYTE)(maxAlpha * f * f);
+            if (alpha == 0) continue;
+
+            RGBALPHA* ppxl = (RGBALPHA*)bits + ((size_t)y * cx + x);
+            // Pre-multiply RGB by alpha/255 as required by AC_SRC_ALPHA
+            ppxl->rgbRed   = (BYTE)((DWORD)shadowR * alpha / 255);
+            ppxl->rgbGreen = (BYTE)((DWORD)shadowG * alpha / 255);
+            ppxl->rgbBlue  = (BYTE)((DWORD)shadowB * alpha / 255);
+            ppxl->rgbAlpha = alpha;
+        }
+    }
+}
+} // namespace ShadowCpp
+
+//+---------------------------------------------------------------------------
+//
+// _InitShadow
+//
+//----------------------------------------------------------------------------
+
+void CShadowWindow::_InitShadow()
+{
     if (!_isGradient)
         return;
 
@@ -272,131 +416,11 @@ void CShadowWindow::_InitShadow()
 
     memset(pDIBits, 0, (size_t)size.cx * size.cy * 4);
 
-    // Sample background at 4 corners of the shadow window to determine shadow color.
-    // The shadow window is visible but UpdateLayeredWindow hasn't been called yet,
-    // so the screen shows the true background.
-    // Shadow color adapts to background: dark shadow on light bg, light shadow on dark bg.
-    // Alpha is boosted only when IME theme mismatches background (e.g. dark IME on light bg).
-    BOOL isDarkMode = CConfig::GetEffectiveDarkMode();
-    BYTE shadowR = isDarkMode ? 200 : 0;
-    BYTE shadowG = isDarkMode ? 200 : 0;
-    BYTE shadowB = isDarkMode ? 200 : 0;
-    BYTE maxAlpha = SHADOW_MAX_ALPHA;
-    {
-        // Detect background luminance from system window color (instant, no DWM flush).
-        // COLOR_WINDOW reflects the system theme. Legacy apps that don't support dark mode
-        // keep COLOR_WINDOW light even when system is dark — exactly the mismatch case.
-        COLORREF sysWndColor = GetSysColor(COLOR_WINDOW);
-        int lum = (299 * GetRValue(sysWndColor) + 587 * GetGValue(sysWndColor) + 114 * GetBValue(sysWndColor)) / 1000;
-        BOOL bgIsLight = (lum > 128);
-        if (isDarkMode && bgIsLight)
-        {
-            // Dark IME on light bg: flip to dark shadow with boosted alpha
-            shadowR = 0; shadowG = 0; shadowB = 0;
-            maxAlpha = SHADOW_MAX_ALPHA_DARK;
-        }
-        else if (!isDarkMode && !bgIsLight)
-        {
-            // Light IME on dark bg: flip to light shadow (keep original alpha)
-            shadowR = 200; shadowG = 200; shadowB = 200;
-        }
-    }
-
-    // All-around soft shadow with proper rounded-corner masking.
-    int sp = SHADOW_SPREAD;
-    int iL = sp, iT = sp, iR = size.cx - sp, iB = size.cy - sp;
-    int ownerW = iR - iL;
-    int ownerH = iB - iT;
-
-    // Rounded-rect SDF: gives true distance from the owner's rounded boundary at every pixel,
-    // including corner cutout areas where the old PtInRegion+dx/dy code zeroed alpha.
+    BYTE gray = 0, maxAlpha = 0;
+    ShadowCpp::Color(CConfig::GetEffectiveDarkMode(), GetSysColor(COLOR_WINDOW), &gray, &maxAlpha);
     UINT dpi = CConfig::GetDpiForHwnd(_GetWnd());
     int ownerRadius = MulDiv(_pWndOwner->_GetCornerRadiusBase(), dpi, USER_DEFAULT_SCREEN_DPI);
-    double r      = ownerRadius * 0.5;   // arc radius (CreateRoundRectRgn takes ellipse size)
-    double half_w = ownerW * 0.5;
-    double half_h = ownerH * 0.5;
-    double inner_rx = half_w - r;
-    double inner_ry = half_h - r;
-
-    // Border band bounds: shadow pixels only exist within SHADOW_SPREAD+1 of the owner edges.
-    // Skip the interior to avoid evaluating SDF for ~80% of pixels.
-    int bandT = iT + 2;  // first interior row (no shadow)
-    int bandB = iB - 2;  // last interior row (no shadow)
-    int bandL = iL + 2;  // first interior column
-    int bandR = iR - 2;  // last interior column
-
-    for (int y = 0; y < size.cy; y++) {
-        // Skip interior rows (only left+right bands needed)
-        if (y >= bandT && y <= bandB)
-        {
-            // Left band + right band only
-            for (int x = 0; x < bandL; x++) {
-                double ox = x - iL;
-                double oy = y - iT;
-                double qx = fabs(ox - half_w) - inner_rx;
-                double qy = fabs(oy - half_h) - inner_ry;
-                double len = sqrt(max(qx, 0.0) * max(qx, 0.0) + max(qy, 0.0) * max(qy, 0.0));
-                double sdf = len + min(max(qx, qy), 0.0) - r;
-                if (sdf <= -1.0) continue;
-                double dist = max(0.0, sdf) / (double)sp;
-                if (dist > 1.0) continue;
-                double f = 1.0 - dist;
-                BYTE alpha = (BYTE)(maxAlpha * f * f);
-                if (alpha == 0) continue;
-                RGBALPHA* ppxl = (RGBALPHA*)pDIBits + ((size_t)y * size.cx + x);
-                ppxl->rgbRed   = (BYTE)((DWORD)shadowR * alpha / 255);
-                ppxl->rgbGreen = (BYTE)((DWORD)shadowG * alpha / 255);
-                ppxl->rgbBlue  = (BYTE)((DWORD)shadowB * alpha / 255);
-                ppxl->rgbAlpha = alpha;
-            }
-            for (int x = max(bandR, bandL); x < size.cx; x++) {
-                double ox = x - iL;
-                double oy = y - iT;
-                double qx = fabs(ox - half_w) - inner_rx;
-                double qy = fabs(oy - half_h) - inner_ry;
-                double len = sqrt(max(qx, 0.0) * max(qx, 0.0) + max(qy, 0.0) * max(qy, 0.0));
-                double sdf = len + min(max(qx, qy), 0.0) - r;
-                if (sdf <= -1.0) continue;
-                double dist = max(0.0, sdf) / (double)sp;
-                if (dist > 1.0) continue;
-                double f = 1.0 - dist;
-                BYTE alpha = (BYTE)(maxAlpha * f * f);
-                if (alpha == 0) continue;
-                RGBALPHA* ppxl = (RGBALPHA*)pDIBits + ((size_t)y * size.cx + x);
-                ppxl->rgbRed   = (BYTE)((DWORD)shadowR * alpha / 255);
-                ppxl->rgbGreen = (BYTE)((DWORD)shadowG * alpha / 255);
-                ppxl->rgbBlue  = (BYTE)((DWORD)shadowB * alpha / 255);
-                ppxl->rgbAlpha = alpha;
-            }
-            continue;
-        }
-        for (int x = 0; x < size.cx; x++) {
-            double ox = x - iL;
-            double oy = y - iT;
-
-            // Signed distance from rounded rect boundary: negative = inside, positive = outside
-            double qx = fabs(ox - half_w) - inner_rx;
-            double qy = fabs(oy - half_h) - inner_ry;
-            double len = sqrt(max(qx, 0.0) * max(qx, 0.0) + max(qy, 0.0) * max(qy, 0.0));
-            double sdf = len + min(max(qx, qy), 0.0) - r;
-
-            if (sdf <= -1.0) continue; // extend shadow 1px under candidate edge to close boundary gap
-
-            double dist = max(0.0, sdf) / (double)sp;
-            if (dist > 1.0) dist = 1.0;
-
-            double f = 1.0 - dist;
-            BYTE alpha = (BYTE)(maxAlpha * f * f);
-            if (alpha == 0) continue;
-
-            RGBALPHA* ppxl = (RGBALPHA*)pDIBits + ((size_t)y * size.cx + x);
-            // Pre-multiply RGB by alpha/255 as required by AC_SRC_ALPHA
-            ppxl->rgbRed   = (BYTE)((DWORD)shadowR * alpha / 255);
-            ppxl->rgbGreen = (BYTE)((DWORD)shadowG * alpha / 255);
-            ppxl->rgbBlue  = (BYTE)((DWORD)shadowB * alpha / 255);
-            ppxl->rgbAlpha = alpha;
-        }
-    }
+    ShadowCpp::FillPixels(pDIBits, size.cx, size.cy, SHADOW_SPREAD, ownerRadius, gray, maxAlpha);
 
     POINT ptSrc = {0, 0};
     BLENDFUNCTION Blend = {};

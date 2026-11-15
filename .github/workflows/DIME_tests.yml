@@ -2,6 +2,20 @@ name: Test
 
 on:
   workflow_dispatch:
+  # Fork build only: test pushes to build/** branches (master keeps the nightly schedule).
+  push:
+    branches: ['build/**']
+    paths:
+      - '.github/workflows/DIME_tests.yml'
+      - 'src/**/*.cpp'
+      - 'src/**/*.h'
+      - 'src/**/*.rc'
+      - 'src/**/*.def'
+      - 'src/**/*.sln'
+      - 'src/**/*.vcxproj'
+      - 'src/**/*.vcxproj.filters'
+      - 'src/tests/keyflow/**'
+      - 'rust/**'
   schedule:
     - cron: '0 18 * * *'  # 2:00 AM Asia/Taipei == 18:00 UTC previous day
 
@@ -21,8 +35,8 @@ jobs:
         id: check
         shell: pwsh
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            Write-Host "Manual trigger - running tests"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.event_name }}" -eq "push") {
+            Write-Host "Manual or push trigger - running tests"
             echo "should-run=true" >> $env:GITHUB_OUTPUT
             exit 0
           }
@@ -36,7 +50,7 @@ jobs:
             exit 0
           }
           # Check for source changes in last 24 hours
-          $changes = git log --since="24 hours ago" --name-only --pretty=format: -- 'src/**/*.cpp' 'src/**/*.h' 'src/**/*.rc' 'src/**/*.def' 'src/**/*.sln' 'src/**/*.vcxproj' 'src/**/*.vcxproj.filters' | Sort-Object -Unique | Where-Object { $_ -ne "" }
+          $changes = git log --since="24 hours ago" --name-only --pretty=format: -- 'src/**/*.cpp' 'src/**/*.h' 'src/**/*.rc' 'src/**/*.def' 'src/**/*.sln' 'src/**/*.vcxproj' 'src/**/*.vcxproj.filters' 'rust/**/*.rs' 'rust/**/Cargo.toml' 'rust/Cargo.lock' 'rust/**/*.h' | Sort-Object -Unique | Where-Object { $_ -ne "" }
           if ($changes) {
             Write-Host "Source changes detected in last 24 hours"
             echo "should-run=true" >> $env:GITHUB_OUTPUT
@@ -50,19 +64,60 @@ jobs:
     if: needs.check-changes.outputs.should-run == 'true'
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         platform: [Win32, x64]
         configuration: [Debug, Release]
+        # rust: the default build; cpp: the all-C++ build (DimeUseRustEngine=false)
+        engine: [rust, cpp]
     steps:
       - uses: actions/checkout@v4
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
+      - name: Install MSVC Spectre libraries and ATL
+        # The projects' own toolset (the runner's latest MSVC); DIME.vcxproj needs the
+        # Spectre libraries and the TSF / UIA tests include atlbase.h.
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstallPath = & $vsWhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+          if (-not $vsInstallPath) { throw "Visual Studio installation not found." }
+          $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          $components = @(
+            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre",
+            "Microsoft.VisualStudio.Component.VC.ATL",
+            "Microsoft.VisualStudio.Component.VC.ATL.Spectre"
+          )
+          $arguments = @("modify", "--installPath", $vsInstallPath, "--quiet", "--norestart", "--nocache")
+          foreach ($component in $components) { $arguments += @("--add", $component) }
+          & $setup @arguments
+          if ($LASTEXITCODE -eq 3010) {
+            Write-Host "Visual Studio Installer requested a reboot; continuing on the hosted runner."
+          } elseif ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          $latestTools = Get-ChildItem -Path (Join-Path $vsInstallPath "VC\Tools\MSVC") -Directory |
+            Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
+          foreach ($dir in @("lib\spectre\x86", "lib\spectre\x64", "atlmfc\include\atlbase.h")) {
+            $path = Join-Path $latestTools.FullName $dir
+            if (-not (Test-Path $path)) { throw "Missing after install: $path" }
+          }
       - name: Setup VSTest
         uses: darenm/Setup-VSTest@v1.3
+      - name: Setup Rust (dime-ffi for RustParityTest)
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup target add i686-pc-windows-msvc x86_64-pc-windows-msvc
+      - name: Rust unit tests
+        if: matrix.platform == 'x64' && matrix.configuration == 'Debug' && matrix.engine == 'rust'
+        run: cargo test --locked --manifest-path rust/Cargo.toml
       - name: Build
         run: |
           cd src
-          msbuild DIME.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:PlatformToolset=v143
+          msbuild DIME.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:DimeTestRustEngine=${{ matrix.engine == 'rust' }} /p:DimeUseRustEngine=${{ matrix.engine == 'rust' }}
       - name: Run Tests
         run: |
           cd src
@@ -70,5 +125,5 @@ jobs:
       - name: Upload Results
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.platform }}-${{ matrix.configuration }}
+          name: test-results-${{ matrix.platform }}-${{ matrix.configuration }}-${{ matrix.engine }}
           path: src/TestResults/*.trx

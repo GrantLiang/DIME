@@ -16,6 +16,7 @@ namespace SettingsKeys {
     constexpr const wchar_t DoBeep[]                       = L"DoBeep";
     constexpr const wchar_t DoBeepNotify[]                 = L"DoBeepNotify";
     constexpr const wchar_t DoBeepOnCandi[]                = L"DoBeepOnCandi";
+    constexpr const wchar_t SentenceMode[]                 = L"SentenceMode";
     constexpr const wchar_t ActivatedKeyboardMode[]        = L"ActivatedKeyboardMode";
     constexpr const wchar_t MakePhrase[]                   = L"MakePhrase";
     constexpr const wchar_t ShowNotifyDesktop[]            = L"ShowNotifyDesktop";
@@ -38,6 +39,7 @@ namespace SettingsKeys {
     constexpr const wchar_t NumericPad[]                   = L"NumericPad";
     constexpr const wchar_t ArrayScope[]                   = L"ArrayScope";
     constexpr const wchar_t PhoneticKeyboardLayout[]       = L"PhoneticKeyboardLayout";
+    constexpr const wchar_t DayiSelkeyMode[]               = L"DayiSelkeyMode";
     constexpr const wchar_t ShiftEnglishDigitMode[]        = L"ShiftEnglishDigitMode";
 
     // String keys

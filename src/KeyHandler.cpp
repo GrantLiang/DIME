@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "UIPresenter.h"
 #include "CompositionProcessorEngine.h"
 #include "BaseStructure.h"
+#include "RustSessionHost.h"
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -79,6 +80,16 @@ BOOL CDIME::_IsRangeCovered(TfEditCookie ec, _In_ ITfRange *pRangeTest, _In_ ITf
 
 HRESULT CDIME::_HandleComplete(TfEditCookie ec, _In_ ITfContext *pContext)
 {
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_complete(host.Get());
+#else
+	return _HandleCompleteCpp(ec, pContext);
+#endif
+}
+
+HRESULT CDIME::_HandleCompleteCpp(TfEditCookie ec, _In_ ITfContext *pContext)
+{
 	debugPrint(L"CDIME::_HandleComplete()");
     _DeleteCandidateList(FALSE, pContext);
 
@@ -96,7 +107,29 @@ HRESULT CDIME::_HandleComplete(TfEditCookie ec, _In_ ITfContext *pContext)
 
 HRESULT CDIME::_HandleCancel(TfEditCookie ec, _In_ ITfContext *pContext)
 {
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_cancel(host.Get());
+#else
+	return _HandleCancelCpp(ec, pContext);
+#endif
+}
+
+HRESULT CDIME::_HandleCancelCpp(TfEditCookie ec, _In_ ITfContext *pContext)
+{
 	debugPrint(L"CDIME::_HandleCancel()");
+
+	// Sentence mode: cancelling a reading or candidate window keeps the sentence;
+	// cancelling with nothing else pending discards the sentence.
+	if (_IsSentencePending())
+	{
+		if ((_pCompositionProcessorEngine && _pCompositionProcessorEngine->GetVirtualKeyLength() > 0) ||
+			_candidateMode != CANDIDATE_MODE::CANDIDATE_NONE)
+		{
+			return _SentenceCloseReading(ec, pContext);
+		}
+		_SentenceReset();
+	}
 
     _RemoveDummyCompositionForComposing(ec, _pComposition);
 
@@ -115,7 +148,19 @@ HRESULT CDIME::_HandleCancel(TfEditCookie ec, _In_ ITfContext *pContext)
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCompositionInput(TfEditCookie ec, _In_ ITfContext *pContext, WCHAR wch)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_composition_input(host.Get(), wch);
+#else
+	return _HandleCompositionInputCpp(ec, pContext, wch);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCompositionInputCpp(TfEditCookie ec, _In_ ITfContext *pContext, WCHAR wch)
 {
 	debugPrint(L"CDIME::_HandleCompositionInput(), _candidateMode = %d, wch = %c (0x%x)", _candidateMode, wch, wch);
     ITfRange* pRangeComposition = nullptr;
@@ -195,6 +240,17 @@ Exit:
 
 HRESULT CDIME::_HandleCompositionInputWorker(_In_ CCompositionProcessorEngine *pCompositionProcessorEngine, TfEditCookie ec, _In_ ITfContext *pContext)
 {
+#ifdef DIME_USE_RUST_ENGINE
+	UNREFERENCED_PARAMETER(pCompositionProcessorEngine);
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_composition_input_worker(host.Get());
+#else
+	return _HandleCompositionInputWorkerCpp(pCompositionProcessorEngine, ec, pContext);
+#endif
+}
+
+HRESULT CDIME::_HandleCompositionInputWorkerCpp(_In_ CCompositionProcessorEngine *pCompositionProcessorEngine, TfEditCookie ec, _In_ ITfContext *pContext)
+{
 	debugPrint(L"CDIME::_HandleCompositionInputWorker()");
     HRESULT hr = S_OK;
     
@@ -206,8 +262,10 @@ HRESULT CDIME::_HandleCompositionInputWorker(_In_ CCompositionProcessorEngine *p
     //
     pCompositionProcessorEngine->GetReadingString(&readingString, &isWildcardIncluded);
 
-   
-	hr = _AddComposingAndChar(ec, pContext, &readingString);
+	if (_IsSentencePending())
+		hr = _SentenceRender(ec, pContext, std::wstring(readingString.Get() ? readingString.Get() : L"", readingString.GetLength()));
+	else
+		hr = _AddComposingAndChar(ec, pContext, &readingString);
 		
     if (FAILED(hr))
     {
@@ -274,8 +332,27 @@ HRESULT CDIME::_HandleCompositionInputWorker(_In_ CCompositionProcessorEngine *p
 
 HRESULT CDIME::_HandleCompositionFinalize(TfEditCookie ec, _In_ ITfContext *pContext, BOOL isCandidateList)
 {
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_composition_finalize(host.Get(), isCandidateList);
+#else
+	return _HandleCompositionFinalizeCpp(ec, pContext, isCandidateList);
+#endif
+}
+
+HRESULT CDIME::_HandleCompositionFinalizeCpp(TfEditCookie ec, _In_ ITfContext *pContext, BOOL isCandidateList)
+{
 	debugPrint(L"CDIME::_HandleCompositionFinalize()");
     HRESULT hr = S_OK;
+
+	if (_IsSentenceMode())
+	{
+		// A chosen candidate joins the sentence; anything else commits it first.
+		if (isCandidateList && _pUIPresenter)
+			return _HandleCandidateWorker(ec, pContext);
+		if (!isCandidateList)
+			_SentenceCommitBeforeOutput(ec, pContext);
+	}
 
     if (isCandidateList && _pUIPresenter)
     {
@@ -319,7 +396,19 @@ HRESULT CDIME::_HandleCompositionFinalize(TfEditCookie ec, _In_ ITfContext *pCon
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCompositionConvert(TfEditCookie ec, _In_ ITfContext *pContext, BOOL isWildcardSearch, BOOL isArrayPhraseEnding)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_composition_convert(host.Get(), isWildcardSearch, isArrayPhraseEnding);
+#else
+	return _HandleCompositionConvertCpp(ec, pContext, isWildcardSearch, isArrayPhraseEnding);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCompositionConvertCpp(TfEditCookie ec, _In_ ITfContext *pContext, BOOL isWildcardSearch, BOOL isArrayPhraseEnding)
 {
     debugPrint(L"CDIME::_HandleCompositionConvert() isWildcardSearch = %d, isArrayPhraseEnding =%d. ", isWildcardSearch, isArrayPhraseEnding);
     HRESULT hr = S_OK;
@@ -331,6 +420,18 @@ HRESULT CDIME::_HandleCompositionConvert(TfEditCookie ec, _In_ ITfContext *pCont
     //
     CCompositionProcessorEngine* pCompositionProcessorEngine = nullptr;
     pCompositionProcessorEngine = _pCompositionProcessorEngine;
+
+	// Sentence mode: the character joins the sentence with all its candidates instead
+	// of opening the candidate window.  Wildcard and symbol ('=') input still show the
+	// window; the chosen item then joins the sentence pinned (_HandleCandidateWorker).
+	if (_IsSentenceMode() && !isWildcardSearch && pCompositionProcessorEngine->GetVirtualKeyLength() > 0 &&
+		!pCompositionProcessorEngine->IsEscapeInputLeading())
+	{
+		pCompositionProcessorEngine->GetCandidateList(&candidateList, FALSE, FALSE, FALSE);
+		if (candidateList.Count())
+			return _SentenceAppendFromCandidateList(ec, pContext, &candidateList, -1);
+	}
+
     pCompositionProcessorEngine->GetCandidateList(&candidateList, FALSE, isWildcardSearch, isArrayPhraseEnding);
 
     // If there is no candlidate listing the current reading string, we don't do anything. Just wait for
@@ -377,7 +478,19 @@ HRESULT CDIME::_HandleCompositionConvert(TfEditCookie ec, _In_ ITfContext *pCont
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCompositionBackspace(TfEditCookie ec, _In_ ITfContext *pContext)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_composition_backspace(host.Get());
+#else
+	return _HandleCompositionBackspaceCpp(ec, pContext);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCompositionBackspaceCpp(TfEditCookie ec, _In_ ITfContext *pContext)
 {
     ITfRange* pRangeComposition = nullptr;
     TF_SELECTION tfSelection;
@@ -422,7 +535,15 @@ HRESULT CDIME::_HandleCompositionBackspace(TfEditCookie ec, _In_ ITfContext *pCo
 		BOOL symbolMode = pCompositionProcessorEngine->IsEscapeInput();
         pCompositionProcessorEngine->RemoveVirtualKey(vKeyLen - 1);
 
-		if ((pCompositionProcessorEngine->GetVirtualKeyLength() && !symbolMode) &&
+		if (_IsSentencePending())
+		{
+			// Keep the sentence when the reading is emptied.
+			if (pCompositionProcessorEngine->GetVirtualKeyLength() && !symbolMode)
+				_HandleCompositionInputWorker(pCompositionProcessorEngine, ec, pContext);
+			else
+				_SentenceCloseReading(ec, pContext);
+		}
+		else if ((pCompositionProcessorEngine->GetVirtualKeyLength() && !symbolMode) &&
 			!(Global::imeMode == IME_MODE::IME_MODE_PHONETIC && _candidateMode != CANDIDATE_MODE::CANDIDATE_NONE))
         {
             _HandleCompositionInputWorker(pCompositionProcessorEngine, ec, pContext);
@@ -446,7 +567,19 @@ Exit:
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCompositionArrowKey(TfEditCookie ec, _In_ ITfContext *pContext, KEYSTROKE_FUNCTION keyFunction)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_composition_arrow_key(host.Get(), (uint32_t)keyFunction);
+#else
+	return _HandleCompositionArrowKeyCpp(ec, pContext, keyFunction);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCompositionArrowKeyCpp(TfEditCookie ec, _In_ ITfContext *pContext, KEYSTROKE_FUNCTION keyFunction)
 {
     ITfRange* pRangeComposition = nullptr;
     TF_SELECTION tfSelection;
@@ -488,9 +621,23 @@ Exit:
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCompositionDoubleSingleByte(TfEditCookie ec, _In_ ITfContext *pContext, WCHAR wch)
 {
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_double_single_byte(host.Get(), wch);
+#else
+	return _HandleCompositionDoubleSingleByteCpp(ec, pContext, wch);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCompositionDoubleSingleByteCpp(TfEditCookie ec, _In_ ITfContext *pContext, WCHAR wch)
+{
     HRESULT hr = S_OK;
+
+    _SentenceCommitBeforeOutput(ec, pContext);
 
     WCHAR fullWidth = Global::FullWidthCharTable[wch - 0x20];
 
@@ -519,7 +666,19 @@ HRESULT CDIME::_HandleCompositionDoubleSingleByte(TfEditCookie ec, _In_ ITfConte
 // - CapsLock ON: produce shifted characters (A, !, _)
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCompositionShiftEnglishInput(TfEditCookie ec, _In_ ITfContext *pContext, UINT code, WCHAR wch)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_shift_english_input(host.Get(), code, wch);
+#else
+	return _HandleCompositionShiftEnglishInputCpp(ec, pContext, code, wch);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCompositionShiftEnglishInputCpp(TfEditCookie ec, _In_ ITfContext *pContext, UINT code, WCHAR wch)
 {
     HRESULT hr = S_OK;
     const BOOL wasPhraseCandidate = (_candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE);
@@ -530,6 +689,7 @@ HRESULT CDIME::_HandleCompositionShiftEnglishInput(TfEditCookie ec, _In_ ITfCont
     {
         _HandleCandidateFinalize(ec, pContext);
     }
+    _SentenceCommitBeforeOutput(ec, pContext);
 
     WCHAR outputChar = wch; // Default fallback
     BOOL isCapsLockOn = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
@@ -616,7 +776,22 @@ HRESULT CDIME::_HandleCompositionShiftEnglishInput(TfEditCookie ec, _In_ ITfCont
 //
 //----------------------------------------------------------------------------
 
+#ifdef DIME_COMPILE_ROUTING_HANDLERS
 HRESULT CDIME::_HandleCompositionAddressChar(TfEditCookie ec, _In_ ITfContext *pContext, WCHAR wch)
+{
+#ifdef DIME_USE_RUST_ENGINE
+	if (_pCompositionProcessorEngine == nullptr) return S_FALSE;
+#endif
+#ifdef DIME_USE_RUST_ENGINE
+	CRustSessionHost host(this, ec, pContext);
+	return dime_session_handle_address_char(host.Get(), wch);
+#else
+	return _HandleCompositionAddressCharCpp(ec, pContext, wch);
+#endif
+}
+#endif
+
+HRESULT CDIME::_HandleCompositionAddressCharCpp(TfEditCookie ec, _In_ ITfContext *pContext, WCHAR wch)
 {
 	HRESULT hr = S_OK;
 
@@ -628,6 +803,7 @@ HRESULT CDIME::_HandleCompositionAddressChar(TfEditCookie ec, _In_ ITfContext *p
 
 	if (pCompositionProcessorEngine == nullptr) return S_FALSE;
 
+	_SentenceCommitBeforeOutput(ec, pContext);
 	if (_IsComposing())  _HandleCancel(ec, pContext);
 
 	WCHAR addressChar = pCompositionProcessorEngine->GetDayiAddressChar(wch);

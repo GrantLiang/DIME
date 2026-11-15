@@ -43,6 +43,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Private.h"
 #include "resource.h"
 #include "BaseWindow.h"
+#ifdef DIME_USE_RUST_ENGINE
+#include "dime_ffi.h"
+#endif
 #include "define.h"
 #include "BaseStructure.h"
 
@@ -114,6 +117,22 @@ BOOL isWindows8 = FALSE;
 BOOL isWindows1809OrLater = FALSE;
 
 IME_MODE imeMode = IME_MODE::IME_MODE_NONE;
+
+#ifdef DIME_UNIT_TESTING
+WCHAR testAppDataOverride[MAX_PATH] = L"";
+#endif
+
+BOOL GetAppDataPath(_Out_writes_(MAX_PATH) WCHAR* path, BOOL create)
+{
+#ifdef DIME_UNIT_TESTING
+	if (testAppDataOverride[0])
+	{
+		if (create) CreateDirectoryW(testAppDataOverride, nullptr);
+		return SUCCEEDED(StringCchCopyW(path, MAX_PATH, testAppDataOverride));
+	}
+#endif
+	return SHGetSpecialFolderPathW(nullptr, path, CSIDL_APPDATA, create);
+}
 
 BOOL hasPhraseSection = FALSE;
 BOOL hasCINPhraseSection = FALSE;
@@ -272,30 +291,92 @@ ATOM AtomNotifyShadowWindow;
 BOOL RegisterWindowClass()
 {
     // Candidate and Notify use popup class (no CS_IME, with CS_DROPSHADOW) for DWM shadow
+#ifdef DIME_USE_RUST_ENGINE
+    // The candidate window is owned by Rust (dime-ui::candwin, via the presenter).
+    AtomCandidateWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)CandidateClassName, 1);
+    if (AtomCandidateWindow == 0)
+    {
+        return FALSE;
+    }
+#else
     if (!CBaseWindow::_InitPopupWindowClass(CandidateClassName, &AtomCandidateWindow))
     {
         return FALSE;
     }
+#endif
+#ifdef DIME_USE_RUST_ENGINE
+    // Shadow windows are owned by Rust (dime-ui::shadow, CRustShadowWindow): its window procedure.
+    AtomCandidateShadowWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)CandidateShadowClassName, 0);
+    if (AtomCandidateShadowWindow == 0)
+    {
+        return FALSE;
+    }
+#else
     if (!CBaseWindow::_InitWindowClass(CandidateShadowClassName, &AtomCandidateShadowWindow))
     {
         return FALSE;
     }
+#endif
+#ifdef DIME_USE_RUST_ENGINE
+    // The candidate scroll bar is owned by Rust (dime-ui::sbwin, CRustScrollBarWindow).
+    AtomCandidateScrollBarWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)CandidateScrollBarClassName, 0);
+    if (AtomCandidateScrollBarWindow == 0)
+    {
+        return FALSE;
+    }
+#else
     if (!CBaseWindow::_InitWindowClass(CandidateScrollBarClassName, &AtomCandidateScrollBarWindow))
     {
         return FALSE;
     }
+#endif
 
+#ifdef DIME_USE_RUST_ENGINE
+    // The notify window is owned by Rust (dime-ui::notifywin, via the presenter).
+    AtomNotifyWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)NotifyClassName, 1);
+    if (AtomNotifyWindow == 0)
+    {
+        return FALSE;
+    }
+#else
     if (!CBaseWindow::_InitPopupWindowClass(NotifyClassName, &AtomNotifyWindow))
     {
         return FALSE;
     }
+#endif
+#ifdef DIME_USE_RUST_ENGINE
+    // Shadow windows are owned by Rust (dime-ui::shadow, CRustShadowWindow): its window procedure.
+    AtomNotifyShadowWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)NotifyShadowClassName, 0);
+    if (AtomNotifyShadowWindow == 0)
+    {
+        return FALSE;
+    }
+#else
     if (!CBaseWindow::_InitWindowClass(NotifyShadowClassName, &AtomNotifyShadowWindow))
     {
         return FALSE;
     }
+#endif
 
     return TRUE;
 }
+
+#ifdef DIME_USE_RUST_ENGINE
+// The window classes are unregistered at DLL_PROCESS_DETACH in the Rust build
+// (docs/RUST_WINDOW_OWNERSHIP.md); the C++ build keeps them registered as before.
+void UnregisterWindowClass()
+{
+    ATOM* atoms[] = { &AtomCandidateWindow, &AtomCandidateShadowWindow, &AtomCandidateScrollBarWindow,
+                      &AtomNotifyWindow, &AtomNotifyShadowWindow };
+    for (ATOM* atom : atoms)
+    {
+        // CBaseWindow::_UninitWindowClass (CBaseWindow is not compiled into the Rust build).
+        if (*atom != 0)
+            UnregisterClass((LPCTSTR)(ULONG_PTR)*atom, dllInstanceHandle);
+        *atom = 0;
+    }
+}
+#endif
 
 //---------------------------------------------------------------------
 // defined full width characters for Double/Single byte conversion
@@ -315,10 +396,6 @@ extern const WCHAR FullWidthCharTable[] = {
     0xFF50, 0xFF51, 0xFF52, 0xFF53, 0xFF54, 0xFF55, 0xFF56, 0xFF57, 0xFF58, 0xFF59, 0xFF5A, 0xFF5B, 0xFF5C, 0xFF5D, 0xFF5E
 };
 
-//---------------------------------------------------------------------
-// defined symbol characters
-//---------------------------------------------------------------------
-extern const WCHAR DayiSymbolCharTable[] = L" !\\\"#$%&\'()*+,-./0123456789:;<>?@[]^_`{}|~";
 //---------------------------------------------------------------------
 // defined directly input address characters
 //---------------------------------------------------------------------
@@ -343,62 +420,11 @@ extern const _DAYI_ADDRESS_DIRECT_INPUT dayiArticleCharTable[6] = {
 };
 
 
-//+---------------------------------------------------------------------------
-//
-// CheckModifiers
-//
-//----------------------------------------------------------------------------
-
+// Modifier masks used by UpdateModifiers. CheckModifiers (and the RL masks it
+// needed) had no callers.
 #define TF_MOD_ALLALT     (TF_MOD_RALT | TF_MOD_LALT | TF_MOD_ALT)
 #define TF_MOD_ALLCONTROL (TF_MOD_RCONTROL | TF_MOD_LCONTROL | TF_MOD_CONTROL)
 #define TF_MOD_ALLSHIFT   (TF_MOD_RSHIFT | TF_MOD_LSHIFT | TF_MOD_SHIFT)
-#define TF_MOD_RLALT      (TF_MOD_RALT | TF_MOD_LALT)
-#define TF_MOD_RLCONTROL  (TF_MOD_RCONTROL | TF_MOD_LCONTROL)
-#define TF_MOD_RLSHIFT    (TF_MOD_RSHIFT | TF_MOD_LSHIFT)
-
-#define CheckMod(m0, m1, mod)        \
-    if (m1 & TF_MOD_ ## mod ##)      \
-{ \
-    if (!(m0 & TF_MOD_ ## mod ##)) \
-{      \
-    return FALSE;   \
-}      \
-} \
-    else       \
-{ \
-    if ((m1 ^ m0) & TF_MOD_RL ## mod ##)    \
-{      \
-    return FALSE;   \
-}      \
-} \
-
-
-
-BOOL CheckModifiers(UINT modCurrent, UINT mod)
-{
-    mod &= ~TF_MOD_ON_KEYUP;
-
-    if (mod & TF_MOD_IGNORE_ALL_MODIFIER)
-    {
-        return TRUE;
-    }
-
-    if (modCurrent == mod)
-    {
-        return TRUE;
-    }
-
-    if (modCurrent && !mod)
-    {
-        return FALSE;
-    }
-
-    CheckMod(modCurrent, mod, ALT);
-    CheckMod(modCurrent, mod, SHIFT);
-    CheckMod(modCurrent, mod, CONTROL);
-
-    return TRUE;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -552,13 +578,6 @@ BOOL UpdateModifiers(WPARAM wParam, LPARAM lParam)
     return TRUE;
 }
 
-//---------------------------------------------------------------------
-// override CompareElements
-//---------------------------------------------------------------------
-BOOL CompareElements(LCID locale, const CStringRange* pElement1, const CStringRange* pElement2)
-{
-    return (CStringRange::Compare(locale, (CStringRange*)pElement1, (CStringRange*)pElement2) == CSTR_EQUAL) ? TRUE : FALSE;
-}
 #endif
 
 }
