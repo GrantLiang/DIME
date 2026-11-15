@@ -2,6 +2,20 @@ name: Test
 
 on:
   workflow_dispatch:
+  # Fork build only: test pushes to build/** branches (master keeps the nightly schedule).
+  push:
+    branches: ['build/**']
+    paths:
+      - '.github/workflows/DIME_tests.yml'
+      - 'src/**/*.cpp'
+      - 'src/**/*.h'
+      - 'src/**/*.rc'
+      - 'src/**/*.def'
+      - 'src/**/*.sln'
+      - 'src/**/*.vcxproj'
+      - 'src/**/*.vcxproj.filters'
+      - 'src/tests/keyflow/**'
+      - 'rust/**'
   schedule:
     - cron: '0 18 * * *'  # 2:00 AM Asia/Taipei == 18:00 UTC previous day
 
@@ -21,8 +35,8 @@ jobs:
         id: check
         shell: pwsh
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            Write-Host "Manual trigger - running tests"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.event_name }}" -eq "push") {
+            Write-Host "Manual or push trigger - running tests"
             echo "should-run=true" >> $env:GITHUB_OUTPUT
             exit 0
           }
