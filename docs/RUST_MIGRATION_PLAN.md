@@ -201,7 +201,23 @@
 
 - 移除 C++ 實作與 `DimeUseRust*` 開關、`RustTableDictionaryEngine` 轉接層、`TestStubs.cpp`。
 - C++ 單元測試（CppUnitTestFramework）中針對已刪除類別的部分轉成 Rust 測試；黑箱測試（CLI、TSF）保留。
-- 更新 `CLAUDE.md`、`HOW_TO_BUILD.md`、CI workflow：`DIMESettings.exe` 改由 cargo 建置；`DIME.dll` 仍由 MSBuild 建置薄 C++ 外殼並連結 Rust 靜態函式庫（若做了第 4 階段選做部分，則改由 cargo 產出 `cdylib`）。
+- 更新 `CLAUDE.md`、`HOW_TO_BUILD.md`、CI workflow：`DIMESettings.exe` 改由 cargo 建置（5b-15f 已完成）；`DIME.dll` 仍由 MSBuild 建置薄 C++ 外殼並連結 Rust 靜態函式庫（若做了第 4 階段選做部分，則改由 cargo 產出 `cdylib`）。
+- **決定（2026-11-16）**：v2.0.765／v2.0.770 發佈後開始（使用者決定不再等觀察期）。
+  - **對拍測試轉成黃金檔**：刪 C++ 之前，把每個「C++ 對 Rust」對拍的輸入與 Rust 端輸出錄成 `src/tests/golden/` 下的文字檔，之後 Rust 和檔案比對。現在兩邊逐位元組／逐像素相同（對拍保證），所以從 Rust 錄就等於 C++ 的行為，C++ 不需要加錄製層。錄製方式比照 keyflow：設 `DIME_GOLDEN_RECORD=1` 重錄，檢查 diff。過渡期間（C++ 還在）測試同時檢查「C++ = 黃金檔」與「Rust = 黃金檔」。
+  - **比對像素的測試改錄繪圖呼叫**：像素結果受機器字型、ClearType 影響，不能跨機器。Rust 的繪圖呼叫集中到一個可錄製的 `gdi` 層（正常時直接呼叫系統，錄製時另外記下每個呼叫與參數）；錄製時量字函式（`GetTextExtentPoint32W`、`GetTextMetricsW`、`DrawTextW` 的 `DT_CALCRECT`）回傳固定的合成值，紀錄因此與機器無關。
+  - **順序**：先設定程式（風險最低：Rust 版 exe 已不用 C++），再 `DIME.dll`，最後拿掉開關。
+- **分步**：
+  - **6a：設定程式**
+    - **6a-1**：黃金檔基礎（`src/tests/Golden.*`：檔案位置、錄製開關、正規化 HWND／指標／暫存路徑、差異訊息）。
+    - **6a-2**：不比像素的設定對拍（`SettingsAppParityTest`、`SettingsCommandParityTest`、`SettingsControlsParityTest`、`SettingsDriverParityTest`、`SettingsEditorParityTest`、`SettingsFrameParityTest`、`SettingsLifecycleParityTest`、`SettingsMainParityTest`、`SettingsNavParityTest`、`SettingsPopulateParityTest`、`SettingsProcParityTest`、`SettingsWindowLayoutParityTest`、`SettingsWinHostParityTest`、`CinConvertParityTest`、`CliHostParityTest`）轉成黃金檔。
+    - **6a-3**：`dime-settings` 的 `gdi` 錄製層與合成量字；比對像素的設定測試（`SettingsWindowPaintParityTest`、`SettingsScreenshotTest`、`SettingsWindowParityTest`、`SettingsShellParityTest`、`SettingsChildrenParityTest`、`SettingsMsgBoxParityTest`）改成繪圖紀錄的黃金檔。
+    - **6a-4**：刪除 `src/DIMESettings/` 的 C++（設定視窗、`Cpp::` 原版、`CLI.cpp`、`DIMESettings.cpp`）與 `DIMESettings.vcxproj` 的全 C++ 組態；CLI 與 UIA 等黑箱測試改驅動 Rust；`RustCliParityTest` 的 `g_keyRegistry` 一併刪除。
+  - **6b**：`DIME.dll` 的 C++ 視窗（`CandidateWindow`、`NotifyWindow`、`ScrollBarWindow`、`ShadowWindow`、`BaseWindow`、`UILayout`）與 `DIME_CPP_PRESENTER`、`KeyStateCategory`；相關對拍（候選字窗、提示窗、陰影、捲軸、呈現器、`UILayout`）先轉成黃金檔，繪圖同 6a-3。
+  - **6c**：組字核心的 `_XxxCpp` 原版（按鍵分類、組字緩衝、候選字產生與選擇、整句緩衝、handler、引擎設定、語言列）；對拍轉黃金檔，按鍵流程以 keyflow 黃金測試為主。
+  - **6d**：設定（`CConfig` 的 C++ 儲存）與碼表引擎（`CTableDictionaryEngine`、`RustTableDictionaryEngine` 轉接層）；`RustParityTest`／`RustConfigParityTest` 轉成黃金檔。
+  - **6e**：拿掉 `DimeUseRustEngine`／`DimeTestRustEngine`／`DimeTestRustConfig` 開關與 `DIME_USE_RUST_*`／`DIME_RUST_AVAILABLE` 條件編譯、`TestStubs.cpp`、CI 的全 C++ 矩陣。
+  - **6f**：文件（`CLAUDE.md`、`HOW_TO_BUILD.md`、README、本文件）。
+- 每個子步驟單獨 commit，並跑完整測試（x64 與 Win32）。
 
 ## 4. 順序與相依
 

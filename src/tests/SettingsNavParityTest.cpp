@@ -7,6 +7,10 @@
 * sequences; after every event the state and the ordered effect list must
 * match. Clicks and moves are aimed at sidebar items, cards, rows, the
 * breadcrumb, and the hamburger at several dpis.
+*
+* Golden files (src/tests/golden/SettingsNav): one line per run with the
+* final state and a hash of every step's state and effects, and the minimum
+* track sizes; they keep the Rust side checked once the C++ one is deleted.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -17,6 +21,7 @@
 
 #include "../DIMESettings/SettingsNav.h"
 #include "dime_ffi.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SN = SettingsNav;
@@ -38,7 +43,7 @@ namespace
 
     SN::NavState RandomState(std::mt19937& rng)
     {
-        auto r = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
+        auto r = [&](int lo, int hi) { return Golden::Pick(rng, lo, hi); };
         SN::NavState s = {};
         int sel[] = { 0, 1, 2, 3, 5 };
         s.selectedModeIndex = sel[r(0, 4)];
@@ -59,7 +64,7 @@ namespace
 
     SN::NavEvent RandomEvent(std::mt19937& rng, UINT dpi)
     {
-        auto r = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
+        auto r = [&](int lo, int hi) { return Golden::Pick(rng, lo, hi); };
         SN::NavEvent ev = {};
         ev.kind = r(SN::EV_MAIN_SIZE, SN::EV_BACK);
         ev.dpi = dpi;
@@ -104,9 +109,11 @@ namespace DIMEUnitTests
             std::mt19937 rng(77);
             const UINT dpis[] = { 96, 120, 144, 192 };
             int effects = 0, switches = 0, toggles = 0, rebuilds = 0;
+            Golden::Log golden;
             for (int run = 0; run < 1500; run++) {
                 UINT dpi = dpis[run % 4];
                 SN::NavState a = RandomState(rng), b = a;
+                Golden::Hash hash;
                 for (int step = 0; step < 40; step++) {
                     SN::NavEvent ev = RandomEvent(rng, dpi);
                     std::vector<SN::NavEffect> fa;
@@ -119,6 +126,13 @@ namespace DIMEUnitTests
                         + L") " + Describe(a) + L" | " + Describe(b);
                     Assert::IsTrue(SameState(a, b), (L"state: " + ctx).c_str());
                     Assert::AreEqual(fa.size(), count, (L"effect count: " + ctx).c_str());
+                    hash.Add(&b, sizeof(b));
+                    for (size_t i = 0; i < count; i++) {
+                        const SN::NavEffect& y = fb[i];
+                        int v[8] = { y.kind, y.arg, y.erase, y.hasRect, y.rc.left, y.rc.top, y.rc.right, y.rc.bottom };
+                        if (!y.hasRect) v[4] = v[5] = v[6] = v[7] = 0;
+                        hash.Add(v, sizeof(v));
+                    }
                     for (size_t i = 0; i < count; i++) {
                         const SN::NavEffect& x = fa[i];
                         const SN::NavEffect& y = fb[i];
@@ -139,7 +153,9 @@ namespace DIMEUnitTests
                         }
                     }
                 }
+                golden.Add(L"run " + std::to_wstring(run) + L" " + Describe(b) + L" " + hash.Hex());
             }
+            Golden::Check(L"SettingsNav", L"RandomEventSequences", golden.lines);
             Assert::IsTrue(effects > 20000 && switches > 100 && toggles > 50 && rebuilds > 500,
                 (L"coverage: effects " + std::to_wstring(effects) + L" switches " + std::to_wstring(switches)
                     + L" toggles " + std::to_wstring(toggles) + L" rebuilds " + std::to_wstring(rebuilds)).c_str());
@@ -147,12 +163,15 @@ namespace DIMEUnitTests
 
         TEST_METHOD(MinTrackSize)
         {
+            Golden::Log golden;
             for (UINT dpi : { 72u, 96u, 120u, 144u, 192u, 288u }) {
                 POINT a = SN::Cpp::MinTrackSize(dpi), b = {};
                 dime_settings_nav_min_track_size(dpi, &b);
                 Assert::AreEqual(a.x, b.x);
                 Assert::AreEqual(a.y, b.y);
+                golden.Add(L"dpi " + std::to_wstring(dpi) + L": " + std::to_wstring(b.x) + L"x" + std::to_wstring(b.y));
             }
+            Golden::Check(L"SettingsNav", L"MinTrackSize", golden.lines);
         }
     };
 }

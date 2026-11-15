@@ -1,0 +1,72 @@
+// Golden.h — golden files for tests whose C++ reference implementation is
+// being deleted (phase 6 of docs/RUST_MIGRATION_PLAN.md).
+//
+// A golden file is src/tests/golden/<group>/<name>.txt: UTF-8, one line per
+// entry, lines starting with "# " are comments. It holds what the code under
+// test produced when it was still checked against the C++ implementation
+// (the parity tests proved both sides equal), so comparing against it keeps
+// that protection after the C++ side is gone.
+//
+// Set DIME_GOLDEN_RECORD=1 to (re)write the files from the current output,
+// then review the diff of src/tests/golden. Without it, a missing file or
+// any different line fails the test.
+#pragma once
+
+#include <cstdint>
+#include <random>
+#include <string>
+#include <vector>
+
+namespace Golden {
+
+// The repository root, with a trailing backslash.
+std::wstring RepoRoot();
+
+// DIME_GOLDEN_RECORD=1.
+bool Recording();
+
+// Records `lines` as <group>/<name> when recording; otherwise compares them
+// with the file and fails at the first difference.
+void Check(const std::wstring& group, const std::wstring& name, const std::vector<std::wstring>& lines);
+
+// Compares only (never records): for a second implementation that must
+// produce the recorded output too, e.g. the C++ side while it still exists.
+// `who` names it in the failure message.
+void Compare(const std::wstring& group, const std::wstring& name, const std::vector<std::wstring>& lines,
+    const std::wstring& who);
+
+// Collects lines for one golden file.
+class Log {
+public:
+    void Add(const std::wstring& line) { lines.push_back(line); }
+    // Several lines, split at '\n' (a trailing '\n' adds no empty line).
+    void AddText(const std::wstring& text);
+    std::vector<std::wstring> lines;
+};
+
+// A value in [lo, hi] from the raw output of `rng`. std::mt19937's sequence
+// is fixed by the standard but std::uniform_int_distribution is not, so
+// inputs behind a golden file must come from here to stay the same on every
+// toolchain.
+int Pick(std::mt19937& rng, int lo, int hi);
+
+// FNV-1a over the UTF-16 text of each added line: one golden line can stand
+// for a long run of output (the file names the run; record with the details
+// in a local diff when one changes).
+class Hash {
+public:
+    void Add(const std::wstring& line);
+    void Add(const void* bytes, size_t size);
+    std::wstring Hex() const;
+private:
+    uint64_t h = 1469598103934665603ULL;
+};
+
+// `s` with every occurrence of `from` replaced by `to`.
+std::wstring Replace(std::wstring s, const std::wstring& from, const std::wstring& to);
+
+// `s` with each "0x" followed by hex digits replaced by "<ptr>" (window
+// handles and pointers differ from run to run).
+std::wstring HidePointers(const std::wstring& s);
+
+} // namespace Golden

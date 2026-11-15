@@ -351,6 +351,7 @@
     <ClInclude Include="..\DIMESettings\SettingsApp.h" />
     <ClInclude Include="SettingsFakeApp.h" />
     <ClInclude Include="TestAppData.h" />
+    <ClInclude Include="Golden.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\CompositionProcessorEngine.cpp">
@@ -420,6 +421,7 @@
     <ClCompile Include="CliHostParityTest.cpp" />
     <ClCompile Include="SettingsMainParityTest.cpp" />
     <ClCompile Include="TestAppData.cpp" />
+    <ClCompile Include="Golden.cpp" />
     <ClCompile Include="CandidatePaintParityTest.cpp" />
     <ClCompile Include="ScrollBarProcParityTest.cpp" />
     <ClCompile Include="ShadowParityTest.cpp" />
