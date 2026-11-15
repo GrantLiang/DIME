@@ -8,9 +8,10 @@
 //! providers and selection, the snapshot, the paths, the dpi and the dark
 //! theme. The values are the process-wide settings object that `CConfig`
 //! also reads (`DIME_USE_RUST_CONFIG`), so the parts still in C++ (message
-//! box, the composition engine) see the same values; those calls go to the
-//! C++ host the app was made with. Table parsing (`CConfig::parseCINFile`)
-//! is `appenv::parse_cin_file` since phase 5b-15b.
+//! box) see the same values; those calls go to the C++ host the app was
+//! made with. Table parsing (`CConfig::parseCINFile`) is
+//! `appenv::parse_cin_file` since phase 5b-15b, the engine
+//! `settings_engine.rs` since 5b-15c.
 //!
 //! State `CConfig` keeps in its own statics lives here: the IME mode and its
 //! INI path, the INI time stamp and the mode it was loaded for, `colors[6]`
@@ -26,6 +27,7 @@ use dime_core::{DictionaryType, TableDictionaryEngine, WinTextOps};
 use dime_settings::appenv::{self, ReverseProvider};
 use dime_settings::window::App;
 
+use crate::settings_engine::SettingsEngine;
 use crate::settings_window::{AppVtbl, Ctx, VtblApp};
 use crate::{global_settings, guard, DimeSettings};
 
@@ -386,6 +388,8 @@ impl ConfigStore {
 pub struct NativeApp {
     fallback: VtblApp,
     store: RefCell<ConfigStore>,
+    /// `ConfigHost::_engine` (phase 5b-15c).
+    engine: RefCell<Option<SettingsEngine>>,
 }
 
 impl NativeApp {
@@ -459,16 +463,20 @@ impl App for NativeApp {
         appenv::parse_cin_file(src, dst, custom_table, false)
     }
     fn recreate_engine(&self, mode: i32) {
-        self.fallback.recreate_engine(mode);
+        // DestroyEngine, then CreateEngine.
+        *self.engine.borrow_mut() = None;
+        let app_data = self.s().app_data_path();
+        let engine = SettingsEngine::create(global(), mode, &app_data);
+        *self.engine.borrow_mut() = Some(engine);
     }
     fn destroy_engine(&self) {
-        self.fallback.destroy_engine();
+        *self.engine.borrow_mut() = None;
     }
     fn has_engine(&self) -> bool {
-        self.fallback.has_engine()
+        self.engine.borrow().is_some()
     }
     fn engine_char_ok(&self, ch: u16) -> bool {
-        self.fallback.engine_char_ok(ch)
+        self.engine.borrow().as_ref().is_some_and(|e| e.char_ok(ch))
     }
     fn custom_table_txt_path(&self, mode: i32) -> Vec<u16> {
         self.s().custom_table_path(mode, false)
@@ -679,6 +687,7 @@ pub unsafe extern "C" fn dime_settings_native_app_new(
             // SAFETY: the caller keeps the C++ host alive longer than the app.
             fallback: VtblApp { v: unsafe { &*fallback }, ctx: fallback_ctx },
             store: RefCell::new(ConfigStore::new(override_dir)),
+            engine: RefCell::new(None),
         });
         Box::into_raw(a).cast()
     })

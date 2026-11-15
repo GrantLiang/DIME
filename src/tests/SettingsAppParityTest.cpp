@@ -25,6 +25,7 @@
 
 #include "CppUnitTest.h"
 #include <Windows.h>
+#include <algorithm>
 #include <array>
 #include <random>
 #include <string>
@@ -388,6 +389,179 @@ namespace
         s.native = nullptr;
     }
 
+    // ---- EngineKeys -------------------------------------------------------
+
+    std::wstring RepoRoot()
+    {
+        std::wstring p = __FILEW__;            // ...\src\tests\SettingsAppParityTest.cpp
+        for (int i = 0; i < 3; i++) p = p.substr(0, p.find_last_of(L'\\'));
+        return p + L"\\";
+    }
+
+    void RemoveTree(const std::wstring& dir)
+    {
+        WIN32_FIND_DATAW fd;
+        HANDLE h = FindFirstFileW((dir + L"\\*").c_str(), &fd);
+        if (h != INVALID_HANDLE_VALUE) {
+            do {
+                std::wstring n = fd.cFileName;
+                if (n == L"." || n == L"..") continue;
+                std::wstring p = dir + L"\\" + n;
+                if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) RemoveTree(p);
+                else DeleteFileW(p.c_str());
+            } while (FindNextFileW(h, &fd));
+            FindClose(h);
+        }
+        RemoveDirectoryW(dir.c_str());
+    }
+
+    // Names and sizes under `dir`, sorted.
+    void Listing(const std::wstring& dir, const std::wstring& rel, std::vector<std::wstring>& out)
+    {
+        WIN32_FIND_DATAW fd;
+        HANDLE h = FindFirstFileW((dir + L"\\*").c_str(), &fd);
+        if (h == INVALID_HANDLE_VALUE) return;
+        do {
+            std::wstring n = fd.cFileName;
+            if (n == L"." || n == L"..") continue;
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) Listing(dir + L"\\" + n, rel + n + L"\\", out);
+            else out.push_back(rel + n + L" " + std::to_wstring(fd.nFileSizeLow));
+        } while (FindNextFileW(h, &fd));
+        FindClose(h);
+        std::sort(out.begin(), out.end());
+    }
+
+    // A small table: %keyname with `keys`, %endkey, maybe %autoCompose.
+    std::string Table(const std::wstring& keys, const std::wstring& endkey, int autoCompose, bool utf16 = true)
+    {
+        // The converted (parseCINFile) form the IME loads: tabs, quoted keys.
+        auto q = [](const std::wstring& s) {
+            std::wstring o = L"\"";
+            for (wchar_t c : s) { if (c == L'"' || c == L'\\') o += L'\\'; o += c; }
+            return o + L"\"";
+        };
+        std::wstring t = L"%gen_inp\r\n%ename\ttest\r\n";
+        if (!endkey.empty()) t += L"%endkey\t" + endkey + L"\r\n";
+        if (autoCompose >= 0) t += L"%autoCompose\t" + std::to_wstring(autoCompose) + L"\r\n";
+        t += L"%keyname begin\r\n";
+        for (wchar_t k : keys) t += q(std::wstring(1, k)) + L"\t" + q(std::wstring(1, (wchar_t)0x4E00 + (k % 50))) + L"\r\n";
+        t += L"%keyname end\r\n%chardef begin\r\n";
+        if (!keys.empty()) t += q(std::wstring(1, keys[0])) + L"\t" + q(std::wstring(1, (wchar_t)0x4E2D)) + L"\r\n";
+        t += L"%chardef end\r\n";
+        if (!utf16) {
+            std::string s;
+            for (wchar_t c : t) s += (char)(c < 128 ? c : '?');
+            return s;
+        }
+        return Utf16File(t);
+    }
+
+    struct EngineScenario {
+        std::wstring name;
+        // Files under AppData\DIME and ProgramW6432\DIME (name -> bytes, or a
+        // repo path prefixed with '@').
+        std::vector<std::pair<std::wstring, std::string>> app, pf;
+        int arrayScope;
+        std::vector<int> modes;   // RecreateEngine order; -1 = DestroyEngine
+    };
+
+    std::vector<EngineScenario> EngineScenarios()
+    {
+        std::wstring abc = L"abcdefghijklmnopqrstuvwxyz";
+        std::wstring dayi = L"abcdefghijklmnopqrstuvwxyz,./;'[]-=\\`";
+        std::wstring many;
+        for (wchar_t c = 33; c < 33 + 97; c++) many += c;   // 97 radicals: too many
+        std::vector<EngineScenario> out;
+        out.push_back({ L"nothing", {}, {}, 0, { 0, 1, 2, 3 } });
+        out.push_back({ L"dayi in appdata", { { L"Dayi.cin", Table(dayi, L"", -1) } }, {}, 0, { 0, -1, 0 } });
+        out.push_back({ L"dayi with '=' and endkey", { { L"Dayi.cin", Table(L"=abc,.", L" ,.", 0) } }, {}, 0, { 0 } });
+        out.push_back({ L"array shipped", {}, { { L"Array.cin", "@installer\\Array.cin" }, { L"Array-special.cin", "@installer\\Array-special.cin" },
+            { L"Array-shortcode.cin", "@installer\\Array-shortcode.cin" } }, 0, { 1, 1 } });
+        out.push_back({ L"array40 shipped", {}, { { L"Array40.cin", "@installer\\Array40.cin" }, { L"Array.cin", "@installer\\Array.cin" } }, 4, { 1 } });
+        out.push_back({ L"array appdata newer than shipped", { { L"Array.cin", Table(abc + L",./;", L"", 1) } },
+            { { L"Array.cin", Table(L"abc", L"", 0) } }, 0, { 1 } });
+        out.push_back({ L"phonetic shipped", {}, { { L"Phone.cin", "@installer\\phone.cin" } }, 0, { 2, 0, 2 } });
+        out.push_back({ L"generic", { { L"Generic.cin", Table(abc, L"1234", 0) } }, {}, 0, { 3 } });
+        out.push_back({ L"generic lower and high keys", { { L"Generic.cin", Table(L"aBz~" + std::wstring(1, (wchar_t)0xE9), L"z", -1) } }, {}, 0, { 3 } });
+        out.push_back({ L"too many radicals", { { L"Generic.cin", Table(many, L"", -1) } }, {}, 0, { 3 } });
+        out.push_back({ L"not unicode", { { L"Generic.cin", Table(abc, L"", 1, false) } }, {}, 0, { 3 } });
+        out.push_back({ L"custom tables with autoCompose", { { L"Generic.cin", Table(abc, L"", 0) },
+            { L"GENERIC-CUSTOM.cin", Table(L"ab", L"", 1) }, { L"DAYI-CUSTOM.cin", Table(L"ab", L"", 0) },
+            { L"Dayi.cin", Table(dayi, L"", 1) }, { L"Phrase.cin", Table(L"xy", L"", 0) } }, {}, 0, { 3, 0, 1, 2 } });
+        return out;
+    }
+
+    // Load the files of a scenario into `app` / `pf`.
+    void Place(const std::wstring& root, const std::vector<std::pair<std::wstring, std::string>>& files, WORD year)
+    {
+        SYSTEMTIME st = { year, 1, 0, 1, 0, 0, 0, 0 };
+        FILETIME ft = {};
+        SystemTimeToFileTime(&st, &ft);
+        CreateDirectoryW(root.c_str(), nullptr);
+        CreateDirectoryW((root + L"\\DIME").c_str(), nullptr);
+        for (const auto& f : files) {
+            std::wstring dst = root + L"\\DIME\\" + f.first;
+            if (!f.second.empty() && f.second[0] == '@') {
+                std::wstring src = RepoRoot() + std::wstring(f.second.begin() + 1, f.second.end());
+                Assert::IsTrue(CopyFileW(src.c_str(), dst.c_str(), FALSE) != 0, src.c_str());
+            } else {
+                WriteBytes(dst, f.second);
+            }
+            SetWriteTime(dst, ft);
+        }
+    }
+
+    std::vector<std::wstring> RunEngine(bool rust, const EngineScenario& sc, const std::wstring& base, const DimeConfigEnv& env)
+    {
+        std::wstring app = base + (rust ? L"\\appR" : L"\\appC"), pf = base + (rust ? L"\\pfR" : L"\\pfC");
+        RemoveTree(app);
+        RemoveTree(pf);
+        // Fixed file times: shipped tables are newer than the AppData ones.
+        Place(app, sc.app, 2020);
+        Place(pf, sc.pf, 2025);
+        ResetCommon(env, {});
+        CConfig::SetArrayScope((ARRAY_SCOPE)sc.arrayScope);
+        DimeConfigValues v = {};
+        CConfig::ExportValues(&v);
+        dime_settings_set_values(dime_settings_global(), &v);
+        wcscpy_s(Global::testAppDataOverride, app.c_str());
+        SetEnvironmentVariableW(L"ProgramW6432", pf.c_str());
+        Global::imeMode = IME_MODE::IME_MODE_NONE;
+
+        SettingsApp::ConfigHost cpp;
+        void* native = nullptr;
+        const DimeSettingsAppVtbl* vt = static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl());
+        void* ctx = static_cast<SettingsApp::Host*>(&cpp);
+        if (rust) {
+            native = dime_settings_native_app_new(vt, ctx, (const uint16_t*)app.c_str());
+            vt = dime_settings_native_app_vtbl();
+            ctx = native;
+        }
+        std::vector<std::wstring> log;
+        for (int m : sc.modes) {
+            if (m < 0) vt->destroy_engine(ctx);
+            else vt->recreate_engine(ctx, m);
+            std::wstring keys;
+            for (int c = 0; c < 0x180; c++) keys += vt->engine_char_ok(ctx, (uint16_t)c) ? L'1' : L'0';
+            DimeConfigValues vals = {};
+            if (rust) dime_settings_get_values(dime_settings_global(), &vals);
+            else CConfig::ExportValues(&vals);
+            bool end = false;
+            for (uint16_t& ch : vals.font_face_name) { if (end) ch = 0; else if (ch == 0) end = true; }
+            std::vector<std::wstring> files;
+            Listing(app, L"", files);
+            std::wstring s = sc.name + L" mode " + std::to_wstring(m) + L" engine " + std::to_wstring(vt->has_engine(ctx))
+                + L"\nkeys " + keys + L"\nvalues " + Hex(&vals, sizeof(vals)) + L"\nfiles:";
+            for (const std::wstring& f : files) s += L" [" + f + L"]";
+            log.push_back(s);
+        }
+        vt->destroy_engine(ctx);
+        if (native) dime_settings_native_app_free(native);
+        RemoveTree(app);
+        RemoveTree(pf);
+        return log;
+    }
+
     void Cleanup(const std::wstring& dir)
     {
         for (int i = 0; i < 5; i++) DeleteFileW((dir + L"\\DIME\\" + kIniNames[i]).c_str());
@@ -470,6 +644,44 @@ namespace DIMEUnitTests
                 }
             }
             Assert::IsTrue(loads > 100, std::to_wstring(loads).c_str());
+        }
+
+        // The engine the custom table check uses (phase 5b-15c): which
+        // characters are radical keys, the settings it changes, and the
+        // tables it copies into AppData, for each scenario.
+        TEST_METHOD(EngineKeys)
+        {
+            DimeConfigEnv env = { GetSysColor(COLOR_3DHIGHLIGHT), Global::isWindows1809OrLater ? 1 : 0 };
+            wchar_t tmp[MAX_PATH] = {};
+            GetTempPathW(MAX_PATH, tmp);
+            std::wstring base = std::wstring(tmp) + L"DIMEEngineParity" + std::to_wstring(GetCurrentProcessId());
+            CreateDirectoryW(base.c_str(), nullptr);
+            wchar_t savedPf[MAX_PATH] = {};
+            DWORD hadPf = GetEnvironmentVariableW(L"ProgramW6432", savedPf, MAX_PATH);
+            IME_MODE savedMode = Global::imeMode;
+            int keyed = 0;
+            std::wstring failure;
+            for (const EngineScenario& sc : EngineScenarios()) {
+                std::vector<std::wstring> c = RunEngine(false, sc, base, env);
+                std::vector<std::wstring> r = RunEngine(true, sc, base, env);
+                for (size_t i = 0; i < c.size() && failure.empty(); i++) {
+                    std::wstring cn = c[i], rn = r[i];
+                    if (cn != rn) failure = L"C++:\n" + cn + L"\nRust:\n" + rn;
+                    {
+                        size_t k = cn.find(L"keys ");
+                        std::wstring bits = cn.substr(k + 5, 0x180);
+                        Logger::WriteMessage((cn.substr(0, cn.find(L'\n')) + L": " + std::to_wstring(std::count(bits.begin(), bits.end(), L'1'))
+                            + L" keys; " + cn.substr(cn.find(L"files:")) + L"\n").c_str());
+                    }
+                    if (cn.find(L"keys ") != std::wstring::npos && cn.find(L'1', cn.find(L"keys ")) < cn.find(L"\nvalues")) keyed++;
+                }
+            }
+            SetEnvironmentVariableW(L"ProgramW6432", hadPf ? savedPf : nullptr);
+            Global::imeMode = savedMode;
+            RemoveTree(base);
+            Assert::IsTrue(failure.empty(), failure.c_str());
+            Logger::WriteMessage((L"engine states with radical keys: " + std::to_wstring(keyed) + L"\n").c_str());
+            Assert::IsTrue(keyed >= 8, std::to_wstring(keyed).c_str());
         }
 
         // What the app reads from the system is the same on both sides.

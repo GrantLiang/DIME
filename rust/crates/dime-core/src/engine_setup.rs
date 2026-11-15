@@ -55,7 +55,8 @@ const TF_MOD_SHIFT: u32 = 0x0004;
 const TF_MOD_ON_KEYUP_SHIFT_ONLY: u32 = 0x0001_0000 | 0x0200;
 
 const FN_NONE: u32 = 0;
-const FN_INPUT: u32 = 1;
+/// `KEYSTROKE_FUNCTION::FUNCTION_INPUT`.
+pub const FN_INPUT: u32 = 1;
 const FN_INPUT_AND_CONVERT: u32 = 2;
 const FN_CONVERT: u32 = 9;
 
