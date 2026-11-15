@@ -8,6 +8,10 @@
 * subclass procedures get the same message sequence (keys, paste, scroll,
 * wheel, focus) and must post / forward the same messages to the parent and
 * leave the same selection.
+*
+* Golden files (src/tests/golden/SettingsEditor): per viewport case the Rust
+* side's visible range, a hash of the colours, and the selection; per
+* subclass step the parent messages and the selection.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -21,6 +25,7 @@
 
 #include "../DIMESettings/SettingsEditor.h"
 #include "dime_ffi.h"
+#include "Golden.h"
 
 #pragma comment(lib, "comctl32.lib")
 
@@ -142,6 +147,7 @@ namespace DIMEUnitTests
             std::mt19937 rng(8);
             HWND parent = MakeParent();
             int painted = 0;
+            Golden::Log golden;
             for (int iter = 0; iter < 60; iter++) {
                 int w = 300 + (int)(rng() % 400), h = 120 + (int)(rng() % 300);
                 HWND a = MakeEditor(parent, w, h), b = MakeEditor(parent, w, h);
@@ -183,10 +189,16 @@ namespace DIMEUnitTests
                 Assert::IsTrue(sa.cpMin == before.cpMin && sa.cpMax == before.cpMax, L"C++ kept the selection");
                 Assert::IsTrue(sb.cpMin == before.cpMin && sb.cpMax == before.cpMax, L"Rust kept the selection");
                 Assert::AreEqual((LRESULT)(ENM_CHANGE | ENM_SCROLL), SendMessageW(b, EM_GETEVENTMASK, 0, 0), L"mask restored");
+                Golden::Hash colours;
+                colours.Add(cb.data(), cb.size() * sizeof(LONG));
+                golden.Add(L"iter " + std::to_wstring(iter) + L" visible " + std::to_wstring(fb) + L".." + std::to_wstring(lb)
+                    + L" chars " + std::to_wstring(cb.size()) + L" sel " + std::to_wstring(sb.cpMin) + L","
+                    + std::to_wstring(sb.cpMax) + L" colours " + colours.Hex());
                 DestroyWindow(a);
                 DestroyWindow(b);
             }
             DestroyWindow(parent);
+            Golden::Check(L"SettingsEditor", L"ViewportPass", golden.lines);
             Assert::IsTrue(painted > 100, L"some characters got error colours");
         }
 
@@ -215,6 +227,7 @@ namespace DIMEUnitTests
                 { WM_SETFOCUS, 0, 0, 6, 9 },
                 { WM_KEYDOWN, VK_RETURN, 0, 8, 8 },
             };
+            Golden::Log golden;
             for (size_t i = 0; i < _countof(steps); i++) {
                 const Step& st = steps[i];
                 CHARRANGE cr = { st.selMin, st.selMax };
@@ -235,7 +248,12 @@ namespace DIMEUnitTests
                 CHARRANGE sa = Sel(a), sb = Sel(b);
                 Assert::IsTrue(sa.cpMin == sb.cpMin && sa.cpMax == sb.cpMax, (what + L": selection").c_str());
                 Assert::AreEqual(GetWindowTextLengthW(a), GetWindowTextLengthW(b), (what + L": text").c_str());
+                std::wstring msgs;
+                for (UINT m : lb) msgs += L" " + std::to_wstring(m);
+                golden.Add(what + L": parent" + msgs + L" sel " + std::to_wstring(sb.cpMin) + L"," + std::to_wstring(sb.cpMax)
+                    + L" text " + std::to_wstring(GetWindowTextLengthW(b)));
             }
+            Golden::Check(L"SettingsEditor", L"SubclassProc", golden.lines);
             // The focus step resets the selection to the start.
             CHARRANGE cr = { 6, 9 };
             SendMessageW(b, EM_EXSETSEL, 0, (LPARAM)&cr);

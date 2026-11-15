@@ -12,6 +12,10 @@
 * - The font and colour dialogs confirmed with OK, and all four dialogs
 *   closed (cancel), by a driver thread that finds the dialog on the test
 *   thread and posts to it.
+*
+* Golden files (src/tests/golden/SettingsWinHost): the bytes WriteBomFile
+* writes and the editor results. The paths, LOGPIXELSY, and dialog results
+* depend on the machine; those keep absolute checks instead.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -23,6 +27,7 @@
 #include <vector>
 
 #include "../DIMESettings/SettingsWinHost.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace WH = SettingsWinHost;
@@ -131,6 +136,7 @@ namespace DIMETests
             for (int i = 0; i < 70000; i++) big += (wchar_t)(L'\x4E00' + i % 500);
             std::wstring withNul = std::wstring(L"ab") + L'\0' + L"cd\r\n";
             std::vector<std::wstring> texts = { L"", L"a", L"\x5927\x6613 abc\r\nxyz\r\n", withNul, big };
+            Golden::Log golden;
             for (size_t i = 0; i < texts.size(); i++) {
                 std::wstring pa = dir + L"\\cpp" + std::to_wstring(i) + L".txt";
                 std::wstring pb = dir + L"\\rust" + std::to_wstring(i) + L".txt";
@@ -140,6 +146,9 @@ namespace DIMETests
                 std::vector<char> ba = ReadAll(pa), bb = ReadAll(pb);
                 Assert::IsTrue(ba == bb, (L"bytes of text " + std::to_wstring(i)).c_str());
                 Assert::AreEqual((size_t)(2 + texts[i].size() * 2), ba.size(), L"size");
+                Golden::Hash hash;
+                hash.Add(bb.data(), bb.size());
+                golden.Add(L"text " + std::to_wstring(i) + L": " + std::to_wstring(bb.size()) + L" bytes " + hash.Hex());
                 DeleteFileW(pa.c_str());
                 DeleteFileW(pb.c_str());
             }
@@ -147,6 +156,7 @@ namespace DIMETests
             Assert::AreEqual(WH::Cpp::WriteBomFile(missing, L"x"), WH::Rust::WriteBomFile(missing, L"x"), L"missing folder");
             Assert::IsFalse(WH::Rust::WriteBomFile(missing, L"x"), L"missing folder fails");
             RemoveDirectoryW(dir.c_str());
+            Golden::Check(L"SettingsWinHost", L"WriteBomFile", golden.lines);
         }
 
         TEST_METHOD(PathsAndDpi)
@@ -164,6 +174,7 @@ namespace DIMETests
             std::wstring big;
             for (int i = 0; i < 3000; i++) big += L"\x4E00\x4E01 abcd\r\n";
             std::vector<std::wstring> texts = { L"", L"one line", L"a\r\nb\r\nc", L"a\nb\n\nd\r\n", L"x\ty\r\n\r\n\r\n", big };
+            Golden::Log golden;
             for (const auto& t : texts) {
                 g_enChange = 0;
                 int la = WH::Cpp::SetEditorTextMuted(ep.a, t);
@@ -176,8 +187,16 @@ namespace DIMETests
                 Assert::IsTrue(ta == tb, L"text");
                 Assert::IsTrue(WH::Cpp::EditorText(ep.b) == WH::Rust::EditorText(ep.a), L"text crossed");
                 Assert::AreEqual(WH::Cpp::EditorLineCount(ep.a), WH::Rust::EditorLineCount(ep.b), L"EM_GETLINECOUNT");
-                for (int line : { -2, -1, 0, 1, 2, 3, la - 1, la, la + 1, 100000 })
-                    Assert::AreEqual(WH::Cpp::EditorLineIndex(ep.a, line), WH::Rust::EditorLineIndex(ep.b, line), L"line index");
+                Golden::Hash hash;
+                hash.Add(tb);
+                std::wstring line = L"text of " + std::to_wstring(t.size()) + L" chars: lines " + std::to_wstring(lb)
+                    + L" count " + std::to_wstring(WH::Rust::EditorLineCount(ep.b)) + L" read " + hash.Hex() + L" index";
+                for (int ln : { -2, -1, 0, 1, 2, 3, la - 1, la, la + 1, 100000 }) {
+                    int ia = WH::Cpp::EditorLineIndex(ep.a, ln), ib = WH::Rust::EditorLineIndex(ep.b, ln);
+                    Assert::AreEqual(ia, ib, L"line index");
+                    line += L" " + std::to_wstring(ib);
+                }
+                line += L" focus";
                 for (int cp : { 0, 1, 3, (int)ta.size(), (int)ta.size() + 5, -1 }) {
                     WH::Cpp::EditorFocusAt(ep.a, cp);
                     WH::Rust::EditorFocusAt(ep.b, cp);
@@ -186,8 +205,11 @@ namespace DIMETests
                     SendMessageW(ep.b, EM_GETSEL, (WPARAM)&sb0, (LPARAM)&sb1);
                     Assert::IsTrue(sa0 == sb0 && sa1 == sb1, (L"selection after focus at " + std::to_wstring(cp)).c_str());
                     Assert::IsTrue(GetFocus() == ep.b, L"focus");
+                    line += L" " + std::to_wstring(sb0) + L"," + std::to_wstring(sb1);
                 }
+                golden.Add(line);
             }
+            Golden::Check(L"SettingsWinHost", L"EditorCalls", golden.lines);
         }
 
         TEST_METHOD(Dialogs)

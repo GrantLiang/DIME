@@ -6,6 +6,9 @@
 * and editor call from a seeded script; the call logs (names and arguments,
 * including the snapshot at each ApplyAndSave), the final snapshot, and the
 * color grid flag must match for random buttons, combos, edits, and swatches.
+*
+* Golden file (src/tests/golden/SettingsCommand): one hash per 100 commands
+* of the Rust side's calls, final snapshot, and grid flag.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -16,6 +19,7 @@
 
 #include "../DIMESettings/SettingsCommand.h"
 #include "../DIMESettings/SettingsPageLayout.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SC = SettingsCommand;
@@ -238,6 +242,8 @@ namespace DIMEUnitTests
             std::vector<int> ids = ButtonIds();
             static const wchar_t* edits[] = { L"4", L"7", L"0", L"12", L"\xFF15", L"x", L"", L" 3", L"99999999999" };
             int calls = 0, messages = 0, applies = 0;
+            Golden::Log golden;
+            Golden::Hash hash;
             for (int iter = 0; iter < 20000; iter++) {
                 Script sc = RandomScript(rng);
                 SC::CommandEvent ev = {};
@@ -279,7 +285,15 @@ namespace DIMEUnitTests
                 calls += (int)ha.log.size();
                 Assert::IsTrue(memcmp(&sa, &sb, sizeof(sa)) == 0, (L"snapshot: " + ctx).c_str());
                 Assert::AreEqual(ga, gb, (L"grid: " + ctx).c_str());
+                for (const auto& line : hb.log) hash.Add(line);
+                hash.Add(&sb, sizeof(sb));
+                hash.Add(L"grid " + std::to_wstring(gb));
+                if (iter % 100 == 99) {
+                    golden.Add(L"iters " + std::to_wstring(iter - 99) + L".." + std::to_wstring(iter) + L" " + hash.Hex());
+                    hash = Golden::Hash();
+                }
             }
+            Golden::Check(L"SettingsCommand", L"RandomCommands", golden.lines);
             Assert::IsTrue(calls > 20000 && messages > 300 && applies > 1000,
                 (L"coverage: calls " + std::to_wstring(calls) + L" messages " + std::to_wstring(messages)
                     + L" applies " + std::to_wstring(applies)).c_str());

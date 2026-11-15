@@ -1,0 +1,11 @@
+step 0: parent 1025 sel 4,4 text 44
+step 1: parent 1025 sel 0,0 text 44
+step 2: parent sel 1,1 text 44
+step 3: parent sel 2,2 text 39
+step 4: parent 1025 sel 2,2 text 18
+step 5: parent 1025 sel 0,0 text 7
+step 6: parent sel 5,5 text 5
+step 7: parent 1027 sel 4,4 text 5
+step 8: parent 522 sel 4,4 text 5
+step 9: parent sel 0,0 text 5
+step 10: parent 1025 sel 6,6 text 7

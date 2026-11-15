@@ -1,0 +1,6 @@
+text of 0 chars: lines 1 count 1 read 9a7d7700c55a0bf1 index 0 0 0 -1 -1 -1 0 -1 -1 -1 focus 0,0 0,0 0,0 0,0 0,0 0,0
+text of 8 chars: lines 1 count 1 read 9cb6090b9b10ddab index 0 0 0 -1 -1 -1 0 -1 -1 -1 focus 0,0 1,1 3,3 8,8 8,8 8,8
+text of 7 chars: lines 3 count 3 read 867d61db712521b1 index 0 0 0 2 4 -1 4 -1 -1 -1 focus 0,0 1,1 3,3 5,5 5,5 5,5
+text of 8 chars: lines 5 count 5 read af4ff8428216f69e index 0 0 0 2 4 5 7 -1 -1 -1 focus 0,0 1,1 3,3 7,7 7,7 7,7
+text of 9 chars: lines 4 count 4 read f5e496a75faf92c6 index 0 0 0 4 5 6 6 -1 -1 -1 focus 0,0 1,1 3,3 6,6 6,6 6,6
+text of 27000 chars: lines 3001 count 3001 read 72b23e3c1088ff11 index 0 0 0 8 16 24 24000 -1 -1 -1 focus 0,0 1,1 3,3 24000,24000 24000,24000 24000,24000

@@ -8,6 +8,9 @@
 * [儲存] state, preview height, the child controls and their check state, the
 * unsaved-table prompt); random states and random operations must produce the
 * same Host calls and the same state after every operation.
+*
+* Golden file (src/tests/golden/SettingsDriver): one hash per run of the
+* Rust side's Host calls and state after every operation.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -18,6 +21,7 @@
 #include <vector>
 
 #include "../DIMESettings/SettingsDriver.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SD = SettingsDriver;
@@ -26,7 +30,7 @@ namespace SF = SettingsFrame;
 
 namespace
 {
-    int R(std::mt19937& rng, int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); }
+    int R(std::mt19937& rng, int lo, int hi) { return Golden::Pick(rng, lo, hi); }
 
     // Toggle ids of the shipped pages, plus ids no row uses.
     const int kIds[] = { 11, 14, 15, 18, 20, 21, 22, 23, 24, 26, 27, 28, 31, 35, 37, 38, 39, 300, 999 };
@@ -276,12 +280,14 @@ namespace DIMETests
             std::mt19937 rng(9090);
             const UINT dpis[] = { 96, 120, 144, 192 };
             int ops[4] = {}, calls = 0, toggles = 0, prompts = 0, rebuilds = 0, moves = 0;
+            Golden::Log golden;
             for (int run = 0; run < 1500; run++) {
                 UINT dpi = dpis[R(rng, 0, 3)];
                 bool content = R(rng, 0, 7) != 0;
                 unsigned seed = rng();
                 Recorder a(seed, dpi, content), b(seed, dpi, content);
                 SD::State sa = RandomState(rng), sb = sa;
+                Golden::Hash hash;
                 for (int step = 0; step < 30; step++) {
                     int op = R(rng, 0, 9);
                     std::wstring what;
@@ -320,10 +326,13 @@ namespace DIMETests
                     if (a.log.find(L"ask=") != std::wstring::npos) prompts++;
                     if (a.log.find(L"create dpi") != std::wstring::npos) rebuilds++;
                     if (a.log.find(L"move ") != std::wstring::npos) moves++;
+                    hash.Add(what + L" | " + b.log + L" | " + Describe(sb));
                     a.log.clear();
                     b.log.clear();
                 }
+                golden.Add(L"run " + std::to_wstring(run) + L" " + Describe(sb) + L" " + hash.Hex());
             }
+            Golden::Check(L"SettingsDriver", L"RandomOperationSequences", golden.lines);
             std::wstring cov = L"coverage: nav " + std::to_wstring(ops[0]) + L" frame " + std::to_wstring(ops[1])
                 + L" switch " + std::to_wstring(ops[2]) + L" rebuild " + std::to_wstring(ops[3])
                 + L" calls " + std::to_wstring(calls) + L" toggles " + std::to_wstring(toggles)
