@@ -45,11 +45,15 @@ windows_link::link!("kernel32.dll" "system" fn ReadFile(h: Handle, buf: *mut u8,
 windows_link::link!("kernel32.dll" "system" fn CloseHandle(h: Handle) -> i32);
 windows_link::link!("user32.dll" "system" fn SetWindowRgn(h: Handle, rgn: Handle, redraw: i32) -> i32);
 windows_link::link!("gdi32.dll" "system" fn CreateRectRgn(l: i32, t: i32, r: i32, b: i32) -> Handle);
+windows_link::link!("user32.dll" "system" fn ValidateRect(h: Handle, rc: *const c_void) -> i32);
 windows_link::link!("ole32.dll" "system" fn CoCreateInstance(clsid: *const Guid, outer: Handle, ctx: u32, iid: *const Guid, out: *mut *mut c_void) -> i32);
 windows_link::link!("kernel32.dll" "system" fn MultiByteToWideChar(cp: u32, flags: u32, src: *const u8, cb: i32, dst: *mut u16, cch: i32) -> i32);
 
 const WM_SETFONT: u32 = 0x0030;
 const WM_MOUSEWHEEL: u32 = 0x020A;
+const WM_PAINT: u32 = 0x000F;
+const WM_ERASEBKGND: u32 = 0x0014;
+const WM_PRINTCLIENT: u32 = 0x0318;
 const WM_NCDESTROY: u32 = 0x0082;
 const WM_USER: u32 = 0x0400;
 const EM_GETLINECOUNT: u32 = 0x00BA;
@@ -275,15 +279,29 @@ unsafe extern "system" fn wheel_subclass_proc(
     w: usize,
     l: isize,
     id: usize,
-    named: usize,
+    flags: usize,
 ) -> isize {
     // SAFETY: called by comctl32 for a subclassed child; plain user32 calls.
     unsafe {
         if msg == WM_MOUSEWHEEL {
             return SendMessageW(GetParent(h), msg, w, l);
         }
+        // A toggle's check box never paints: its empty window region does
+        // not stop the button from drawing itself when the content area is
+        // redrawn with RDW_ALLCHILDREN (scrolling), which covered the switch.
+        if flags & SUBCLASS_TOGGLE_BOX != 0 {
+            match msg {
+                WM_PAINT => {
+                    ValidateRect(h, null());
+                    return 0;
+                }
+                WM_ERASEBKGND => return 1,
+                WM_PRINTCLIENT => return 0,
+                _ => {}
+            }
+        }
         if msg == WM_NCDESTROY {
-            if named != 0 {
+            if flags & SUBCLASS_NAMED != 0 {
                 clear_acc_name(h);
             }
             RemoveWindowSubclass(h, wheel_subclass_proc, id);
@@ -291,6 +309,12 @@ unsafe extern "system" fn wheel_subclass_proc(
         DefSubclassProc(h, msg, w, l)
     }
 }
+
+/// `wheel_subclass_proc` reference data: the control has an accessible name
+/// to clear.
+const SUBCLASS_NAMED: usize = 1;
+/// `wheel_subclass_proc` reference data: a toggle row's check box.
+const SUBCLASS_TOGGLE_BOX: usize = 2;
 
 static MSFTEDIT_LOADED: AtomicBool = AtomicBool::new(false);
 
@@ -465,7 +489,9 @@ pub fn create(host: &mut dyn ChildHost, ctx: &Context, specs: &[ControlSpec]) {
         host.added(spec.ctrl_id, h, spec.add, spec.vis_h);
         if !h.is_null() {
             // SAFETY: subclassing a window we created.
-            unsafe { SetWindowSubclass(h, wheel_subclass_proc, WHEEL_SUBCLASS_ID, usize::from(named)) };
+            let flags = if named { SUBCLASS_NAMED } else { 0 }
+                | if spec.role == ROLE_TOGGLE { SUBCLASS_TOGGLE_BOX } else { 0 };
+            unsafe { SetWindowSubclass(h, wheel_subclass_proc, WHEEL_SUBCLASS_ID, flags) };
         }
     }
 }

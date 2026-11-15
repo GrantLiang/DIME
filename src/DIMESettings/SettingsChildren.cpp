@@ -60,15 +60,26 @@ void ClearAccName(HWND h)
     svc->Release();
 }
 
+// WheelSubclassProc reference data.
+constexpr DWORD_PTR kSubclassNamed = 1;      // has an accessible name to clear
+constexpr DWORD_PTR kSubclassToggleBox = 2;  // a toggle row's check box
+
 // Child controls forward the wheel to the content area so it scrolls.
-// Reference data 1: the control has an accessible name to clear.
 LRESULT CALLBACK WheelSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-    UINT_PTR uIdSubclass, DWORD_PTR named)
+    UINT_PTR uIdSubclass, DWORD_PTR flags)
 {
     if (uMsg == WM_MOUSEWHEEL)
         return SendMessage(GetParent(hWnd), uMsg, wParam, lParam);
+    // A toggle's check box never paints: its empty window region does not
+    // stop the button from drawing itself when the content area is redrawn
+    // with RDW_ALLCHILDREN (scrolling), which covered the switch.
+    if (flags & kSubclassToggleBox) {
+        if (uMsg == WM_PAINT) { ValidateRect(hWnd, nullptr); return 0; }
+        if (uMsg == WM_ERASEBKGND) return 1;
+        if (uMsg == WM_PRINTCLIENT) return 0;
+    }
     if (uMsg == WM_NCDESTROY) {
-        if (named) ClearAccName(hWnd);
+        if (flags & kSubclassNamed) ClearAccName(hWnd);
         RemoveWindowSubclass(hWnd, WheelSubclassProc, uIdSubclass);
     }
     return DefSubclassProc(hWnd, uMsg, wParam, lParam);
@@ -149,7 +160,11 @@ void Create(Host& host, const Context& ctx, const std::vector<SettingsControls::
             SetWindowRgn(h, CreateRectRgn(0, 0, 0, 0), FALSE);
         bool named = h && !spec.accName.empty() && SetAccName(h, spec.accName);
         host.Added(spec.ctrlId, h, spec.add.left, spec.add.top, spec.add.right, spec.add.bottom, spec.visH);
-        if (h) SetWindowSubclass(h, WheelSubclassProc, kWheelSubclassId, named ? 1 : 0);
+        if (h) {
+            DWORD_PTR flags = (named ? kSubclassNamed : 0)
+                | (spec.role == SettingsControls::ROLE_TOGGLE ? kSubclassToggleBox : 0);
+            SetWindowSubclass(h, WheelSubclassProc, kWheelSubclassId, flags);
+        }
     }
 }
 

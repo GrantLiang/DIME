@@ -110,7 +110,6 @@ windows_link::link!("user32.dll" "system" fn GetWindowLongPtrW(h: Handle, i: i32
 #[cfg(target_pointer_width = "64")]
 windows_link::link!("user32.dll" "system" fn SetWindowLongPtrW(h: Handle, i: i32, v: isize) -> isize);
 windows_link::link!("user32.dll" "system" fn GetWindowLongW(h: Handle, i: i32) -> i32);
-windows_link::link!("gdi32.dll" "system" fn CreateRectRgn(l: i32, t: i32, r: i32, b: i32) -> Handle);
 #[cfg(target_pointer_width = "32")]
 windows_link::link!("user32.dll" "system" fn SetWindowLongW(h: Handle, i: i32, v: i32) -> i32);
 windows_link::link!("user32.dll" "system" fn GetClientRect(h: Handle, rc: *mut Rect) -> i32);
@@ -123,6 +122,7 @@ windows_link::link!("user32.dll" "system" fn SendMessageW(h: Handle, m: u32, w: 
 windows_link::link!("user32.dll" "system" fn SetWindowPos(h: Handle, after: Handle, x: i32, y: i32, w: i32, h2: i32, flags: u32) -> i32);
 windows_link::link!("user32.dll" "system" fn ShowWindow(h: Handle, cmd: i32) -> i32);
 windows_link::link!("user32.dll" "system" fn SetWindowRgn(h: Handle, rgn: Handle, redraw: i32) -> i32);
+windows_link::link!("user32.dll" "system" fn GetClassNameW(h: Handle, name: *mut u16, cap: i32) -> i32);
 windows_link::link!("user32.dll" "system" fn DestroyWindow(h: Handle) -> i32);
 windows_link::link!("user32.dll" "system" fn InvalidateRect(h: Handle, rc: *const Rect, erase: i32) -> i32);
 windows_link::link!("user32.dll" "system" fn TrackMouseEvent(tme: *mut TrackMouseEvent) -> i32);
@@ -643,12 +643,16 @@ impl DriverHost for DriverHostImpl {
     fn reset_control_region(&mut self, index: i32) {
         let hc = self.control_hwnd(index);
         if !hc.is_null() {
-            // A toggle's check box keeps its empty region (children.rs).
-            // SAFETY: plain user32 / gdi32 calls; the system owns the region.
+            // A toggle's check box keeps the empty region children.rs gave
+            // it: resetting it (with a redraw) left the box painted over the
+            // switch. The class matters: a combo's CBS_DROPDOWNLIST has the
+            // same low bits as BS_AUTOCHECKBOX.
+            // SAFETY: plain user32 calls; the system owns no region here.
             unsafe {
-                let toggle = (GetWindowLongW(hc, GWL_STYLE) as u32 & BS_TYPEMASK) == BS_AUTOCHECKBOX;
-                let rgn = if toggle { CreateRectRgn(0, 0, 0, 0) } else { null_mut() };
-                SetWindowRgn(hc, rgn, 1);
+                if is_toggle_box(hc) {
+                    return;
+                }
+                SetWindowRgn(hc, null_mut(), 1);
             }
         }
     }
@@ -1635,5 +1639,16 @@ pub fn paint_into(hwnd: Handle, target: Handle, w: i32, h: i32, content: bool) {
         shell::paint_content_into(target, w, h, &src);
     } else {
         shell::paint_main_into(target, w, h, &src);
+    }
+}
+
+/// A toggle row's check box: a `Button` with `BS_AUTOCHECKBOX`.
+fn is_toggle_box(h: Handle) -> bool {
+    let mut name = [0u16; 16];
+    // SAFETY: plain user32 calls on a live window; `name` outlives them.
+    unsafe {
+        let n = GetClassNameW(h, name.as_mut_ptr(), name.len() as i32).max(0) as usize;
+        String::from_utf16_lossy(&name[..n]).eq_ignore_ascii_case("Button")
+            && (GetWindowLongW(h, GWL_STYLE) as u32 & BS_TYPEMASK) == BS_AUTOCHECKBOX
     }
 }

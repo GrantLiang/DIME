@@ -119,6 +119,52 @@ namespace
         return d;
     }
 
+    // What the user sees must hold on both sides, not only match: a toggle
+    // row's check box (Button, BS_AUTOCHECKBOX) keeps its empty window
+    // region and paints nothing, even into WM_PRINTCLIENT; no other control
+    // has an empty region. Both used to break after a scroll: the reset
+    // after a move treated CBS_DROPDOWNLIST (same low bits) as a toggle and
+    // emptied the combos, and RDW_ALLCHILDREN made the boxes paint over the
+    // switches.
+    std::wstring BrokenControls(HWND content)
+    {
+        std::wstring bad;
+        for (HWND c : Controls(content)) {
+            wchar_t cls[64] = {};
+            GetClassNameW(c, cls, 64);
+            bool toggle = _wcsicmp(cls, L"Button") == 0
+                && (GetWindowLongW(c, GWL_STYLE) & BS_TYPEMASK) == BS_AUTOCHECKBOX;
+            HRGN rgn = CreateRectRgn(0, 0, 0, 0);
+            int kind = GetWindowRgn(c, rgn);
+            DeleteObject(rgn);
+            if (toggle && kind != NULLREGION)
+                bad += L"toggle box region " + std::to_wstring(kind) + L": " + DescribeControl(content, c) + L"\n";
+            if (!toggle && kind == NULLREGION)
+                bad += L"empty region: " + DescribeControl(content, c) + L"\n";
+            if (toggle) {
+                HDC screen = GetDC(nullptr);
+                HDC dc = CreateCompatibleDC(screen);
+                HBITMAP bmp = CreateCompatibleBitmap(screen, 64, 64);
+                ReleaseDC(nullptr, screen);
+                HGDIOBJ old = SelectObject(dc, bmp);
+                RECT all = { 0, 0, 64, 64 };
+                HBRUSH fill = CreateSolidBrush(RGB(1, 2, 3));
+                FillRect(dc, &all, fill);
+                DeleteObject(fill);
+                SendMessageW(c, WM_PRINTCLIENT, (WPARAM)dc, PRF_CLIENT | PRF_ERASEBKGND);
+                bool painted = false;
+                for (int y = 0; y < 64 && !painted; y += 3)
+                    for (int x = 0; x < 64 && !painted; x += 3)
+                        painted = GetPixel(dc, x, y) != RGB(1, 2, 3);
+                SelectObject(dc, old);
+                DeleteObject(bmp);
+                DeleteDC(dc);
+                if (painted) bad += L"toggle box paints: " + DescribeControl(content, c) + L"\n";
+            }
+        }
+        return bad;
+    }
+
     std::wstring Pixels(HWND h, bool content, bool rust)
     {
         RECT rc; GetClientRect(h, &rc);
@@ -193,6 +239,12 @@ namespace
             p = (const unsigned char*)&sn;
             for (size_t i = 0; i < sizeof(sn); i++) s += std::to_wstring(p[i]) + L",";
             return s;
+        }
+
+        std::wstring Broken()
+        {
+            HWND content = ContentOf(main);
+            return content ? BrokenControls(content) : std::wstring();
         }
 
         std::vector<std::wstring> Describe()
@@ -410,6 +462,11 @@ namespace DIMEUnitTests
                                 + L"\nbefore: " + (i < prev.size() ? prev[i] : std::wstring()) + L"\nlog:\n" + lc
                                 + L"\ntrace:\n" + g_trace.substr(0, 6000)).c_str());
                     prev = dc;
+                    for (Side* s : { &c, &r }) {
+                        std::wstring bad = s->Broken();
+                        if (!bad.empty())
+                            Assert::Fail((what + L" " + step + (s == &c ? L" C++: " : L" Rust: ") + bad).c_str());
+                    }
                 };
                 compare(L"create");
                 for (int i = 0; i < 60; i++) {

@@ -290,10 +290,15 @@ public:
     }
     void ResetControlRegion(int i) override
     {
-        // A toggle's check box keeps its empty region (SettingsChildren).
+        // A toggle's check box keeps the empty region SettingsChildren gave
+        // it. The class matters: a combo's CBS_DROPDOWNLIST has the same low
+        // bits as BS_AUTOCHECKBOX.
         if (HWND hc = ControlHwnd(i)) {
-            bool toggle = (GetWindowLongW(hc, GWL_STYLE) & BS_TYPEMASK) == BS_AUTOCHECKBOX;
-            SetWindowRgn(hc, toggle ? CreateRectRgn(0, 0, 0, 0) : nullptr, TRUE);
+            wchar_t cls[16] = {};
+            GetClassNameW(hc, cls, ARRAYSIZE(cls));
+            bool toggle = _wcsicmp(cls, L"Button") == 0
+                && (GetWindowLongW(hc, GWL_STYLE) & BS_TYPEMASK) == BS_AUTOCHECKBOX;
+            if (!toggle) SetWindowRgn(hc, nullptr, TRUE);
         }
     }
     bool ControlChecked(int i) override
