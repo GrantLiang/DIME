@@ -12,6 +12,9 @@
 * line ends, invalid UTF-8, an odd last byte, in UTF-8 with and without a
 * BOM and UTF-16LE with and without one; plus every installer/*.cin.
 *
+* Golden files (src/tests/golden/CinConvert): the Rust result, size and a
+* hash of the bytes written, per case (random sources hashed in chunks).
+*
 * Source is ASCII only (the project compiles with code page 950).
 ********************************************************************************/
 #include "pch.h"
@@ -20,6 +23,7 @@
 
 #include "CppUnitTest.h"
 #include <Windows.h>
+#include <algorithm>
 #include <random>
 #include <string>
 #include <vector>
@@ -27,6 +31,7 @@
 #include "../Globals.h"
 #include "../Config.h"
 #include "dime_ffi.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -79,7 +84,7 @@ namespace
     struct Gen {
         std::mt19937 rng;
         explicit Gen(unsigned seed) : rng(seed) {}
-        int R(int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); }
+        int R(int lo, int hi) { return Golden::Pick(rng, lo, hi); }
         template <class T> const T& Pick(const std::vector<T>& v) { return v[R(0, (int)v.size() - 1)]; }
 
         std::wstring Key()
@@ -194,7 +199,8 @@ namespace
     };
 
     // Both converters on `srcPath`; fails with the first differing byte.
-    void Compare(const Dirs& d, const std::wstring& srcPath, bool custom, const std::wstring& what)
+    // Returns the Rust result, size, and a hash of the output.
+    std::wstring Compare(const Dirs& d, const std::wstring& srcPath, bool custom, const std::wstring& what)
     {
         DeleteFileW(d.outC.c_str());
         DeleteFileW(d.outR.c_str());
@@ -203,7 +209,11 @@ namespace
         std::wstring w = what + (custom ? L" (custom)" : L" (table)");
         Assert::AreEqual(rc ? 1 : 0, rr, (w + L": result").c_str());
         std::string a = ReadBytes(d.outC), b = ReadBytes(d.outR);
-        if (a == b) return;
+        if (a == b) {
+            Golden::Hash h;
+            h.Add(b.data(), b.size());
+            return (custom ? L"custom " : L"table ") + std::to_wstring(rr) + L" " + std::to_wstring(b.size()) + L" " + h.Hex();
+        }
         size_t i = 0;
         while (i < a.size() && i < b.size() && a[i] == b[i]) i++;
         auto around = [&](const std::string& s) {
@@ -222,6 +232,7 @@ namespace
         WriteBytes(keep, ReadBytes(srcPath));
         Assert::Fail((w + L": output differs at byte " + std::to_wstring(i) + L" (sizes " + std::to_wstring(a.size()) + L" / "
             + std::to_wstring(b.size()) + L"), source kept in " + keep + L"\nC++:  " + around(a) + L"\nRust: " + around(b)).c_str());
+        return L"";
     }
 }
 
@@ -234,16 +245,21 @@ namespace DIMEUnitTests
         {
             Dirs d;
             int cases = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"seeds", 50);
             for (unsigned seed = 1; seed <= 1500; seed++) {
                 Gen g(seed);
                 std::wstring how;
                 std::string bytes = g.Bytes(g.Text(), how);
                 WriteBytes(d.src, bytes);
                 std::wstring what = L"seed " + std::to_wstring(seed) + L" " + how;
-                Compare(d, d.src, false, what);
-                Compare(d, d.src, true, what);
+                ch.Add(Compare(d, d.src, false, what));
+                ch.Add(Compare(d, d.src, true, what));
+                ch.Next();
                 cases++;
             }
+            ch.Finish();
+            Golden::Check(L"CinConvert", L"RandomTables", golden.lines);
             Logger::WriteMessage((std::to_wstring(cases) + L" random sources\n").c_str());
         }
 
@@ -255,11 +271,16 @@ namespace DIMEUnitTests
             HANDLE h = FindFirstFileW((dir + L"*.cin").c_str(), &fd);
             Assert::IsTrue(h != INVALID_HANDLE_VALUE, L"installer tables");
             int n = 0;
-            do {
-                Compare(d, dir + fd.cFileName, false, fd.cFileName);
-                n++;
-            } while (FindNextFileW(h, &fd));
+            std::vector<std::wstring> names;
+            do names.push_back(fd.cFileName); while (FindNextFileW(h, &fd));
             FindClose(h);
+            std::sort(names.begin(), names.end());
+            Golden::Log golden;
+            for (const std::wstring& name : names) {
+                golden.Add(name + L": " + Compare(d, dir + name, false, name));
+                n++;
+            }
+            Golden::Check(L"CinConvert", L"InstallerTables", golden.lines);
             Logger::WriteMessage((std::to_wstring(n) + L" installer tables\n").c_str());
             Assert::IsTrue(n >= 8, std::to_wstring(n).c_str());
         }
@@ -274,6 +295,8 @@ namespace DIMEUnitTests
                 std::string("\xC3\xA9\x80"), std::string("\x80\x80\x80\x80\x80"), std::string("\xF8"), std::string("\n") };
             const int bases[] = { 2040, 2044, 2045, 2046, 2047, 2048, 4092, 4094, 4095, 4096, 6140, 6143 };
             int n = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"cases", 11);
             for (int base : bases) {
                 for (const std::string& a : tails) {
                     for (const std::string& b : tails) {
@@ -281,25 +304,31 @@ namespace DIMEUnitTests
                         for (int i = 0; i < base; i++) text += (i % 50 == 49) ? '\n' : (i % 7 == 0 ? ' ' : (char)('a' + i % 26));
                         text += a + "x y\n" + b + "zz\n" + a;
                         WriteBytes(d.src, text);
-                        Compare(d, d.src, false, L"base " + std::to_wstring(base));
+                        ch.Add(Compare(d, d.src, false, L"base " + std::to_wstring(base)));
                         WriteBytes(d.src, "\xEF\xBB\xBF" + text);
-                        Compare(d, d.src, false, L"bom base " + std::to_wstring(base));
+                        ch.Add(Compare(d, d.src, false, L"bom base " + std::to_wstring(base)));
+                        ch.Next();
                         n++;
                     }
                 }
             }
+            ch.Finish();
+            Golden::Check(L"CinConvert", L"Utf8Pieces", golden.lines);
             Logger::WriteMessage((std::to_wstring(n) + L" piece cases\n").c_str());
         }
         TEST_METHOD(MissingSource)
         {
             Dirs d;
-            Compare(d, d.base + L"\\no_such_file.txt", false, L"missing");
-            Compare(d, d.base + L"\\no_such_file.txt", true, L"missing");
+            Golden::Log golden;
+            golden.Add(L"missing: " + Compare(d, d.base + L"\\no_such_file.txt", false, L"missing"));
+            golden.Add(L"missing: " + Compare(d, d.base + L"\\no_such_file.txt", true, L"missing"));
             // Unwritable destination: a directory.
             WriteBytes(d.src, "a b\n");
             BOOL rc = CConfig::parseCINFile(d.src.c_str(), d.base.c_str(), FALSE, TRUE);
             int rr = dime_settings_parse_cin_file((const uint16_t*)d.src.c_str(), (const uint16_t*)d.base.c_str(), 0, 1);
             Assert::AreEqual(rc ? 1 : 0, rr, L"destination is a folder");
+            golden.Add(L"destination is a folder: " + std::to_wstring(rr));
+            Golden::Check(L"CinConvert", L"MissingSource", golden.lines);
         }
     };
 }

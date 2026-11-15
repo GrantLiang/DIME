@@ -18,6 +18,10 @@
 * The executable is rust\target\<triple>\release\DIMESettings.exe, built by
 * this project's cargo step for the test platform.
 *
+* Golden files (src/tests/golden/SettingsMain): the Rust bytes per console
+* case (hashed), the Rust lpCmdLine per program-name case, and the exit code
+* and output hashes per executable command line.
+*
 * Source is ASCII only (the project compiles with code page 950).
 ********************************************************************************/
 #include "pch.h"
@@ -34,6 +38,7 @@
 
 #include "../DIMESettings/CLI.h"
 #include "dime_ffi.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -208,6 +213,8 @@ namespace DIMETests
             std::wstring dir = TempDir();
             std::mt19937 rng(20261115);
             int cases = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"rounds", 20);
             for (int round = 0; round < 400; round++) {
                 std::vector<std::wstring> calls;
                 int n = 1 + (int)(rng() % 5);
@@ -219,6 +226,8 @@ namespace DIMETests
                 bool buffered = (round % 2) == 0;
                 WriteBoth(dir, calls, cpp, rust, buffered);
                 AssertSameBytes(cpp, rust, L"round " + std::to_wstring(round));
+                ch.Add(rust.data(), rust.size());
+                ch.Next();
                 cases++;
             }
             // Fixed cases: the probe's strings and NULs.
@@ -232,7 +241,12 @@ namespace DIMETests
                 std::string cpp, rust;
                 WriteBoth(dir, fixed[i], cpp, rust, true);
                 AssertSameBytes(cpp, rust, L"fixed " + std::to_wstring(i));
+                Golden::Hash h;
+                h.Add(rust.data(), rust.size());
+                golden.Add(L"fixed " + std::to_wstring(i) + L": " + std::to_wstring(rust.size()) + L" bytes " + h.Hex());
             }
+            ch.Finish();
+            Golden::Check(L"SettingsMain", L"ConsoleWrite", golden.lines);
             DeleteFileW((dir + L"\\cpp.bin").c_str());
             DeleteFileW((dir + L"\\rust.bin").c_str());
             RemoveDirectoryW(dir.c_str());
@@ -253,12 +267,15 @@ namespace DIMETests
                 L"\"\" next",
                 L"x\u3000y z",
             };
+            Golden::Log golden;
             for (const auto& line : lines) {
                 uint16_t out[512] = {};
                 size_t n = dime_settings_skip_program_name_for_test(reinterpret_cast<const uint16_t*>(line.c_str()), out, 512);
                 std::wstring got(reinterpret_cast<const wchar_t*>(out), n);
                 Assert::AreEqual(UcrtCmdLine(line), got, line.c_str());
+                golden.Add(L"[" + line + L"] -> [" + got + L"]");
             }
+            Golden::Check(L"SettingsMain", L"ProgramName", golden.lines);
         }
 
         TEST_METHOD(ExecutableCli)
@@ -287,6 +304,7 @@ namespace DIMETests
                 L"DIMESettings.exe --mode \u00e9x\u00ff --get-all",
                 L"DIMESettings.exe --mode \u0080\u009f\u00a0 --list-keys",
             };
+            Golden::Log golden;
             for (const auto& line : lines) {
                 std::wstring cmd = UcrtCmdLine(line);
                 std::wstring co = dir + L"\\cpp_out.txt", ce = dir + L"\\cpp_err.txt";
@@ -302,7 +320,14 @@ namespace DIMETests
                 Assert::AreEqual((DWORD)want, got, (L"exit code: " + line).c_str());
                 AssertSameBytes(ReadAll(co), ReadAll(ro), L"stdout of " + line);
                 AssertSameBytes(ReadAll(ce), ReadAll(re), L"stderr of " + line);
+                std::string out = ReadAll(ro), err = ReadAll(re);
+                Golden::Hash ho, he;
+                ho.Add(out.data(), out.size());
+                he.Add(err.data(), err.size());
+                golden.Add(L"[" + line + L"] exit " + std::to_wstring(got) + L" stdout " + std::to_wstring(out.size()) + L" "
+                    + ho.Hex() + L" stderr " + std::to_wstring(err.size()) + L" " + he.Hex());
             }
+            Golden::Check(L"SettingsMain", L"ExecutableCli", golden.lines);
             for (const wchar_t* n : { L"cpp_out.txt", L"cpp_err.txt", L"rust_out.txt", L"rust_err.txt" })
                 DeleteFileW((dir + L"\\" + n).c_str());
             RemoveDirectoryW(dir.c_str());

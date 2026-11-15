@@ -11,6 +11,10 @@
 * command the exit code, stdout, stderr (folder names replaced by <dir>),
 * every file under the side's AppData and the settings values must match.
 *
+* Golden file (src/tests/golden/CliHost): per command, a hash of the Rust
+* host's result (temporary folder names replaced by <base>). It assumes the
+* default 3D highlight colour (white), which the defaults are built from.
+*
 * Source is ASCII only (the project compiles with code page 950).
 ********************************************************************************/
 #include "pch.h"
@@ -29,6 +33,7 @@
 #include "../DIMESettings/CLI.h"
 #include "dime_ffi.h"
 #include "SettingsAppTestAccess.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -224,6 +229,7 @@ namespace DIMEUnitTests
         DimeConfigValues _savedValues = {};
         SettingsAppConfigAccess::Saved _savedStatics = {};
         WCHAR _savedAppData[MAX_PATH] = {};
+        BOOL _saved1809 = FALSE;
 
     public:
         TEST_METHOD_INITIALIZE(Setup)
@@ -231,6 +237,11 @@ namespace DIMEUnitTests
             CConfig::ExportValues(&_savedValues);
             _savedStatics = SettingsAppConfigAccess::Save();
             wcscpy_s(_savedAppData, Global::testAppDataOverride);
+            // The value DllMain / wWinMain set on Windows 10 1809+; tests that
+            // run earlier may leave either value, and the defaults (colour
+            // mode) recorded in the golden file depend on it.
+            _saved1809 = Global::isWindows1809OrLater;
+            Global::isWindows1809OrLater = TRUE;
         }
 
         TEST_METHOD_CLEANUP(Teardown)
@@ -239,10 +250,14 @@ namespace DIMEUnitTests
             CConfig::SetReverseConversionDescriptionText(nullptr);
             SettingsAppConfigAccess::Restore(_savedStatics);
             wcscpy_s(Global::testAppDataOverride, _savedAppData);
+            Global::isWindows1809OrLater = _saved1809;
         }
 
         TEST_METHOD(Commands)
         {
+            // The C++ side reads these itself, so both sides use the machine's
+            // values; the golden file assumes the defaults (a white 3D
+            // highlight colour and the test process's 1809 flag).
             DimeConfigEnv env = { GetSysColor(COLOR_3DHIGHLIGHT), Global::isWindows1809OrLater ? 1 : 0 };
             wchar_t tmp[MAX_PATH] = {};
             GetTempPathW(MAX_PATH, tmp);
@@ -266,10 +281,30 @@ namespace DIMEUnitTests
             Global::imeMode = savedMode;
             RemoveTree(base);
             int withFiles = 0;
+            Golden::Log golden;
             for (size_t i = 0; i < c.size(); i++) {
-                if (c[i] != r[i]) Assert::Fail((L"C++:\n" + c[i].substr(0, 3000) + L"\nRust:\n" + r[i].substr(0, 3000)).c_str());
+                if (c[i] != r[i]) {
+                    // Only the lines that differ.
+                    std::wstring diff;
+                    size_t pc = 0, pr = 0;
+                    while (pc < c[i].size() || pr < r[i].size()) {
+                        size_t ec = c[i].find(L'\n', pc), er = r[i].find(L'\n', pr);
+                        std::wstring lc = c[i].substr(pc, ec == std::wstring::npos ? std::wstring::npos : ec - pc);
+                        std::wstring lr = r[i].substr(pr, er == std::wstring::npos ? std::wstring::npos : er - pr);
+                        if (lc != lr) diff += L"C++:  " + lc.substr(0, 400) + L"\nRust: " + lr.substr(0, 400) + L"\n";
+                        pc = ec == std::wstring::npos ? c[i].size() : ec + 1;
+                        pr = er == std::wstring::npos ? r[i].size() : er + 1;
+                    }
+                    Assert::Fail((c[i].substr(0, c[i].find(L'\n')) + L"\n" + diff).c_str());
+                }
                 if (c[i].find(L"\n  DIME\\") != std::wstring::npos) withFiles++;
+                // RunSide is the Rust host when its first argument is false.
+                std::wstring result = Golden::Replace(r[i], base, L"<base>");
+                Golden::Hash h;
+                h.Add(result);
+                golden.Add(result.substr(0, result.find(L'\n')) + L" " + h.Hex());
             }
+            Golden::Check(L"CliHost", L"Commands", golden.lines);
             Logger::WriteMessage((std::to_wstring(c.size()) + L" commands, " + std::to_wstring(withFiles) + L" with files\n").c_str());
         }
     };

@@ -1,0 +1,53 @@
+--help c47df9544551b3e2
+--list-modes 084a42673850bde1
+--list-keys c1bfa9593e16c9da
+--mode dayi --list-keys f2548cfb5ab69ead
+--mode dayi --get-all 8142bd8a5c740139
+--mode array --get-all --json 841aede081969a27
+--mode phonetic --get FontSize 57d2ae261beba1f7
+--mode generic --get NoSuchKey 1fe755730111f9e5
+--get FontSize b82ef240181ca1e8
+--mode dayi --set FontSize 20 375f94ad937b8447
+--mode dayi --get FontSize c817d2f39dd73957
+--mode dayi --set FontSize abc db6e6f21f9a0cf2a
+--mode array --set ArrayScope 4 56b42e71cb38e919
+--mode dayi --set ArrayScope 1 dbc185a7e8651d90
+--mode dayi --set ColorMode 2 --set FontItalic 1 91a93b691f3538d7
+--mode dayi --get-all fd3f71ec4329679a
+--mode array --set MaxCodes 9 67070f0d310b3fae
+--mode array --get MaxCodes f568f20e78d66fe2
+--mode dayi --reset ff683cbc4ab045ed
+--mode dayi --get-all --json 43d62e00ae52894d
+--mode array --reset --silent 560ffb63721b3899
+--mode dayi --import-custom {in}\custom_ok.txt 9ad4f41bd9414764
+--mode dayi --load-main {in}\table.cin aee9e04a4c470373
+--mode dayi --import-custom {in}\custom_ok.txt a4e8bf5a03619942
+--mode dayi --import-custom {in}\custom_bad.txt f89771f2047d3f20
+--mode dayi --import-custom {in}\custom_bad.txt --json 84f17d041682dbc8
+--mode dayi --export-custom {dir}\exp_dayi.txt a059951e02314b8c
+--mode array --import-custom {in}\custom_bad.txt 6d573eb0fe369965
+--mode array --import-custom {in}\custom_bad.txt --no-validate b7d65f6f5b9ea0bc
+--mode array --export-custom {dir}\exp_array.txt 7c2552c56cde3e67
+--mode phonetic --import-custom {in}\custom_utf8.txt 1e81b14c7997d307
+--mode generic --load-main {in}\table.cin ea913bcd12593b14
+--mode generic --import-custom {in}\custom_utf8.txt f453a5c32977359d
+--mode generic --import-custom {in}\missing.txt eaa4e3b7537b4179
+--mode generic --import-custom {in}\custom_empty.txt 2db3006382705ad7
+--mode generic --export-custom {dir}\nofolder\x.txt 01f077688e850766
+--mode dayi --import-custom {in}\custom_ok.txt --silent 76ceea2e35cef9e2
+--mode dayi --load-main {in}\garbage.cin 1764a9ebf85fa1b3
+--mode phonetic --load-phrase {in}\table.cin 34b3607b4c62a297
+--mode array --load-array sp {in}\table.cin 2e8b6219f8a56d8d
+--mode array --load-array ext-b {in}\table.cin 45b53c07d77625f1
+--mode array --load-array phrase {in}\missing.cin a7b31cf12beaf686
+--mode array --load-array bogus {in}\table.cin fe51246175f82432
+--load-main {in}\table.cin b65458992ddbd05f
+--mode array --load-array array40 {in}\table.cin 3487045e68969ebc
+--mode array --get-all ea9c20a6479b5832
+--mode bogus --get-all 27088024e0aa69d0
+--mode ce928afcbed5ff58
+--set FontSize 69ed69dd6770d815
+--mode dayi --set 6ee4f18ad66fc5f5
+--frobnicate 314d885f500c6939
+--mode dayi --set FontFaceName Consolas --set CustomTablePriority 1 58ec158b678290bd
+--mode dayi --get-all 60003277665090d3

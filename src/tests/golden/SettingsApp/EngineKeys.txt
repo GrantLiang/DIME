@@ -1,0 +1,23 @@
+nothing mode 0 engine 1 cd03da59b66cd2a5
+nothing mode 1 engine 1 cd95e782cadfdd2d
+nothing mode 2 engine 1 43325cc7ef7249de
+nothing mode 3 engine 1 ca9be227129dc9cf
+dayi in appdata mode 0 engine 1 02c38d1b46261b5b
+dayi in appdata mode -1 engine 0 0091a73279573227
+dayi in appdata mode 0 engine 1 02c38d1b46261b5b
+dayi with '=' and endkey mode 0 engine 1 a9f4c5cadcc2f32c
+array shipped mode 1 engine 1 397da89563838504
+array shipped mode 1 engine 1 397da89563838504
+array40 shipped mode 1 engine 1 0b6c2f5f9df9daa1
+array appdata newer than shipped mode 1 engine 1 a03bcea6ea6c8370
+phonetic shipped mode 2 engine 1 5fe95d79cebcd902
+phonetic shipped mode 0 engine 1 7f11d199858ac7a8
+phonetic shipped mode 2 engine 1 5fe95d79cebcd902
+generic mode 3 engine 1 ebade3ef9b3aa805
+generic lower and high keys mode 3 engine 1 364d1b43e87a7fff
+too many radicals mode 3 engine 1 fa51881925c2cc16
+not unicode mode 3 engine 1 d3e899a706fe7751
+custom tables with autoCompose mode 3 engine 1 4918bef451b641b5
+custom tables with autoCompose mode 0 engine 1 8b2e2d6769ba7d1f
+custom tables with autoCompose mode 1 engine 1 2436f6fd919e602e
+custom tables with autoCompose mode 2 engine 1 4657d799b1826c3d

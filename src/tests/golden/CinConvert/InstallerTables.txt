@@ -1,0 +1,11 @@
+Array-Ext-B.cin: table 1 1365074 3e1d3860e2b2649d
+Array-Ext-CD.cin: table 1 137474 d50a02f558423a14
+Array-Ext-EF.cin: table 1 826306 2f32edb1c63c0b27
+Array-Phrase.cin: table 1 1621718 31843354eabd1bb6
+Array-shortcode.cin: table 1 185926 c7a16eea570077d0
+Array-special.cin: table 1 8384 4567c8c3c5051e13
+Array.cin: table 1 774970 2179dafe55ae3623
+Array40.cin: table 1 342798 d9631cc15a4cb843
+TCFreq.cin: table 1 137616 9c89dd3ad1b89b46
+TCSC.cin: table 1 121184 0716cc91d956fbae
+phone.cin: table 1 312462 844c7fb4bd681690

@@ -7,6 +7,9 @@
 * control / swatch / editor / content-area rectangles, the custom-table buffer
 * validator, and the themed message box (buttons, icon, layout, hits, keys).
 * Both the shipped page tables and random synthetic cards are used.
+*
+* Golden files (src/tests/golden/SettingsWindowLayout): per test method, the
+* Rust results hashed in chunks of cases.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -18,6 +21,7 @@
 #include "../BaseStructure.h"
 #include "../DIMESettings/SettingsWindowLayout.h"
 #include "dime_ffi.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SWL = SettingsWindowLayout;
@@ -28,7 +32,7 @@ namespace
 
     UINT RandomDpi(std::mt19937& rng)
     {
-        return kDpis[std::uniform_int_distribution<int>(0, _countof(kDpis) - 1)(rng)];
+        return kDpis[Golden::Pick(rng, 0, _countof(kDpis) - 1)];
     }
 
     bool Same(const SWL::CtrlRect& a, const SWL::CtrlRect& b)
@@ -47,7 +51,7 @@ namespace
     SyntheticPage RandomPage(std::mt19937& rng, int maxCards)
     {
         static const wchar_t* kDesc = L"desc";
-        std::uniform_int_distribution<int> any(0, 1 << 20);
+        auto any = [](std::mt19937& r) { return Golden::Pick(r, 0, 1 << 20); };
         SyntheticPage page;
         int n = 1 + any(rng) % maxCards;
         page.rows.resize(n);
@@ -90,16 +94,16 @@ namespace
     {
         SWL::RowContext ctx = {};
         ctx.dpi = RandomDpi(rng);
-        ctx.scrollPos = std::uniform_int_distribution<int>(0, 600)(rng);
-        ctx.modeMask = std::uniform_int_distribution<int>(0, 15)(rng);
-        ctx.colorMode = std::uniform_int_distribution<int>(0, 4)(rng);
+        ctx.scrollPos = Golden::Pick(rng, 0, 600);
+        ctx.modeMask = Golden::Pick(rng, 0, 15);
+        ctx.colorMode = Golden::Pick(rng, 0, 4);
         ctx.gridExpanded = (int)(rng() & 1);
-        ctx.previewH = std::uniform_int_distribution<int>(0, 400)(rng);
+        ctx.previewH = Golden::Pick(rng, 0, 400);
         return ctx;
     }
 
     void CheckCardList(const LayoutCard* cards, int count, int modeMask, const bool* expanded,
-        int base, UINT dpi, int scroll, const wchar_t* what)
+        int base, UINT dpi, int scroll, const wchar_t* what, Golden::Chunks& ch)
     {
         for (int y = -40; y < 2200; y += 1) {
             int cpp = SWL::Cpp::CardListHitTest(y, cards, count, modeMask, expanded, base, dpi, scroll);
@@ -113,10 +117,12 @@ namespace
                 reinterpret_cast<const uint8_t*>(expanded), base, dpi, scroll, &b);
             if (a.kind != b.kind || a.card != b.card || a.row != b.row)
                 Assert::Fail((std::wstring(what) + L" click y=" + std::to_wstring(y) + L" dpi=" + std::to_wstring(dpi)).c_str());
+            int v[4] = { rust, b.kind, b.card, b.row };
+            ch.Add(v, sizeof(v));
         }
     }
 
-    void CheckSubPage(const LayoutCard& card, const SWL::RowContext& ctx, const wchar_t* what)
+    void CheckSubPage(const LayoutCard& card, const SWL::RowContext& ctx, const wchar_t* what, Golden::Chunks& ch)
     {
         std::vector<SWL::RowSpan> cpp = SWL::Cpp::RowSpans(card, ctx);
         size_t count = 0;
@@ -130,6 +136,8 @@ namespace
             Assert::AreEqual(cpp[i].startRow, rust[i].startRow, what);
             Assert::AreEqual(cpp[i].endRow, rust[i].endRow, what);
             Assert::AreEqual(cpp[i].height, rust[i].height, what);
+            int v[3] = { rust[i].startRow, rust[i].endRow, rust[i].height };
+            ch.Add(v, sizeof(v));
         }
         Assert::AreEqual(-9, rust[count].startRow, L"wrote past cap");
         for (int y = -40; y < 2400; y++) {
@@ -138,11 +146,13 @@ namespace
             dime_settings_row_cards_hit(y, &card, &ctx, &b);
             if (a.spanStart != b.spanStart || a.row != b.row)
                 Assert::Fail((std::wstring(what) + L" row hit y=" + std::to_wstring(y)).c_str());
+            int v[2] = { b.spanStart, b.row };
+            ch.Add(v, sizeof(v));
         }
     }
 
     void CheckPlan(const SWL::PlanInput& in, const LayoutCard* ime, int imeCount,
-        const LayoutCard* load, int loadCount)
+        const LayoutCard* load, int loadCount, Golden::Chunks& ch)
     {
         std::vector<SWL::Placement> cpp;
         SWL::PlanResult a = SWL::Cpp::PlanControls(in, ime, imeCount, load, loadCount, cpp);
@@ -163,7 +173,11 @@ namespace
             const SWL::Placement& q = rust[i];
             if (p.kind != q.kind || p.card != q.card || p.row != q.row || p.y != q.y || p.h != q.h)
                 Assert::Fail((ctx + L" placement " + std::to_wstring(i)).c_str());
+            int v[5] = { (int)q.kind, q.card, q.row, q.y, q.h };
+            ch.Add(v, sizeof(v));
         }
+        int r[4] = { (int)count, b.setTotal, b.totalHeight, b.populate };
+        ch.Add(r, sizeof(r));
     }
 }
 
@@ -175,7 +189,9 @@ namespace DIMEUnitTests
         TEST_METHOD(Widths)
         {
             std::mt19937 rng(11);
-            std::uniform_int_distribution<int> v(-200, 4000);
+            auto v = [](std::mt19937& r) { return Golden::Pick(r, -200, 4000); };
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"cases", 500);
             for (int i = 0; i < 20000; i++) {
                 UINT dpi = RandomDpi(rng);
                 int a = v(rng), b = v(rng), c = v(rng) % 40;
@@ -185,13 +201,20 @@ namespace DIMEUnitTests
                 SWL::CtrlRect r1 = SWL::Cpp::ContentAreaRect(a, b, dpi, f, g), r2 = {};
                 dime_settings_content_area_rect(a, b, dpi, f, g, &r2);
                 Assert::IsTrue(Same(r1, r2), L"ContentAreaRect");
+                int out[7] = { dime_settings_card_width(a, dpi, f, c), dime_settings_ctrl_right(a, b, dpi, f), r2.x, r2.y, r2.w, r2.h, r2.visH };
+                ch.Add(out, sizeof(out));
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"Widths", golden.lines);
         }
 
         TEST_METHOD(ControlRects)
         {
             std::mt19937 rng(12);
-            std::uniform_int_distribution<int> v(-100, 3000);
+            auto v = [](std::mt19937& r) { return Golden::Pick(r, -100, 3000); };
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"cases", 500);
             for (int i = 0; i < 20000; i++) {
                 UINT dpi = RandomDpi(rng);
                 int type = (int)(rng() % 9);
@@ -212,7 +235,13 @@ namespace DIMEUnitTests
                 SWL::Cpp::RichEditorRects(margin, cardW, pad, curY, thisH, ctrlRight, btnW, btnH, dpi, &e1, &f1);
                 dime_settings_rich_editor_rects(margin, cardW, pad, curY, thisH, ctrlRight, btnW, btnH, dpi, &e2, &f2);
                 Assert::IsTrue(Same(e1, e2) && Same(f1, f2), L"RichEditorRects");
+                int out[] = { b, r2.x, r2.y, r2.w, r2.h, r2.visH, s2.x, s2.y, s2.w, s2.h, s2.visH,
+                    e2.x, e2.y, e2.w, e2.h, e2.visH, f2.x, f2.y, f2.w, f2.h, f2.visH };
+                ch.Add(out, sizeof(out));
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"ControlRects", golden.lines);
         }
 
         TEST_METHOD(RowsOfShippedTables)
@@ -220,24 +249,35 @@ namespace DIMEUnitTests
             int imeCount = 0, ltCount = 0;
             const LayoutCard* ime = GetIMEPageLayout(&imeCount);
             const LayoutCard* lt = GetLoadTablePageLayout(&ltCount);
+            Golden::Log golden;
+            int pageNo = 0;
             for (const auto& page : { std::make_pair(ime, imeCount), std::make_pair(lt, ltCount) }) {
                 for (int i = 0; i < page.second; i++) {
                     const LayoutCard& c = page.first[i];
                     for (int r = 0; c.rows && r < c.rowCount; r++) {
+                        std::wstring line = L"page " + std::to_wstring(pageNo) + L" card " + std::to_wstring(i) + L" row "
+                            + std::to_wstring(r) + L" id " + std::to_wstring((int)c.rows[r].id) + L" heights";
                         for (UINT dpi : kDpis) {
                             for (int previewH : { 0, 137, 260 }) {
                                 Assert::AreEqual(SWL::Cpp::RowHeight(c.rows[r], dpi, previewH),
                                     dime_settings_row_height(&c.rows[r], dpi, previewH), L"RowHeight");
+                                line += L" " + std::to_wstring(dime_settings_row_height(&c.rows[r], dpi, previewH));
                             }
                         }
+                        line += L" shown ";
                         for (int mask = 0; mask < 16; mask++)
                             for (int cm = 0; cm < 5; cm++)
-                                for (int g = 0; g < 2; g++)
+                                for (int g = 0; g < 2; g++) {
                                     Assert::AreEqual(SWL::Cpp::RowShown(c.rows[r], mask, cm, g != 0),
                                         dime_settings_row_shown(&c.rows[r], mask, cm, g) != 0, L"RowShown");
+                                    line += dime_settings_row_shown(&c.rows[r], mask, cm, g) ? L"1" : L"0";
+                                }
+                        golden.Add(line);
                     }
                 }
+                pageNo++;
             }
+            Golden::Check(L"SettingsWindowLayout", L"RowsOfShippedTables", golden.lines);
         }
 
         TEST_METHOD(CardListsOfShippedTables)
@@ -247,15 +287,20 @@ namespace DIMEUnitTests
             const LayoutCard* lt = GetLoadTablePageLayout(&ltCount);
             Assert::IsTrue(imeCount <= 4 && 4 + ltCount <= SWL::kExpandedSlots, L"expanded slots");
             std::mt19937 rng(13);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"iters", 1);
             for (int iter = 0; iter < 40; iter++) {
                 bool expanded[SWL::kExpandedSlots];
                 RandomExpanded(rng, expanded);
                 UINT dpi = RandomDpi(rng);
-                int scroll = std::uniform_int_distribution<int>(0, 300)(rng);
+                int scroll = Golden::Pick(rng, 0, 300);
                 int mask = 1 << (iter % 4);
-                CheckCardList(ime, imeCount, mask, expanded, 0, dpi, scroll, L"ime");
-                CheckCardList(lt, ltCount, 0xF, expanded, 4, dpi, scroll, L"load");
+                CheckCardList(ime, imeCount, mask, expanded, 0, dpi, scroll, L"ime", ch);
+                CheckCardList(lt, ltCount, 0xF, expanded, 4, dpi, scroll, L"load", ch);
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"CardListsOfShippedTables", golden.lines);
             // A null expanded pointer is all collapsed.
             bool none[SWL::kExpandedSlots] = {};
             for (int y = 0; y < 1200; y++)
@@ -266,14 +311,19 @@ namespace DIMEUnitTests
         TEST_METHOD(SyntheticCardLists)
         {
             std::mt19937 rng(14);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"iters", 10);
             for (int iter = 0; iter < 300; iter++) {
                 SyntheticPage page = RandomPage(rng, 6);
                 bool expanded[SWL::kExpandedSlots];
                 RandomExpanded(rng, expanded);
                 int base = (rng() & 1) ? 4 : 0;
                 CheckCardList(page.cards.data(), (int)page.cards.size(), (int)(rng() % 16), expanded, base,
-                    RandomDpi(rng), std::uniform_int_distribution<int>(-50, 400)(rng), L"synthetic");
+                    RandomDpi(rng), Golden::Pick(rng, -50, 400), L"synthetic", ch);
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"SyntheticCardLists", golden.lines);
         }
 
         TEST_METHOD(SubPagesOfShippedTables)
@@ -281,24 +331,34 @@ namespace DIMEUnitTests
             int imeCount = 0;
             const LayoutCard* ime = GetIMEPageLayout(&imeCount);
             std::mt19937 rng(15);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"iters", 1);
             for (int iter = 0; iter < 60; iter++) {
                 SWL::RowContext ctx = RandomContext(rng);
                 ctx.modeMask = 1 << (iter % 4);
                 ctx.colorMode = (iter / 4) % 2 ? 3 : (int)(rng() % 3);
                 for (int i = 0; i < imeCount; i++)
-                    CheckSubPage(ime[i], ctx, L"ime");
+                    CheckSubPage(ime[i], ctx, L"ime", ch);
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"SubPagesOfShippedTables", golden.lines);
         }
 
         TEST_METHOD(SyntheticSubPages)
         {
             std::mt19937 rng(16);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"iters", 10);
             for (int iter = 0; iter < 400; iter++) {
                 SyntheticPage page = RandomPage(rng, 3);
                 SWL::RowContext ctx = RandomContext(rng);
                 for (const LayoutCard& c : page.cards)
-                    CheckSubPage(c, ctx, L"synthetic");
+                    CheckSubPage(c, ctx, L"synthetic", ch);
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"SyntheticSubPages", golden.lines);
         }
 
         TEST_METHOD(PlanControlsShippedTables)
@@ -307,6 +367,8 @@ namespace DIMEUnitTests
             const LayoutCard* ime = GetIMEPageLayout(&imeCount);
             const LayoutCard* lt = GetLoadTablePageLayout(&ltCount);
             std::mt19937 rng(17);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"iters", 10);
             for (int iter = 0; iter < 400; iter++) {
                 SWL::PlanInput in = {};
                 in.dpi = RandomDpi(rng);
@@ -316,15 +378,20 @@ namespace DIMEUnitTests
                 in.modeMask = 1 << (rng() % 4);
                 in.colorMode = (int)(rng() % 4);
                 in.gridExpanded = (int)(rng() & 1);
-                in.previewH = std::uniform_int_distribution<int>(0, 300)(rng);
+                in.previewH = Golden::Pick(rng, 0, 300);
                 RandomExpanded(rng, in.expanded);
-                CheckPlan(in, ime, imeCount, lt, ltCount);
+                CheckPlan(in, ime, imeCount, lt, ltCount, ch);
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"PlanControlsShippedTables", golden.lines);
         }
 
         TEST_METHOD(PlanControlsSynthetic)
         {
             std::mt19937 rng(18);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"iters", 50);
             for (int iter = 0; iter < 2000; iter++) {
                 SyntheticPage ime = RandomPage(rng, 4), lt = RandomPage(rng, 6);
                 SWL::PlanInput in = {};
@@ -335,16 +402,21 @@ namespace DIMEUnitTests
                 in.modeMask = (int)(rng() % 16);
                 in.colorMode = (int)(rng() % 4);
                 in.gridExpanded = (int)(rng() & 1);
-                in.previewH = std::uniform_int_distribution<int>(0, 300)(rng);
+                in.previewH = Golden::Pick(rng, 0, 300);
                 RandomExpanded(rng, in.expanded);
-                CheckPlan(in, ime.cards.data(), (int)ime.cards.size(), lt.cards.data(), (int)lt.cards.size());
+                CheckPlan(in, ime.cards.data(), (int)ime.cards.size(), lt.cards.data(), (int)lt.cards.size(), ch);
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"PlanControlsSynthetic", golden.lines);
         }
 
         TEST_METHOD(ValidateBuffer)
         {
             static const wchar_t kAlphabet[] = L"ab,.;/AZ09 \t\r\n\n中語*?~";
             std::mt19937 rng(19);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"iters", 100);
             for (int iter = 0; iter < 3000; iter++) {
                 std::wstring text;
                 int len = (int)(rng() % 120);
@@ -365,11 +437,19 @@ namespace DIMEUnitTests
                 Assert::AreEqual(a, b, L"error count");
                 Assert::AreEqual(f1, f2, L"first error line");
                 Assert::IsTrue(s1 == s2, (L"summary for: " + text).c_str());
+                int out[2] = { b, f2 };
+                ch.Add(out, sizeof(out));
+                ch.Add(s2.data(), s2.size() * sizeof(wchar_t));
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"ValidateBuffer", golden.lines);
         }
 
         TEST_METHOD(ThemedMessageBoxLayout)
         {
+            Golden::Log golden;
+            Golden::Chunks types(golden, L"types", 16);
             for (UINT type = 0; type < 0x100; type++) {
                 SWL::MsgBoxButtons a = SWL::Cpp::MsgBoxButtonsFor(type), b = {};
                 dime_settings_msgbox_buttons(type, &b);
@@ -379,8 +459,19 @@ namespace DIMEUnitTests
                     for (UINT vk = 0; vk < 0x30; vk++)
                         Assert::AreEqual(SWL::Cpp::MsgBoxKeyResult(a, def, vk), dime_settings_msgbox_key_result(&b, def, vk), L"key");
                 Assert::AreEqual(SWL::Cpp::MsgBoxCloseResult(a), dime_settings_msgbox_close_result(&b), L"close");
+                types.Add(&b, sizeof(b));
+                int out[2] = { dime_settings_msgbox_icon(type), dime_settings_msgbox_close_result(&b) };
+                types.Add(out, sizeof(out));
+                for (int def = 0; def < b.count; def++)
+                    for (UINT vk = 0; vk < 0x30; vk++) {
+                        int k = dime_settings_msgbox_key_result(&b, def, vk);
+                        types.Add(&k, sizeof(k));
+                    }
+                types.Next();
             }
+            types.Finish();
             std::mt19937 rng(20);
+            Golden::Chunks ch(golden, L"layouts", 100);
             for (int iter = 0; iter < 3000; iter++) {
                 UINT dpi = RandomDpi(rng);
                 bool icon = (rng() & 1) != 0;
@@ -395,8 +486,16 @@ namespace DIMEUnitTests
                     int x = (int)(rng() % (L1.rcClient.right + 20)) - 10;
                     int y = (int)(rng() % (L1.rcClient.bottom + 20)) - 10;
                     Assert::AreEqual(SWL::Cpp::MsgBoxButtonAt(L1, count, x, y), dime_settings_msgbox_button_at(&L2, count, x, y), L"button at");
+                    int at = dime_settings_msgbox_button_at(&L2, count, x, y);
+                    ch.Add(&at, sizeof(at));
                 }
+                int out[2] = { dime_settings_msgbox_max_text_width(dpi), dime_settings_msgbox_first_button_x(&L2, count) };
+                ch.Add(out, sizeof(out));
+                ch.Add(&L2, sizeof(L2));
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SettingsWindowLayout", L"ThemedMessageBoxLayout", golden.lines);
         }
     };
 }

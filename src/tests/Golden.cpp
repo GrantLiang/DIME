@@ -150,6 +150,24 @@ std::wstring Hash::Hex() const
     return buf;
 }
 
+void Chunks::Next()
+{
+    items++;
+    if (items - first == size) {
+        log.Add(label + L" " + std::to_wstring(first) + L".." + std::to_wstring(items - 1) + L" " + hash.Hex());
+        hash = Hash();
+        first = items;
+    }
+}
+
+void Chunks::Finish()
+{
+    if (items > first)
+        log.Add(label + L" " + std::to_wstring(first) + L".." + std::to_wstring(items - 1) + L" " + hash.Hex());
+    hash = Hash();
+    first = items;
+}
+
 std::wstring Replace(std::wstring s, const std::wstring& from, const std::wstring& to)
 {
     if (from.empty()) return s;

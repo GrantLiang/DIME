@@ -17,6 +17,12 @@
 * modification time and an unchanged one keeps its old time, on both sides,
 * so "the file was updated by someone else" does not depend on the clock.
 *
+* Golden files (src/tests/golden/SettingsApp): the Rust side's state after
+* every step (hashed in chunks; the machine's dark mode is masked) and per
+* engine scenario step. They assume the default 3D highlight colour (white),
+* which the defaults are built from; SystemFacts reads the machine and has
+* no golden file.
+*
 * Source is ASCII only (the project compiles with code page 950).
 ********************************************************************************/
 #include "pch.h"
@@ -38,6 +44,7 @@
 #include "../DIMESettings/SettingsController.h"
 #include "dime_ffi.h"
 #include "SettingsAppTestAccess.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -134,7 +141,7 @@ namespace
     std::vector<Op> RandomOps(unsigned seed, int count)
     {
         std::mt19937 rng(seed);
-        auto R = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
+        auto R = [&](int lo, int hi) { return Golden::Pick(rng, lo, hi); };
         std::vector<Op> out;
         for (int i = 0; i < count; i++) {
             Op op;
@@ -531,6 +538,7 @@ namespace DIMEUnitTests
         bool _savedHasDescription = false;
         SettingsAppConfigAccess::Saved _savedStatics = {};
         WCHAR _savedAppData[MAX_PATH] = {};
+        BOOL _saved1809 = FALSE;
 
     public:
         TEST_METHOD_INITIALIZE(Setup)
@@ -541,6 +549,11 @@ namespace DIMEUnitTests
             _savedDescription = d ? d : L"";
             _savedStatics = SettingsAppConfigAccess::Save();
             wcscpy_s(_savedAppData, Global::testAppDataOverride);
+            // The value DllMain / wWinMain set on Windows 10 1809+; tests that
+            // run earlier may leave either value, and the defaults (colour
+            // mode) recorded in the golden files depend on it.
+            _saved1809 = Global::isWindows1809OrLater;
+            Global::isWindows1809OrLater = TRUE;
         }
 
         TEST_METHOD_CLEANUP(Teardown)
@@ -551,16 +564,21 @@ namespace DIMEUnitTests
             CDIMEArray<LanguageProfileInfo> empty;
             CConfig::SetReverseConvervsionInfoList(&empty);
             wcscpy_s(Global::testAppDataOverride, _savedAppData);
+            Global::isWindows1809OrLater = _saved1809;
         }
 
         // Random operations: every step matches.
         TEST_METHOD(RandomOperations)
         {
+            // The C++ side reads these itself, so both sides use the machine's
+            // values; the golden file assumes the defaults (a white 3D
+            // highlight colour and the test process's 1809 flag).
             DimeConfigEnv env = { GetSysColor(COLOR_3DHIGHLIGHT), Global::isWindows1809OrLater ? 1 : 0 };
             std::vector<Provider> providers = TestProviders();
             wchar_t tmp[MAX_PATH] = {};
             GetTempPathW(MAX_PATH, tmp);
             int loads = 0;
+            Golden::Log golden;
             for (unsigned seed = 1; seed <= 6; seed++) {
                 std::vector<Op> ops = RandomOps(seed, 250);
                 for (const Op& op : ops) if (op.kind == 0) loads++;
@@ -594,7 +612,15 @@ namespace DIMEUnitTests
                     Assert::Fail((L"seed " + std::to_wstring(seed) + L" step " + std::to_wstring(i) + L"\nops: " + history
                         + L"\n" + diff).c_str());
                 }
+                Golden::Chunks ch(golden, L"seed " + std::to_wstring(seed) + L" steps", 25);
+                for (const std::wstring& step : r.log) {
+                    // The machine's dark mode (op 11) is not part of the golden file.
+                    ch.Add(Golden::Replace(Golden::Replace(step, L" dark 1\n", L" dark ?\n"), L" dark 0\n", L" dark ?\n"));
+                    ch.Next();
+                }
+                ch.Finish();
             }
+            Golden::Check(L"SettingsApp", L"RandomOperations", golden.lines);
             Assert::IsTrue(loads > 100, std::to_wstring(loads).c_str());
         }
 
@@ -613,9 +639,15 @@ namespace DIMEUnitTests
             IME_MODE savedMode = Global::imeMode;
             int keyed = 0;
             std::wstring failure;
+            Golden::Log golden;
             for (const EngineScenario& sc : EngineScenarios()) {
                 std::vector<std::wstring> c = RunEngine(false, sc, base, env);
                 std::vector<std::wstring> r = RunEngine(true, sc, base, env);
+                for (const std::wstring& step : r) {
+                    Golden::Hash h;
+                    h.Add(step);
+                    golden.Add(step.substr(0, step.find(L'\n')) + L" " + h.Hex());
+                }
                 for (size_t i = 0; i < c.size() && failure.empty(); i++) {
                     std::wstring cn = c[i], rn = r[i];
                     if (cn != rn) failure = L"C++:\n" + cn + L"\nRust:\n" + rn;
@@ -632,6 +664,7 @@ namespace DIMEUnitTests
             Global::imeMode = savedMode;
             RemoveTree(base);
             Assert::IsTrue(failure.empty(), failure.c_str());
+            Golden::Check(L"SettingsApp", L"EngineKeys", golden.lines);
             Logger::WriteMessage((L"engine states with radical keys: " + std::to_wstring(keyed) + L"\n").c_str());
             Assert::IsTrue(keyed >= 8, std::to_wstring(keyed).c_str());
         }

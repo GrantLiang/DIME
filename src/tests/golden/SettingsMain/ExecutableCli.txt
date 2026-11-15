@@ -1,0 +1,17 @@
+[DIMESettings.exe --help] exit 0 stdout 2349 4363985fc07af87b stderr 0 14650fb0739d0383
+[DIMESettings.exe --help --silent] exit 0 stdout 0 14650fb0739d0383 stderr 0 14650fb0739d0383
+[DIMESettings.exe --list-modes] exit 0 stdout 32 fbef38d4a27849b4 stderr 0 14650fb0739d0383
+[DIMESettings.exe --list-modes --json] exit 0 stdout 39 58e1d195fc77a3a1 stderr 0 14650fb0739d0383
+[DIMESettings.exe --bogus 中é] exit 1 stdout 0 14650fb0739d0383 stderr 36 7a3f6ee62a946cbf
+[DIMESettings.exe --get] exit 1 stdout 0 14650fb0739d0383 stderr 35 1c1fc427f4ce001f
+[DIMESettings.exe --mode] exit 1 stdout 0 14650fb0739d0383 stderr 37 5ddd6246df4ffc57
+[DIMESettings.exe --mode xyz --get Foo] exit 1 stdout 0 14650fb0739d0383 stderr 28 da4e8f4da8ec9d92
+[DIMESettings.exe --set] exit 1 stdout 0 14650fb0739d0383 stderr 42 2b2639fb83a70739
+[DIMESettings.exe "quoted arg" --help] exit 1 stdout 0 14650fb0739d0383 stderr 39 25957ffc0fc53c57
+["C:\some where\x.exe"   --list-modes] exit 0 stdout 32 fbef38d4a27849b4 stderr 0 14650fb0739d0383
+[odd"name with"space --bogus	x] exit 1 stdout 0 14650fb0739d0383 stderr 36 7a3f6ee62a946cbf
+[DIMESettings.exe --import-custom] exit 1 stdout 0 14650fb0739d0383 stderr 46 1cfa50e1bcbcc749
+[DIMESettings.exe --list-keys] exit 1 stdout 0 14650fb0739d0383 stderr 45 35d140ddc3c08884
+[DIMESettings.exe --mode 大易 --get-all] exit 1 stdout 0 14650fb0739d0383 stderr 27 db826d53ecab68f9
+[DIMESettings.exe --mode éxÿ --get-all] exit 1 stdout 0 14650fb0739d0383 stderr 28 f527b005a533250b
+[DIMESettings.exe --mode   --list-keys] exit 1 stdout 0 14650fb0739d0383 stderr 28 d6fb66eeed6d4c92

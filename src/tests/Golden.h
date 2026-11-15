@@ -66,6 +66,25 @@ private:
     uint64_t h = 1469598103934665603ULL;
 };
 
+// Hashes items in chunks: every `size` items (and the last, shorter chunk)
+// become one line "<label> <first>..<last> <hash>" of `log`.
+class Chunks {
+public:
+    Chunks(Log& log, const std::wstring& label, int size) : log(log), label(label), size(size) {}
+    void Add(const std::wstring& line) { hash.Add(line); }
+    void Add(const void* bytes, size_t n) { hash.Add(bytes, n); }
+    // Ends one item.
+    void Next();
+    // Writes the last, shorter chunk.
+    void Finish();
+private:
+    Log& log;
+    std::wstring label;
+    int size;
+    int items = 0, first = 0;
+    Hash hash;
+};
+
 // `s` with every occurrence of `from` replaced by `to`.
 std::wstring Replace(std::wstring s, const std::wstring& from, const std::wstring& to);
 
