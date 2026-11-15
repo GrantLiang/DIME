@@ -47,6 +47,9 @@ jobs:
   build-installer:
     name: Build Installer
     runs-on: windows-latest
+    # The "Commit test files" step pushes the installers and checksums to master.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
