@@ -18,7 +18,7 @@ msbuild DIME.sln /p:Configuration=Release /p:Platform=Win32 /t:DIMESettings    #
 ```
 
 - `DIME` 專案 → `DIME.dll`（Win32 / x64 / ARM64 / ARM64EC）；`DIMESettings` 專案 → `DIMESettings.exe`（僅 Win32，所有平台共用；預設由 cargo 建置 Rust 版，見下方 5b-15f）；`DIMETests` 專案 → 單元測試 DLL。
-- 每次建置的 PreBuildEvent 會執行 `src/buildInfo.cmd`，以 git commit 數與日期重新產生 **受版控的** `src/BuildInfo.h`（版號格式 `1.3.<commit數>.<日期>`）。建置後 `BuildInfo.h` 出現 diff 屬正常；除非是要發版，否則不要把它一起 commit。
+- 每次建置的 PreBuildEvent 會執行 `src/buildInfo.cmd`，以 git commit 數與日期重新產生 **受版控的** `src/BuildInfo.h`（版號格式 `2.0.<commit數>.<日期>`；本 fork 從 2.0 起算，比 upstream 的 1.3.x 高，MSI 從 upstream 換過來是升級）。建置後 `BuildInfo.h` 出現 diff 屬正常；除非是要發版，否則不要把它一起 commit。
 
 ## 測試
 

@@ -1,5 +1,5 @@
 
-## Rust 核心版 (本 fork，基於 upstream `master` `2788155`)
+## DIME 2.0：Rust 核心版 (本 fork，基於 upstream `master` `2788155`)
 
 這是本 fork 第一個以 **Rust 核心** 為預設建置的版本。輸入法的組字、字典、設定與候選字／提示視窗大多已改由 Rust 實作，設定程式 `DIMESettings.exe` 則完全改為 Rust 程式。行為與外觀以對拍測試、按鍵流程黃金測試與逐像素截圖比對確認和原本的 C++ 版相同；若發現任何差異，請回報。
 
@@ -20,6 +20,7 @@
 
 ### 變更
 
+- 版號改為 2.0 起算（`2.0.<commit 數>`）。本 fork 不併回 upstream，2.0 比 upstream 的 1.3.x 高，已安裝 upstream 版本的電腦直接安裝即為升級。
 - 舊版屬性表設定對話框已移除；`DIMESettings.exe --legacy` 改開新的設定視窗。
 - `DIMESettings.exe` 的版本資訊改為應用程式（`FILETYPE`、`InternalName`、`OriginalFilename`），不再沿用 `DIME.dll` 的值。
 

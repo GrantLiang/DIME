@@ -17,13 +17,13 @@ rem Construct build date strings
 set _BuildDate1=%BUILD_YEAR_1%%BUILD_MONTH%%BUILD_DAY%
 set _BuildDate4=%BUILD_YEAR_4%%BUILD_MONTH%%BUILD_DAY%
 set _BuildSubVersion=%_BuildDate1%
-set _BuildVersion=1.3.%_CommitCount%.%_BuildDate1%
-set _BuildVersionStrShort=1.3.%_CommitCount%
+set _BuildVersion=2.0.%_CommitCount%.%_BuildDate1%
+set _BuildVersionStrShort=2.0.%_CommitCount%
 
 rem Generate into a per-invocation temp file (DIME and DIMESettings may run this in parallel)
 set _Tmp=BuildInfo.h.%RANDOM%%RANDOM%.tmp
-echo #define BUILD_VER_MAJOR 1 >%_Tmp%
-echo #define BUILD_VER_MINOR 3 >>%_Tmp%
+echo #define BUILD_VER_MAJOR 2 >%_Tmp%
+echo #define BUILD_VER_MINOR 0 >>%_Tmp%
 echo #define BUILD_COMMIT_COUNT %_CommitCount% >>%_Tmp%
 echo #define BUILD_YEAR_4 %BUILD_YEAR_4% >>%_Tmp%
 echo #define BUILD_YEAR_2 %BUILD_YEAR_2% >>%_Tmp%

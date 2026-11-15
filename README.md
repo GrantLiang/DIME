@@ -7,7 +7,7 @@
 
 DIME 是一套適用於 Windows 8/10/11 的輸入法框架，支援多種中文輸入法，包含大易、行列、注音、自建輸入法。
 
-> **Fork 說明**：本儲存庫 fork 自 [jrywu/DIME](https://github.com/jrywu/DIME)（原作者 Jeremy Wu，BSD 3-Clause 授權），以 upstream `master` 的 commit `2788155` 為基礎。本頁沿用原專案說明，並在 [本 Fork 的異動](#本-fork-的異動) 一節列出新增與修改的部分。上方的徽章、下載連結與問題回報管道仍指向原專案；原專案發布的安裝檔**不包含**本 fork 的異動，需自行[從原始碼建置](docs/HOW_TO_BUILD.md)。
+> **Fork 說明**：本儲存庫 fork 自 [jrywu/DIME](https://github.com/jrywu/DIME)（原作者 Jeremy Wu，BSD 3-Clause 授權），以 upstream `master` 的 commit `2788155` 為基礎。本 fork 不併回 upstream，版號從 2.0 起算（upstream 為 1.3.x）。本頁沿用原專案說明，並在 [本 Fork 的異動](#本-fork-的異動) 一節列出新增與修改的部分。上方的徽章、下載連結與問題回報管道仍指向原專案；原專案發布的安裝檔**不包含**本 fork 的異動，需自行[從原始碼建置](docs/HOW_TO_BUILD.md)。
 
 ## 本 Fork 的異動
 
