@@ -64,6 +64,7 @@ jobs:
     if: needs.check-changes.outputs.should-run == 'true'
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         platform: [Win32, x64]
         configuration: [Debug, Release]
@@ -73,6 +74,36 @@ jobs:
       - uses: actions/checkout@v4
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
+      - name: Install MSVC Spectre libraries and ATL
+        # The projects' own toolset (the runner's latest MSVC); DIME.vcxproj needs the
+        # Spectre libraries and the TSF / UIA tests include atlbase.h.
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstallPath = & $vsWhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+          if (-not $vsInstallPath) { throw "Visual Studio installation not found." }
+          $setup = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe"
+          $components = @(
+            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre",
+            "Microsoft.VisualStudio.Component.VC.ATL",
+            "Microsoft.VisualStudio.Component.VC.ATL.Spectre"
+          )
+          $arguments = @("modify", "--installPath", $vsInstallPath, "--quiet", "--norestart", "--nocache")
+          foreach ($component in $components) { $arguments += @("--add", $component) }
+          & $setup @arguments
+          if ($LASTEXITCODE -eq 3010) {
+            Write-Host "Visual Studio Installer requested a reboot; continuing on the hosted runner."
+          } elseif ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          $latestTools = Get-ChildItem -Path (Join-Path $vsInstallPath "VC\Tools\MSVC") -Directory |
+            Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
+          foreach ($dir in @("lib\spectre\x86", "lib\spectre\x64", "atlmfc\include\atlbase.h")) {
+            $path = Join-Path $latestTools.FullName $dir
+            if (-not (Test-Path $path)) { throw "Missing after install: $path" }
+          }
       - name: Setup VSTest
         uses: darenm/Setup-VSTest@v1.3
       - name: Setup Rust (dime-ffi for RustParityTest)
@@ -86,7 +117,7 @@ jobs:
       - name: Build
         run: |
           cd src
-          msbuild DIME.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:PlatformToolset=v143 /p:DimeTestRustEngine=${{ matrix.engine == 'rust' }} /p:DimeUseRustEngine=${{ matrix.engine == 'rust' }}
+          msbuild DIME.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:DimeTestRustEngine=${{ matrix.engine == 'rust' }} /p:DimeUseRustEngine=${{ matrix.engine == 'rust' }}
       - name: Run Tests
         run: |
           cd src

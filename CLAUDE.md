@@ -8,7 +8,7 @@ DIME 是 Windows 8/10/11 的中文輸入法，以 100% 原生 C++ 實作 Windows
 
 ## 建置
 
-需求：Visual Studio（C++ 桌面開發 workload、Windows SDK；CI 使用 `PlatformToolset=v143`）。方案檔是 `src/DIME.sln`，指令要在 `src/` 下執行。
+需求：Visual Studio（C++ 桌面開發 workload、Windows SDK；專案用 v145（CI 用 runner 上最新的 MSVC，並安裝 Spectre 程式庫與 ATL））。方案檔是 `src/DIME.sln`，指令要在 `src/` 下執行。
 
 ```powershell
 cd src
