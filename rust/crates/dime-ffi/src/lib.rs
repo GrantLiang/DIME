@@ -4857,6 +4857,16 @@ pub unsafe extern "C" fn dime_ui_set_work_area_for_test(rc: *const layout::Rect)
     guard((), || candwin::set_work_area_for_test(unsafe { rc.as_ref() }.copied()))
 }
 
+/// Tests: the mouse position the Rust windows read on this thread
+/// (`GetCursorPos`); null reads the mouse again.
+///
+/// # Safety
+/// `pt` must be valid or null.
+#[no_mangle]
+pub unsafe extern "C" fn dime_ui_set_cursor_pos_for_test(pt: *const layout::Point) {
+    guard((), || candwin::set_cursor_pos_for_test(unsafe { pt.as_ref() }.copied()))
+}
+
 /// The timer test hook of a candidate window (`g_baseWindowTimerTestHook`
 /// for it); null removes it.
 ///

@@ -227,11 +227,14 @@ namespace
     // but only while its GDI calls are recorded with synthetic text metrics
     // at 96 dpi: its sizes and calls do not depend on the machine's fonts.
 
+    // Golden recordings: 96 dpi and a light system theme whatever the machine
+    // (CConfig::GetDpiForHwnd / IsSystemDarkTheme).
     struct Dpi96
     {
         UINT saved = CConfig::testDpiOverride;
-        Dpi96() { CConfig::testDpiOverride = 96; }
-        ~Dpi96() { CConfig::testDpiOverride = saved; }
+        int savedDark = CConfig::testSystemDarkOverride;
+        Dpi96() { CConfig::testDpiOverride = 96; CConfig::testSystemDarkOverride = 0; }
+        ~Dpi96() { CConfig::testDpiOverride = saved; CConfig::testSystemDarkOverride = savedDark; }
     };
 
     void SetupGolden(RustSide& g, const Pair& p, int rowsInPage, UINT wndWidth, const std::vector<std::wstring>& texts,
@@ -267,6 +270,16 @@ namespace
         for (int i = 0; i < ARRAYSIZE(ids); i++)
             if (c == LoadCursor(nullptr, ids[i])) return names[i];
         return L"other";
+    }
+
+    // G's mouse (dime_ui_set_cursor_pos_for_test): at `pt` in h's client area,
+    // whatever the machine's mouse does.
+    void SetGoldenMouse(HWND h, int x, int y)
+    {
+        POINT p = { x, y };
+        ClientToScreen(h, &p);
+        DimePoint dp = { p.x, p.y };
+        dime_ui_set_cursor_pos_for_test(&dp);
     }
 
     void AddStep(Golden::Chunks& ch, const std::wstring& head, const std::vector<std::wstring>& calls)
@@ -454,9 +467,11 @@ namespace DIMEUnitTests
                         SetCursor(nullptr);
                         WINDOWPOS wpos = pos;
                         wpos.hwnd = g.Wnd();
+                        SetGoldenMouse(g.Wnd(), gx, gy);
                         Golden::GdiRecording rec;
                         LRESULT r = SendMessage(g.Wnd(), msg, wp, useWindowPos ? (LPARAM)&wpos : xy ? MAKELPARAM(gx, gy) : lp);
                         std::vector<std::wstring> calls = rec.Take();
+                        dime_ui_set_cursor_pos_for_test(nullptr);
                         if (msg == WM_CTLCOLORSCROLLBAR) r = (r != 0);
                         AddStep(ch, L"msg " + std::to_wstring(msg) + L" " + std::to_wstring((uint32_t)wp) + L" " + std::to_wstring((uint32_t)(xy ? MAKELPARAM(gx, gy) : useWindowPos ? 0 : lp)) +
                             L" " + ObserveRust(g) + L" result=" + std::to_wstring(r) + L" cursor=" + CursorName(GetCursor()) +

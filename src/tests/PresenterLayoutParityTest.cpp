@@ -307,10 +307,12 @@ namespace DIMEUnitTests
             // the GDI calls recorded (synthetic metrics), at 96 dpi and in a
             // fixed work area (the real one is the machine's screen).
             UINT savedDpi = CConfig::testDpiOverride;
+            int savedDark = CConfig::testSystemDarkOverride;
             CConfig::testDpiOverride = 96;
+            CConfig::testSystemDarkOverride = 0;   // a light system theme whatever the machine
             const DimeRect kWork = { 0, 0, 1920, 1040 };
             Golden::Log golden;
-            Golden::Chunks ch(golden, L"steps", 40);
+            Golden::Chunks ch(golden, L"steps", 5);
             std::vector<std::wstring> gcalls;
             std::mt19937 rng(4201);
             auto in = [&](int lo, int hi) { return lo + (int)(rng() % (unsigned)(hi - lo + 1)); };
@@ -484,6 +486,7 @@ namespace DIMEUnitTests
             Global::defaultlFontHandle = savedFont;
             DeleteObject(font);
             CConfig::testDpiOverride = savedDpi;
+            CConfig::testSystemDarkOverride = savedDark;
             ch.Finish();
             Golden::Check(L"PresenterLayout", L"Decisions", golden);
             Logger::WriteMessage((std::to_wstring(steps) + L" steps compared (" + std::to_wstring(layoutPlaced) + L" layout changes, " +

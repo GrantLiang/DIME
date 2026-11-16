@@ -618,6 +618,30 @@ pub fn set_work_area_for_test(wa: Option<Rect>) {
     WORK_AREA_FOR_TEST.with(|w| w.set(wa));
 }
 
+thread_local! {
+    /// Tests: where the mouse is (golden recordings, phase 6b-2: the real
+    /// one is wherever the machine's mouse happens to be).
+    static CURSOR_POS_FOR_TEST: Cell<Option<Point>> = const { Cell::new(None) };
+}
+
+/// Tests: `Some` makes [`cursor_pos`] return that screen point on this
+/// thread; `None` reads the mouse again.
+pub fn set_cursor_pos_for_test(pt: Option<Point>) {
+    CURSOR_POS_FOR_TEST.with(|c| c.set(pt));
+}
+
+/// `GetCursorPos` (or the tests' point).
+pub fn cursor_pos() -> POINT {
+    if let Some(p) = CURSOR_POS_FOR_TEST.with(|c| c.get()) {
+        return POINT { x: p.x, y: p.y };
+    }
+    let mut cursor = POINT::default();
+    unsafe {
+        let _ = windows::Win32::UI::WindowsAndMessaging::GetCursorPos(&mut cursor);
+    }
+    cursor
+}
+
 /// The work area [`set_work_area_for_test`] set on this thread, if any.
 pub fn work_area_for_test() -> Option<Rect> {
     WORK_AREA_FOR_TEST.with(|w| w.get())

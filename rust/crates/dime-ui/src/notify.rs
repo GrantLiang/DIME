@@ -9,11 +9,11 @@
 use crate::candwnd;
 use crate::layout::{Point, Rect};
 use windows::core::PCWSTR;
-use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, SIZE, WPARAM};
+use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, RECT, SIZE, WPARAM};
 use windows::Win32::Graphics::Gdi::{BeginPaint, EndPaint, MapWindowPoints, ETO_OPAQUE, HBRUSH, HDC, HFONT, HGDIOBJ, PAINTSTRUCT, TRANSPARENT};
 use crate::gdi::{CreateRoundRectRgn, ExtTextOutW, FillRect, GetDC, GetTextExtentPoint32W, ReleaseDC, SelectObject, SetBkColor, SetBkMode, SetTextColor, SetWindowRgn};
 use windows::Win32::UI::WindowsAndMessaging::{
-    DefWindowProcW, GetClientRect, GetCursorPos, LoadCursorW, SetCursor, SetWindowPos, IDC_ARROW, IDC_HAND,
+    DefWindowProcW, GetClientRect, LoadCursorW, SetCursor, SetWindowPos, IDC_ARROW, IDC_HAND,
     MA_NOACTIVATE, SWP_HIDEWINDOW, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER, WINDOWPOS, WM_CREATE, WM_DESTROY,
     WM_DPICHANGED, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE,
     WM_PAINT, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SETCURSOR, WM_SHOWWINDOW, WM_WINDOWPOSCHANGED, WM_WINDOWPOSCHANGING,
@@ -333,9 +333,8 @@ pub unsafe fn window_proc(host: &mut dyn NotifyHost, hwnd: HWND, msg: u32, wpara
             LRESULT(0)
         }
         WM_SETCURSOR => {
-            let mut cursor = POINT::default();
+            let mut cursor = crate::candwin::cursor_pos();
             unsafe {
-                let _ = GetCursorPos(&mut cursor);
                 let mut pts = [cursor];
                 MapWindowPoints(None, Some(hwnd), &mut pts);
                 cursor = pts[0];

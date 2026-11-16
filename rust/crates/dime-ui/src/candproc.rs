@@ -20,7 +20,7 @@ use crate::gdi::{BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, D
 use windows::Win32::UI::Accessibility::NotifyWinEvent;
 use windows::Win32::UI::Input::KeyboardAndMouse::{SetCapture, TrackMouseEvent, TME_LEAVE, TRACKMOUSEEVENT};
 use windows::Win32::UI::WindowsAndMessaging::{
-    DefWindowProcW, GetClientRect, GetCursorPos, IsWindow, IsWindowVisible, LoadCursorW, SetCursor, SetWindowPos,
+    DefWindowProcW, GetClientRect, IsWindow, IsWindowVisible, LoadCursorW, SetCursor, SetWindowPos,
     CHILDID_SELF, EVENT_OBJECT_IME_CHANGE, EVENT_OBJECT_IME_HIDE, EVENT_OBJECT_IME_SHOW, IDC_ARROW, IDC_HAND,
     MA_NOACTIVATE, OBJID_CLIENT, SB_LINEDOWN, SB_LINEUP, SB_PAGEDOWN, SB_PAGEUP, SB_THUMBPOSITION, SB_THUMBTRACK,
     SWP_HIDEWINDOW, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOREDRAW, SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW, WINDOWPOS,
@@ -235,10 +235,7 @@ pub unsafe fn window_proc(host: &mut dyn CandHost, hwnd: HWND, msg: u32, wparam:
             LRESULT(0)
         }
         WM_SETCURSOR => {
-            let mut cursor = POINT::default();
-            unsafe {
-                let _ = GetCursorPos(&mut cursor);
-            }
+            let cursor = crate::candwin::cursor_pos();
             let pt = map_point(
                 None,
                 Some(hwnd),

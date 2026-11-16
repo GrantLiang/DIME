@@ -829,6 +829,8 @@ void    dime_ui_candidate_sb_op(const DimeCandidate* c, uint32_t op, int32_t a, 
 void    dime_ui_candidate_sb_set(const DimeCandidate* c, const DimeScrollInfo* si, const DimeRect* rect, int32_t radius, uint32_t color);
 /* Tests: the work area the Rust windows use on this thread (golden recordings); NULL: the monitors. */
 void    dime_ui_set_work_area_for_test(const DimeRect* rc);
+/* Tests: the mouse position the Rust windows read on this thread (GetCursorPos); NULL: the mouse. */
+void    dime_ui_set_cursor_pos_for_test(const DimePoint* pt);
 /* The timer test hook (g_baseWindowTimerTestHook for this window); NULL removes it. */
 void    dime_ui_candidate_set_timer_hook(const DimeCandidate* c, void (*hook)(void* ctx, int32_t start, uint32_t elapse, uintptr_t id), void* ctx);
 

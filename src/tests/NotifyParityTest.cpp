@@ -164,11 +164,14 @@ namespace
     // A third notify window, Rust, set up and driven like the pair but only
     // while its GDI calls are recorded with synthetic text metrics at 96 dpi.
 
+    // Golden recordings: 96 dpi and a light system theme whatever the machine
+    // (CConfig::GetDpiForHwnd / IsSystemDarkTheme).
     struct Dpi96
     {
         UINT saved = CConfig::testDpiOverride;
-        Dpi96() { CConfig::testDpiOverride = 96; }
-        ~Dpi96() { CConfig::testDpiOverride = saved; }
+        int savedDark = CConfig::testSystemDarkOverride;
+        Dpi96() { CConfig::testDpiOverride = 96; CConfig::testSystemDarkOverride = 0; }
+        ~Dpi96() { CConfig::testDpiOverride = saved; CConfig::testSystemDarkOverride = savedDark; }
     };
 
     struct GoldenSide
@@ -211,6 +214,16 @@ namespace
         s += L" timers=";
         for (auto& t : g.timers) s += t + L" ";
         return s;
+    }
+
+    // G's mouse (dime_ui_set_cursor_pos_for_test): at `pt` in h's client area,
+    // whatever the machine's mouse does.
+    void SetGoldenMouse(HWND h, int x, int y)
+    {
+        POINT p = { x, y };
+        ClientToScreen(h, &p);
+        DimePoint dp = { p.x, p.y };
+        dime_ui_set_cursor_pos_for_test(&dp);
     }
 
     void AddStep(Golden::Chunks& ch, const std::wstring& head, const std::vector<std::wstring>& calls)
@@ -405,6 +418,7 @@ namespace DIMEUnitTests
                         pos.flags = wpFlags;
                         if (flag && gs) pos.hwndInsertAfter = gs;
                         LRESULT gr = 0;
+                        SetGoldenMouse(h, x, y);
                         Golden::GdiRecording rec;
                         switch (op)
                         {
@@ -424,6 +438,7 @@ namespace DIMEUnitTests
                         case 14: gr = SendMessage(h, WM_TIMER, timer, 0); break;
                         }
                         std::vector<std::wstring> calls = rec.Take();
+                        dime_ui_set_cursor_pos_for_test(nullptr);
                         AddStep(ch, L"op " + std::to_wstring(op) + L" " + ObserveGolden(g) + L" res=" + std::to_wstring(gr) +
                             L" cursor=" + CursorName(GetCursor()) + L" wp=" + std::to_wstring(pos.flags), calls);
                     }

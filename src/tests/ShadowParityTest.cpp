@@ -83,11 +83,14 @@ namespace
     int32_t GoldenDark() { return CConfig::GetEffectiveDarkMode() ? 1 : 0; }
     const DimeShadowEnv kGoldenEnv = { GoldenDpi, GoldenDark };
 
+    // Golden recordings: 96 dpi and a light system theme whatever the machine
+    // (CConfig::GetDpiForHwnd / IsSystemDarkTheme).
     struct Dpi96
     {
         UINT saved = CConfig::testDpiOverride;
-        Dpi96() { CConfig::testDpiOverride = 96; }
-        ~Dpi96() { CConfig::testDpiOverride = saved; }
+        int savedDark = CConfig::testSystemDarkOverride;
+        Dpi96() { CConfig::testDpiOverride = 96; CConfig::testSystemDarkOverride = 0; }
+        ~Dpi96() { CConfig::testDpiOverride = saved; CConfig::testSystemDarkOverride = savedDark; }
     };
 
     std::wstring GoldenState(DimeShadow* sh, HWND owner)

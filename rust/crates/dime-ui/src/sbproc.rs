@@ -11,14 +11,14 @@
 
 use crate::candwnd::{self, hit, ScrollInfo};
 use crate::layout::{Point, Rect};
-use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
+use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, RECT, WPARAM};
 use windows::Win32::Graphics::Gdi::{
     BeginPaint, BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, EndPaint, MapWindowPoints,
     SelectObject, HDC, PAINTSTRUCT, SRCCOPY,
 };
 use windows::Win32::UI::Input::KeyboardAndMouse::{TrackMouseEvent, TME_LEAVE, TRACKMOUSEEVENT};
 use windows::Win32::UI::WindowsAndMessaging::{
-    DefWindowProcW, GetClientRect, GetCursorPos, GetWindowRect, IsWindow, IsWindowVisible, KillTimer,
+    DefWindowProcW, GetClientRect, GetWindowRect, IsWindow, IsWindowVisible, KillTimer,
     SetLayeredWindowAttributes, SetWindowPos, LWA_ALPHA, LWA_COLORKEY, SB_LINEDOWN, SB_LINEUP, SB_PAGEDOWN, SB_PAGEUP,
     SB_THUMBPOSITION, SB_THUMBTRACK, SWP_NOACTIVATE, SWP_NOOWNERZORDER, WM_ERASEBKGND, WM_PAINT, WM_TIMER, WM_VSCROLL,
 };
@@ -287,10 +287,9 @@ pub fn on_mouse_move(host: &mut dyn SbHost) {
         let p = candwnd::parts(&client, dpi, &si);
         if p.track.height().wrapping_sub(p.thumb.height()) > 0 {
             // Get cursor in scrollbar client coords
-            let mut cursor = POINT::default();
+            let mut cursor = crate::candwin::cursor_pos();
             let hwnd = host.hwnd();
             unsafe {
-                let _ = GetCursorPos(&mut cursor);
                 let mut pts = [cursor];
                 MapWindowPoints(None, Some(hwnd), &mut pts);
                 cursor = pts[0];
