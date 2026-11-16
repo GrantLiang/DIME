@@ -58,6 +58,16 @@ namespace
         int msgResult;
     };
 
+    // `src` into `dst` (truncated), the rest zero. Not wcscpy_s: the debug
+    // CRT fills the rest of the buffer with 0xFE, and the buffers end up in
+    // the hashed snapshot, so Debug and Release would differ.
+    template <size_t N>
+    void CopyZ(wchar_t (&dst)[N], const wchar_t* src)
+    {
+        memset(dst, 0, sizeof(dst));
+        for (size_t i = 0; i + 1 < N && src[i]; i++) dst[i] = src[i];
+    }
+
     std::wstring RandomText(std::mt19937& rng, int maxLen)
     {
         static const wchar_t alphabet[] = L"ab;/ \n中文\\:.x0123456789";
@@ -76,7 +86,7 @@ namespace
         s.fontOut.lfWeight = (rng() % 2) ? FW_BOLD : 350;
         s.fontOut.lfItalic = (BYTE)(rng() % 2);
         std::wstring face = (rng() % 3 == 0) ? std::wstring(40, L'F') : L"Microsoft JhengHei";
-        wcsncpy_s(s.fontOut.lfFaceName, face.c_str(), _TRUNCATE);
+        CopyZ(s.fontOut.lfFaceName, face.c_str());
         s.pointSize10 = (int)(rng() % 400) - 5;
         s.colorOk = b();
         s.colorOut = (COLORREF)(rng() & 0xFFFFFF);
@@ -95,7 +105,7 @@ namespace
         s.loadSnap.fontSize = (UINT)(rng() % 40);
         s.loadSnap.colorMode = (int)(rng() % 4);
         s.loadSnap.maxCodes = (UINT)(rng() % 8);
-        wcscpy_s(s.loadSnap.fontFaceName, L"Snap");
+        CopyZ(s.loadSnap.fontFaceName, L"Snap");
         for (COLORREF& c : s.colors) c = (COLORREF)(rng() & 0xFFFFFF);
         s.editorExists = (rng() % 5) != 0;
         s.editorText = RandomText(rng, 60);
@@ -258,7 +268,7 @@ namespace DIMEUnitTests
                 ev.comboSel = (int)(rng() % 12) - 1;
                 ev.comboItemData = (int)(rng() % 6) - 1;
         ev.checked = (int)(rng() & 1);
-                wcscpy_s(ev.editText, edits[rng() % _countof(edits)]);
+                CopyZ(ev.editText, edits[rng() % _countof(edits)]);
 
                 SettingsSnapshot start = RandomSnapshot(rng);
                 int startGrid = (int)(rng() & 1);
