@@ -7,9 +7,10 @@
 //! line to the log: the function, its arguments, and what it returned. A
 //! handle the recording created is numbered in order of creation (`h1`,
 //! `h2`, ...) until it is deleted; any other handle (a DC, font or brush the
-//! caller made, a stock object) is written by what it is (`dc`,
-//! `font(-16,Segoe UI)`, `brush(f0f0f0)`), because the system reuses the
-//! values of freed handles and a numbering by value would depend on that.
+//! caller made) is written by what it is (`dc`, `font(-16,Segoe UI)`,
+//! `brush(0,f0f0f0)`), because the system reuses the values of freed handles
+//! and a numbering by value would depend on that; a stock object is
+//! `stock(n)` (what `DEFAULT_GUI_FONT` is depends on the system's locale).
 //! So the log has no addresses.
 //!
 //! A recording with synthetic metrics makes the text measurements machine
@@ -226,6 +227,8 @@ struct Recorder {
     selected: HashMap<usize, usize>,
     /// DC handle -> the selected font at each SaveDC.
     saved: HashMap<usize, Vec<Option<usize>>>,
+    /// Stock object handle -> its GetStockObject index.
+    stock: HashMap<usize, i32>,
 }
 
 impl Recorder {
@@ -258,10 +261,13 @@ impl Recorder {
         if h.is_null() {
             return "0".to_string();
         }
-        match self.own.get(&(h as usize)) {
-            Some(n) => format!("h{n}"),
-            None => describe(h),
+        if let Some(n) = self.own.get(&(h as usize)) {
+            return format!("h{n}");
         }
+        if let Some(i) = self.stock.get(&(h as usize)) {
+            return format!("stock({i})");
+        }
+        describe(h)
     }
 
     fn new_h(&mut self, h: Handle) -> String {
@@ -321,6 +327,19 @@ fn read_font(h: Handle) -> (i32, Vec<u16>) {
     }
 }
 
+/// The process's stock objects (handle -> index).
+fn stock_objects() -> HashMap<usize, i32> {
+    let mut m = HashMap::new();
+    for i in 0..=19 {
+        // SAFETY: GetStockObject with any index; null for unused ones.
+        let h = unsafe { sys::GetStockObject(i) };
+        if !h.is_null() {
+            m.entry(h as usize).or_insert(i);
+        }
+    }
+    m
+}
+
 thread_local! {
     static REC: RefCell<Option<Recorder>> = const { RefCell::new(None) };
 }
@@ -336,6 +355,7 @@ pub fn record_start(synthetic: bool) {
             fonts: HashMap::new(),
             selected: HashMap::new(),
             saved: HashMap::new(),
+            stock: stock_objects(),
         })
     });
 }
@@ -485,6 +505,7 @@ pub unsafe fn CreateSolidBrush(color: u32) -> Handle {
 pub unsafe fn GetStockObject(i: i32) -> Handle {
     let h = unsafe { sys::GetStockObject(i) };
     with(|r| {
+        r.stock.entry(h as usize).or_insert(i);
         let id = r.h(h);
         r.lines.push(format!("GetStockObject({i}) = {id}"))
     });
@@ -502,7 +523,10 @@ pub unsafe fn SelectObject(hdc: Handle, obj: Handle) -> Handle {
             // The font's requested height and face (its LOGFONT, not what
             // the font mapper picked) set the synthetic metrics, also for a
             // font created outside the recording.
-            if !r.own.contains_key(&ob) {
+            if r.stock.contains_key(&ob) {
+                // A stock font depends on the system's locale: the default.
+                r.fonts.insert(ob, (0, Vec::new()));
+            } else if !r.own.contains_key(&ob) {
                 // Not the recording's: read it each time (the value may be a
                 // different font than the last time it was seen).
                 r.fonts.insert(ob, read_font(obj));
@@ -1135,6 +1159,7 @@ mod tests {
             fonts: HashMap::new(),
             selected: HashMap::new(),
             saved: HashMap::new(),
+            stock: stock_objects(),
         };
         let a = 0x1000 as Handle;
         let b = 0x2000 as Handle;
@@ -1147,10 +1172,13 @@ mod tests {
         r.forget(a);
         assert_eq!(r.h(a), "x");
         assert_eq!(r.h(std::ptr::null_mut()), "0");
-        // A real stock brush is described, not numbered.
-        // SAFETY: a stock object.
+        // Stock objects by index; other brushes by what they are.
+        // SAFETY: a stock object; a brush created and deleted here.
         let white = unsafe { sys::GetStockObject(0) };
-        assert_eq!(r.h(white), "brush(0,ffffff)");
+        assert_eq!(r.h(white), "stock(0)");
+        let red = unsafe { sys::CreateSolidBrush(0x0000ff) };
+        assert_eq!(r.h(red), "brush(0,0000ff)");
+        unsafe { sys::DeleteObject(red) };
         assert!(record_take().is_empty());
     }
 }

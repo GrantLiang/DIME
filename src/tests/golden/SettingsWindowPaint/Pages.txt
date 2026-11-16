@@ -1,88 +1,88 @@
-page mode=0 card=-1 dpi=96 light 700x900: 152 calls 10c687d5b7134814
-page mode=0 card=0 dpi=96 light 700x900: 191 calls 866514011e6d472a
-page mode=0 card=1 dpi=96 light 700x900: 158 calls 102aa4b9b7a5501f
-page mode=0 card=2 dpi=96 light 700x900: 686 calls 57f3941bcb49fe82
-page mode=0 card=3 dpi=96 light 700x900: 103 calls 851a656e300b6220
-page mode=1 card=-1 dpi=96 light 700x900: 614 calls 0524bb9f22526b60
-page mode=1 card=0 dpi=96 light 700x900: 198 calls 11b9835f877ef11b
-page mode=1 card=1 dpi=96 light 700x900: 104 calls 47fe345b4e7ae410
-page mode=1 card=2 dpi=96 light 700x900: 693 calls 80997bdcd3320758
-page mode=1 card=3 dpi=96 light 700x900: 96 calls 0e2ca1b54b84da57
-page mode=2 card=-1 dpi=96 light 700x900: 216 calls 36a193fdfb23bd3b
-page mode=2 card=0 dpi=96 light 700x900: 198 calls b2cf589e79f9f674
-page mode=2 card=1 dpi=96 light 700x900: 104 calls 257ec0310dc5367f
-page mode=2 card=2 dpi=96 light 700x900: 595 calls a04e0758f4d37dd7
-page mode=2 card=3 dpi=96 light 700x900: 103 calls 151890855823b228
-page mode=3 card=-1 dpi=96 light 700x900: 556 calls 42d250060fbfaee6
-page mode=3 card=0 dpi=96 light 700x900: 205 calls d2d244026a6d6d2a
-page mode=3 card=1 dpi=96 light 700x900: 104 calls d33256470d3df9c5
-page mode=3 card=2 dpi=96 light 700x900: 612 calls 984cd4edd85ded56
-page mode=3 card=3 dpi=96 light 700x900: 103 calls 7fbf54f0d519c16e
-load-table page 700x900: 206 calls 5eff54183959929e
-load-table page 700x900: 238 calls fc7f55beb198abf7
-page mode=0 card=-1 dpi=144 light 1050x1350: 632 calls 87a090f91e1af098
-page mode=0 card=0 dpi=144 light 1050x1350: 195 calls ea62e537cd418405
-page mode=0 card=1 dpi=144 light 1050x1350: 151 calls e621c6787b1a6348
-page mode=0 card=2 dpi=144 light 1050x1350: 679 calls a82b94d6ea016b36
-page mode=0 card=3 dpi=144 light 1050x1350: 103 calls d119316fc26d3f01
-page mode=1 card=-1 dpi=144 light 1050x1350: 607 calls 358960c5d5bd98a9
-page mode=1 card=0 dpi=144 light 1050x1350: 195 calls 3de9c5582b634eaf
-page mode=1 card=1 dpi=144 light 1050x1350: 104 calls e40ff429798cf1a8
-page mode=1 card=2 dpi=144 light 1050x1350: 693 calls b1265e68666d1f45
-page mode=1 card=3 dpi=144 light 1050x1350: 96 calls 1ab39de424831e48
-page mode=2 card=-1 dpi=144 light 1050x1350: 209 calls abfe8891871dbbe9
-page mode=2 card=0 dpi=144 light 1050x1350: 188 calls 678c9bb5dfc30883
-page mode=2 card=1 dpi=144 light 1050x1350: 104 calls bcd03b8af78df167
-page mode=2 card=2 dpi=144 light 1050x1350: 588 calls 66224be11357ee26
-page mode=2 card=3 dpi=144 light 1050x1350: 103 calls 0d6976a8e3e2cace
-page mode=3 card=-1 dpi=144 light 1050x1350: 145 calls 5befc8dd0e5256d8
-page mode=3 card=0 dpi=144 light 1050x1350: 205 calls af838d0eefcd6103
-page mode=3 card=1 dpi=144 light 1050x1350: 111 calls 2b9bbe5b4b9946c2
-page mode=3 card=2 dpi=144 light 1050x1350: 612 calls 33c06e0cadca90c9
-page mode=3 card=3 dpi=144 light 1050x1350: 96 calls 593d77b1f62e295d
-load-table page 1050x1350: 206 calls 14a6bb0999e4af3d
-load-table page 1050x1350: 238 calls 00c8059d7e8bb980
-page mode=0 card=-1 dpi=96 dark 700x900: 484 calls 37e0c460948bac6d
-page mode=0 card=0 dpi=96 dark 700x900: 173 calls 3d4e8bc502e105a9
-page mode=0 card=1 dpi=96 dark 700x900: 112 calls d5b7f587bcb110e4
-page mode=0 card=2 dpi=96 dark 700x900: 432 calls 64aa8764d3fcb293
-page mode=0 card=3 dpi=96 dark 700x900: 64 calls 8e207d9d3ea11f07
-page mode=1 card=-1 dpi=96 dark 700x900: 100 calls 9c21af7f8a74bbff
-page mode=1 card=0 dpi=96 dark 700x900: 156 calls 8870b1e24d48b8fd
-page mode=1 card=1 dpi=96 dark 700x900: 85 calls b1a9d622f0402a24
-page mode=1 card=2 dpi=96 dark 700x900: 446 calls 74804221fba5344c
-page mode=1 card=3 dpi=96 dark 700x900: 57 calls f626b67e2e4291a9
-page mode=2 card=-1 dpi=96 dark 700x900: 100 calls 302fcb2f93b8edc2
-page mode=2 card=0 dpi=96 dark 700x900: 156 calls 3bf14b6879037c2f
-page mode=2 card=1 dpi=96 dark 700x900: 78 calls b06becb7c4eb9878
-page mode=2 card=2 dpi=96 dark 700x900: 374 calls 58aca1e818df06ef
-page mode=2 card=3 dpi=96 dark 700x900: 64 calls 33cd8aec32bd3df6
-page mode=3 card=-1 dpi=96 dark 700x900: 440 calls 5adf8f8d5bb4802a
-page mode=3 card=0 dpi=96 dark 700x900: 152 calls 686b8fc56b6c80e9
-page mode=3 card=1 dpi=96 dark 700x900: 78 calls c860d1a58ea7e4af
-page mode=3 card=2 dpi=96 dark 700x900: 391 calls 385fdd31ff42a863
-page mode=3 card=3 dpi=96 dark 700x900: 64 calls af3989f757262e3b
-load-table page 700x900: 128 calls e638f80a5e3c06a5
-load-table page 700x900: 160 calls f65b478fa156f85a
-page mode=0 card=-1 dpi=144 dark 1050x1350: 484 calls 615396c30292633d
-page mode=0 card=0 dpi=144 dark 1050x1350: 149 calls 3df3c26a00cba0a3
-page mode=0 card=1 dpi=144 dark 1050x1350: 119 calls 6f10c51eca1301cd
-page mode=0 card=2 dpi=144 dark 1050x1350: 439 calls 1b6b911fc8b50f2f
-page mode=0 card=3 dpi=144 dark 1050x1350: 64 calls a1d07a9359d0a7c6
-page mode=1 card=-1 dpi=144 dark 1050x1350: 562 calls 9199e87b85a9469e
-page mode=1 card=0 dpi=144 dark 1050x1350: 173 calls 3df9bec93abe9f4c
-page mode=1 card=1 dpi=144 dark 1050x1350: 78 calls ee65430cf46d9013
-page mode=1 card=2 dpi=144 dark 1050x1350: 453 calls 7cd5dd4cc46a768b
-page mode=1 card=3 dpi=144 dark 1050x1350: 64 calls 6fff9a6fda9f0cd7
-page mode=2 card=-1 dpi=144 dark 1050x1350: 93 calls f6b52bcaf5ad5766
-page mode=2 card=0 dpi=144 dark 1050x1350: 156 calls ee16e061ab615c82
-page mode=2 card=1 dpi=144 dark 1050x1350: 85 calls edca5ded10f6f9b2
-page mode=2 card=2 dpi=144 dark 1050x1350: 374 calls a8386eb616f1ac00
-page mode=2 card=3 dpi=144 dark 1050x1350: 64 calls d675c630b980f36e
-page mode=3 card=-1 dpi=144 dark 1050x1350: 440 calls 53f45ec3988b1e74
-page mode=3 card=0 dpi=144 dark 1050x1350: 149 calls 034e5b70da607db3
-page mode=3 card=1 dpi=144 dark 1050x1350: 78 calls f14eaf662ec1182f
-page mode=3 card=2 dpi=144 dark 1050x1350: 391 calls 0b76e6505a322a7d
-page mode=3 card=3 dpi=144 dark 1050x1350: 64 calls 7eff96d81dd2b347
-load-table page 1050x1350: 128 calls f2f05d3a43af28e6
-load-table page 1050x1350: 160 calls 91590cb56366d5c5
+page mode=0 card=-1 dpi=96 light 700x900: 152 calls 382b5b10936d08e3
+page mode=0 card=0 dpi=96 light 700x900: 191 calls 35b732c012850929
+page mode=0 card=1 dpi=96 light 700x900: 158 calls 0885305fff69c8e0
+page mode=0 card=2 dpi=96 light 700x900: 686 calls eaaee3333f7327ad
+page mode=0 card=3 dpi=96 light 700x900: 103 calls 912d2f8168da4fdf
+page mode=1 card=-1 dpi=96 light 700x900: 614 calls 43610054e3bd527f
+page mode=1 card=0 dpi=96 light 700x900: 198 calls 57019353c90b7e88
+page mode=1 card=1 dpi=96 light 700x900: 104 calls f398b960465c0cbf
+page mode=1 card=2 dpi=96 light 700x900: 693 calls 196c2bb512157747
+page mode=1 card=3 dpi=96 light 700x900: 96 calls 33f6acee04e05510
+page mode=2 card=-1 dpi=96 light 700x900: 216 calls 50734a238e1857a4
+page mode=2 card=0 dpi=96 light 700x900: 198 calls 08475bcaf49fa7d7
+page mode=2 card=1 dpi=96 light 700x900: 104 calls 7d8bffdec9fc2af0
+page mode=2 card=2 dpi=96 light 700x900: 595 calls d40ccebd492caa58
+page mode=2 card=3 dpi=96 light 700x900: 103 calls 16f7b45422907c47
+page mode=3 card=-1 dpi=96 light 700x900: 556 calls 61e9b6515442e081
+page mode=3 card=0 dpi=96 light 700x900: 205 calls 1e086241959e85b1
+page mode=3 card=1 dpi=96 light 700x900: 104 calls 3de77a734987c1ba
+page mode=3 card=2 dpi=96 light 700x900: 612 calls a9dcf8247b8c7521
+page mode=3 card=3 dpi=96 light 700x900: 103 calls a3354b0cf434b531
+load-table page 700x900: 206 calls c7a7d8a275c9efa5
+load-table page 700x900: 238 calls dec377dd37b45d0c
+page mode=0 card=-1 dpi=144 light 1050x1350: 632 calls 394ddb72a4f889df
+page mode=0 card=0 dpi=144 light 1050x1350: 195 calls 09caed0f62f7efbe
+page mode=0 card=1 dpi=144 light 1050x1350: 151 calls ba7294dcb1ebda6f
+page mode=0 card=2 dpi=144 light 1050x1350: 679 calls 566e6dd4af205931
+page mode=0 card=3 dpi=144 light 1050x1350: 103 calls 2bc6b2cb544b5916
+page mode=1 card=-1 dpi=144 light 1050x1350: 607 calls d014a8801009a826
+page mode=1 card=0 dpi=144 light 1050x1350: 195 calls 39cbc686ab5cfd04
+page mode=1 card=1 dpi=144 light 1050x1350: 104 calls b10f458ebfe819ef
+page mode=1 card=2 dpi=144 light 1050x1350: 693 calls 85f925f4cd83093a
+page mode=1 card=3 dpi=144 light 1050x1350: 96 calls 114a576a548babf7
+page mode=2 card=-1 dpi=144 light 1050x1350: 209 calls e90dad34df11fa76
+page mode=2 card=0 dpi=144 light 1050x1350: 188 calls 0e20236ffe73acf8
+page mode=2 card=1 dpi=144 light 1050x1350: 104 calls ca2f0e7e1f2da090
+page mode=2 card=2 dpi=144 light 1050x1350: 588 calls 333a81acaef9abf1
+page mode=2 card=3 dpi=144 light 1050x1350: 103 calls 42ad2f2aa3a7d4a1
+page mode=3 card=-1 dpi=144 light 1050x1350: 145 calls 75fac02b1ac5289f
+page mode=3 card=0 dpi=144 light 1050x1350: 205 calls fbe7ffd838244bd8
+page mode=3 card=1 dpi=144 light 1050x1350: 111 calls fe35fde57de979c5
+page mode=3 card=2 dpi=144 light 1050x1350: 612 calls ebc07319d4870586
+page mode=3 card=3 dpi=144 light 1050x1350: 96 calls 1cd603b7bd06ce1a
+load-table page 1050x1350: 206 calls 54a4e0bdbe5ab4a6
+load-table page 1050x1350: 238 calls 589e882dc7f5ad03
+page mode=0 card=-1 dpi=96 dark 700x900: 484 calls 3076a2bb88f7b6b2
+page mode=0 card=0 dpi=96 dark 700x900: 173 calls 2bf0e5056044f89a
+page mode=0 card=1 dpi=96 dark 700x900: 112 calls bb0a99c428731483
+page mode=0 card=2 dpi=96 dark 700x900: 432 calls cd9bbdc5f3feb494
+page mode=0 card=3 dpi=96 dark 700x900: 64 calls ce539165db332728
+page mode=1 card=-1 dpi=96 dark 700x900: 100 calls c83565ba5d5f7c60
+page mode=1 card=0 dpi=96 dark 700x900: 156 calls 1a0100f5318f1746
+page mode=1 card=1 dpi=96 dark 700x900: 85 calls eb7782f9a44fd32b
+page mode=1 card=2 dpi=96 dark 700x900: 446 calls 88ed55024dfc227b
+page mode=1 card=3 dpi=96 dark 700x900: 57 calls 75cbb8fef095d2b6
+page mode=2 card=-1 dpi=96 dark 700x900: 100 calls 51fe00c49c50d945
+page mode=2 card=0 dpi=96 dark 700x900: 156 calls e33173115524d4b4
+page mode=2 card=1 dpi=96 dark 700x900: 78 calls 5c08a5a6bce0e5f7
+page mode=2 card=2 dpi=96 dark 700x900: 374 calls 89dec252b8b13038
+page mode=2 card=3 dpi=96 dark 700x900: 64 calls e2b536ce1bafe2e9
+page mode=3 card=-1 dpi=96 dark 700x900: 440 calls ecaa5a09e415a005
+page mode=3 card=0 dpi=96 dark 700x900: 152 calls 1488d7c2a66f67f2
+page mode=3 card=1 dpi=96 dark 700x900: 78 calls 5da5923a0d7a1db8
+page mode=3 card=2 dpi=96 dark 700x900: 391 calls ecc0c3d94f4c2a5c
+page mode=3 card=3 dpi=96 dark 700x900: 64 calls 8650d207e0256b44
+load-table page 700x900: 128 calls 9a21b63269638a76
+load-table page 700x900: 160 calls 15ff499c81a4c0d9
+page mode=0 card=-1 dpi=144 dark 1050x1350: 484 calls 5d6e2e2571054ac2
+page mode=0 card=0 dpi=144 dark 1050x1350: 149 calls 1d6dcb09d6b14cd0
+page mode=0 card=1 dpi=144 dark 1050x1350: 119 calls 059d0e8992d51302
+page mode=0 card=2 dpi=144 dark 1050x1350: 439 calls 814f75ba24ca4918
+page mode=0 card=3 dpi=144 dark 1050x1350: 64 calls ff5c3aa01a51e289
+page mode=1 card=-1 dpi=144 dark 1050x1350: 562 calls f21af869fa3a1cd1
+page mode=1 card=0 dpi=144 dark 1050x1350: 173 calls 6aa993772359a65f
+page mode=1 card=1 dpi=144 dark 1050x1350: 78 calls cc6055a3477737d4
+page mode=1 card=2 dpi=144 dark 1050x1350: 453 calls 8dec116f9170a21c
+page mode=1 card=3 dpi=144 dark 1050x1350: 64 calls e34dc1052a163f90
+page mode=2 card=-1 dpi=144 dark 1050x1350: 93 calls 414ff716b30b4f11
+page mode=2 card=0 dpi=144 dark 1050x1350: 156 calls 6081715246700a21
+page mode=2 card=1 dpi=144 dark 1050x1350: 85 calls 3bf687d306387b7d
+page mode=2 card=2 dpi=144 dark 1050x1350: 374 calls 4e7922eb20cb557f
+page mode=2 card=3 dpi=144 dark 1050x1350: 64 calls 91d9509a7750b461
+page mode=3 card=-1 dpi=144 dark 1050x1350: 440 calls d7886197cd8e97cb
+page mode=3 card=0 dpi=144 dark 1050x1350: 149 calls d051e3baaa275318
+page mode=3 card=1 dpi=144 dark 1050x1350: 78 calls b923ac45c07456f8
+page mode=3 card=2 dpi=144 dark 1050x1350: 391 calls 9bab71cf0876968a
+page mode=3 card=3 dpi=144 dark 1050x1350: 64 calls f0a8ccd80e8ce5c0
+load-table page 1050x1350: 128 calls a220cdd1a3cfd1a5
+load-table page 1050x1350: 160 calls 2648864d36a715fe
