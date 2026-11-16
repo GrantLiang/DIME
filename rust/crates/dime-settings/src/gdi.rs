@@ -4,9 +4,13 @@
 //! Each function here has the signature of the system function it wraps and
 //! calls it unchanged. While a recording is on (this thread only, started
 //! and taken by `dime_settings_gdi_record_*`), every call also appends one
-//! line to the log: the function, its arguments, and what it returned, with
-//! handles numbered in order of appearance (`h1`, `h2`, ...) so the log has
-//! no addresses.
+//! line to the log: the function, its arguments, and what it returned. A
+//! handle the recording created is numbered in order of creation (`h1`,
+//! `h2`, ...) until it is deleted; any other handle (a DC, font or brush the
+//! caller made, a stock object) is written by what it is (`dc`,
+//! `font(-16,Segoe UI)`, `brush(f0f0f0)`), because the system reuses the
+//! values of freed handles and a numbering by value would depend on that.
+//! So the log has no addresses.
 //!
 //! A recording with synthetic metrics makes the text measurements machine
 //! independent: `GetTextExtentPoint32W`, `GetTextMetricsW`, `GetTextFaceW`
@@ -105,6 +109,15 @@ pub struct BitmapInfo {
     pub colors: u32,
 }
 
+/// `LOGBRUSH`, for describing brushes the recording did not create.
+#[repr(C)]
+#[derive(Default)]
+struct LogBrush {
+    style: u32,
+    color: u32,
+    hatch: usize,
+}
+
 /// `LOGFONTW`, read back from fonts created outside a recording.
 #[repr(C)]
 #[derive(Default)]
@@ -187,7 +200,13 @@ mod sys {
     windows_link::link!("gdiplus.dll" "system" fn GdipFillEllipse(graphics: Handle, brush: Handle, x: f32, y: f32, w: f32, h: f32) -> i32);
 }
 
+const OBJ_PEN: u32 = 1;
+const OBJ_BRUSH: u32 = 2;
+const OBJ_DC: u32 = 3;
 const OBJ_FONT: u32 = 6;
+const OBJ_BITMAP: u32 = 7;
+const OBJ_REGION: u32 = 8;
+const OBJ_MEMDC: u32 = 10;
 const DT_CALCRECT: u32 = 0x400;
 const DT_SINGLELINE: u32 = 0x20;
 const DT_WORDBREAK: u32 = 0x10;
@@ -198,50 +217,57 @@ const DEFAULT_HEIGHT: i32 = 16;
 struct Recorder {
     lines: Vec<String>,
     synthetic: bool,
-    ids: HashMap<usize, usize>,
+    /// Handles the recording created and has not seen deleted -> number.
+    own: HashMap<usize, usize>,
     next: usize,
-    /// Font handle id -> (requested height, face).
+    /// Font handle -> (requested height, face).
     fonts: HashMap<usize, (i32, Vec<u16>)>,
-    /// DC handle id -> selected font handle id.
+    /// DC handle -> selected font handle.
     selected: HashMap<usize, usize>,
-    /// DC handle id -> the selected font at each SaveDC.
+    /// DC handle -> the selected font at each SaveDC.
     saved: HashMap<usize, Vec<Option<usize>>>,
 }
 
 impl Recorder {
+    /// The key the tracking maps use: the handle value.
     fn id(&mut self, h: Handle) -> usize {
-        if h.is_null() {
-            return 0;
-        }
-        let next = &mut self.next;
-        *self.ids.entry(h as usize).or_insert_with(|| {
-            *next += 1;
-            *next
-        })
+        h as usize
     }
 
-    /// A handle just created: a new id even if the value was seen before
+    /// A handle just created: numbered, even if the value was seen before
     /// (the system reuses freed handles).
     fn fresh(&mut self, h: Handle) -> usize {
         if h.is_null() {
             return 0;
         }
         self.next += 1;
-        self.ids.insert(h as usize, self.next);
-        self.next
+        self.own.insert(h as usize, self.next);
+        h as usize
+    }
+
+    /// A handle deleted: its value may come back as something else.
+    fn forget(&mut self, h: Handle) {
+        let k = h as usize;
+        self.own.remove(&k);
+        self.fonts.remove(&k);
+        self.selected.remove(&k);
+        self.saved.remove(&k);
     }
 
     fn h(&mut self, h: Handle) -> String {
-        match self.id(h) {
-            0 => "0".to_string(),
-            n => format!("h{n}"),
+        if h.is_null() {
+            return "0".to_string();
+        }
+        match self.own.get(&(h as usize)) {
+            Some(n) => format!("h{n}"),
+            None => describe(h),
         }
     }
 
     fn new_h(&mut self, h: Handle) -> String {
         match self.fresh(h) {
             0 => "0".to_string(),
-            n => format!("h{n}"),
+            _ => self.h(h),
         }
     }
 
@@ -256,6 +282,45 @@ impl Recorder {
     }
 }
 
+/// A handle the recording did not create, written by what it is.
+fn describe(h: Handle) -> String {
+    // SAFETY: queries on a handle the caller passed to a GDI function.
+    unsafe {
+        match sys::GetObjectType(h) {
+            OBJ_FONT => {
+                let (height, face) = read_font(h);
+                format!("font({height},{})", String::from_utf16_lossy(&face))
+            }
+            OBJ_BRUSH => {
+                let mut lb = LogBrush::default();
+                if sys::GetObjectW(h, std::mem::size_of::<LogBrush>() as i32, (&mut lb as *mut LogBrush).cast()) > 0 {
+                    format!("brush({},{:06x})", lb.style, lb.color)
+                } else {
+                    "brush".to_string()
+                }
+            }
+            OBJ_PEN => "pen".to_string(),
+            OBJ_DC | OBJ_MEMDC => "dc".to_string(),
+            OBJ_BITMAP => "bitmap".to_string(),
+            OBJ_REGION => "rgn".to_string(),
+            _ => "x".to_string(),
+        }
+    }
+}
+
+/// A font's requested height and face (its LOGFONT, not what the font
+/// mapper picked).
+fn read_font(h: Handle) -> (i32, Vec<u16>) {
+    let mut lf = LogFontW::default();
+    // SAFETY: a LOGFONTW-sized buffer for a font handle.
+    let got = unsafe { sys::GetObjectW(h, std::mem::size_of::<LogFontW>() as i32, (&mut lf as *mut LogFontW).cast()) };
+    if got > 0 {
+        (lf.height, lf.face.iter().copied().take_while(|&c| c != 0).collect())
+    } else {
+        (0, Vec::new())
+    }
+}
+
 thread_local! {
     static REC: RefCell<Option<Recorder>> = const { RefCell::new(None) };
 }
@@ -266,7 +331,7 @@ pub fn record_start(synthetic: bool) {
         *r.borrow_mut() = Some(Recorder {
             lines: Vec::new(),
             synthetic,
-            ids: HashMap::new(),
+            own: HashMap::new(),
             next: 0,
             fonts: HashMap::new(),
             selected: HashMap::new(),
@@ -437,16 +502,11 @@ pub unsafe fn SelectObject(hdc: Handle, obj: Handle) -> Handle {
             // The font's requested height and face (its LOGFONT, not what
             // the font mapper picked) set the synthetic metrics, also for a
             // font created outside the recording.
-            r.fonts.entry(ob).or_insert_with(|| {
-                let mut lf = LogFontW::default();
-                // SAFETY: a LOGFONTW-sized buffer for a font handle.
-                let got = unsafe { sys::GetObjectW(obj, std::mem::size_of::<LogFontW>() as i32, (&mut lf as *mut LogFontW).cast()) };
-                if got > 0 {
-                    (lf.height, lf.face.iter().copied().take_while(|&c| c != 0).collect())
-                } else {
-                    (0, Vec::new())
-                }
-            });
+            if !r.own.contains_key(&ob) {
+                // Not the recording's: read it each time (the value may be a
+                // different font than the last time it was seen).
+                r.fonts.insert(ob, read_font(obj));
+            }
             r.selected.insert(dc, ob);
         }
         r.lines.push(format!("SelectObject({d}, {o}) = {p}"))
@@ -457,7 +517,8 @@ pub unsafe fn SelectObject(hdc: Handle, obj: Handle) -> Handle {
 pub unsafe fn DeleteObject(obj: Handle) -> i32 {
     with(|r| {
         let o = r.h(obj);
-        r.lines.push(format!("DeleteObject({o})"))
+        r.lines.push(format!("DeleteObject({o})"));
+        r.forget(obj);
     });
     unsafe { sys::DeleteObject(obj) }
 }
@@ -497,13 +558,14 @@ pub unsafe fn CreateFontW(
         )
     };
     with(|r| {
-        let id = r.fresh(font);
+        let key = r.fresh(font);
+        let id = r.h(font);
         let f = units(face, -1).to_vec();
         r.lines.push(format!(
-            "CreateFontW({h}, {w}, {esc}, {orient}, {weight}, {italic}, {underline}, {strike}, {charset}, {out_precision}, {clip_precision}, {quality}, {pitch}, {}) = h{id}",
+            "CreateFontW({h}, {w}, {esc}, {orient}, {weight}, {italic}, {underline}, {strike}, {charset}, {out_precision}, {clip_precision}, {quality}, {pitch}, {}) = {id}",
             text(&f)
         ));
-        r.fonts.insert(id, (h, f));
+        r.fonts.insert(key, (h, f));
     });
     font
 }
@@ -562,7 +624,8 @@ pub unsafe fn CreateDIBSection(
 pub unsafe fn DeleteDC(hdc: Handle) -> i32 {
     with(|r| {
         let a = r.h(hdc);
-        r.lines.push(format!("DeleteDC({a})"))
+        r.lines.push(format!("DeleteDC({a})"));
+        r.forget(hdc);
     });
     unsafe { sys::DeleteDC(hdc) }
 }
@@ -580,7 +643,8 @@ pub unsafe fn GetDC(wnd: Handle) -> Handle {
 pub unsafe fn ReleaseDC(wnd: Handle, hdc: Handle) -> i32 {
     with(|r| {
         let (w, d) = (r.h(wnd), r.h(hdc));
-        r.lines.push(format!("ReleaseDC({w}, {d})"))
+        r.lines.push(format!("ReleaseDC({w}, {d})"));
+        r.forget(hdc);
     });
     unsafe { sys::ReleaseDC(wnd, hdc) }
 }
@@ -598,7 +662,8 @@ pub unsafe fn LoadImageW(inst: Handle, nm: *const u16, kind: u32, cx: i32, cy: i
 pub unsafe fn DestroyIcon(icon: Handle) -> i32 {
     with(|r| {
         let i = r.h(icon);
-        r.lines.push(format!("DestroyIcon({i})"))
+        r.lines.push(format!("DestroyIcon({i})"));
+        r.forget(icon);
     });
     unsafe { sys::DestroyIcon(icon) }
 }
@@ -932,7 +997,8 @@ pub unsafe fn GdipCreateFromHDC(hdc: Handle, graphics: *mut Handle) -> i32 {
 pub unsafe fn GdipDeleteGraphics(graphics: Handle) -> i32 {
     with(|r| {
         let g = r.h(graphics);
-        r.lines.push(format!("GdipDeleteGraphics({g})"))
+        r.lines.push(format!("GdipDeleteGraphics({g})"));
+        r.forget(graphics);
     });
     unsafe { sys::GdipDeleteGraphics(graphics) }
 }
@@ -957,7 +1023,8 @@ pub unsafe fn GdipCreatePath(fill_mode: i32, path: *mut Handle) -> i32 {
 pub unsafe fn GdipDeletePath(path: Handle) -> i32 {
     with(|r| {
         let p = r.h(path);
-        r.lines.push(format!("GdipDeletePath({p})"))
+        r.lines.push(format!("GdipDeletePath({p})"));
+        r.forget(path);
     });
     unsafe { sys::GdipDeletePath(path) }
 }
@@ -990,7 +1057,8 @@ pub unsafe fn GdipCreateSolidFill(color: u32, brush: *mut Handle) -> i32 {
 pub unsafe fn GdipDeleteBrush(brush: Handle) -> i32 {
     with(|r| {
         let b = r.h(brush);
-        r.lines.push(format!("GdipDeleteBrush({b})"))
+        r.lines.push(format!("GdipDeleteBrush({b})"));
+        r.forget(brush);
     });
     unsafe { sys::GdipDeleteBrush(brush) }
 }
@@ -1015,7 +1083,8 @@ pub unsafe fn GdipCreatePen1(color: u32, width: f32, unit: i32, pen: *mut Handle
 pub unsafe fn GdipDeletePen(pen: Handle) -> i32 {
     with(|r| {
         let p = r.h(pen);
-        r.lines.push(format!("GdipDeletePen({p})"))
+        r.lines.push(format!("GdipDeletePen({p})"));
+        r.forget(pen);
     });
     unsafe { sys::GdipDeletePen(pen) }
 }
@@ -1061,18 +1130,27 @@ mod tests {
         let mut r = Recorder {
             lines: vec![],
             synthetic: true,
-            ids: HashMap::new(),
+            own: HashMap::new(),
             next: 0,
             fonts: HashMap::new(),
             selected: HashMap::new(),
             saved: HashMap::new(),
         };
         let a = 0x1000 as Handle;
-        assert_eq!(r.h(a), "h1");
-        assert_eq!(r.h(0x2000 as Handle), "h2");
+        let b = 0x2000 as Handle;
+        // Created ones are numbered; a value created again gets a new number.
+        assert_eq!(r.new_h(a), "h1");
+        assert_eq!(r.new_h(b), "h2");
         assert_eq!(r.h(a), "h1");
         assert_eq!(r.new_h(a), "h3");
+        // Deleted: the value is no longer the recording's.
+        r.forget(a);
+        assert_eq!(r.h(a), "x");
         assert_eq!(r.h(std::ptr::null_mut()), "0");
+        // A real stock brush is described, not numbered.
+        // SAFETY: a stock object.
+        let white = unsafe { sys::GetStockObject(0) };
+        assert_eq!(r.h(white), "brush(0,ffffff)");
         assert!(record_take().is_empty());
     }
 }

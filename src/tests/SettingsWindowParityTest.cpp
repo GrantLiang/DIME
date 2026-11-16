@@ -521,9 +521,8 @@ namespace DIMEUnitTests
                 c.Create(mode, dir);
                 r.Create(mode, dir);
                 // The golden window, with synthetic metrics from its creation.
-                std::unique_ptr<Golden::GdiRecording> rec(new Golden::GdiRecording());
-                g.Create(mode, dir);
                 Pump();
+                std::unique_ptr<Golden::GdiRecording> rec;
                 auto goldenStep = [&](const std::wstring& step) {
                     std::wstring detail = Golden::Replace(g.NewLog(), dir, L"<dir>") + L"state " + g.State() + L"\n";
                     for (std::wstring line : g.Describe())
@@ -563,6 +562,12 @@ namespace DIMEUnitTests
                     }
                 };
                 compare(L"create");
+                // Recording only while the golden window works: the C++ and
+                // Rust windows paint in compare(), and (in the Rust
+                // configuration the C++ side is Rust too) would be recorded.
+                rec.reset(new Golden::GdiRecording());
+                g.Create(mode, dir);
+                Pump();
                 goldenStep(L"create");
                 for (int i = 0; i < 60; i++) {
                     Op op = RandomOp(rng);
