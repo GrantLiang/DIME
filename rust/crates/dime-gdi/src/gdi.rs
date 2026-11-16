@@ -300,6 +300,17 @@ impl Recorder {
     }
 }
 
+/// A window or module handle: `x`, or `0` for null. Never asked what GDI
+/// object it is: its value can equal a live GDI handle's (a window was once
+/// written as `font(-12,Segoe UI)`), and what it is does not matter here.
+fn not_gdi(h: Handle) -> &'static str {
+    if h.is_null() {
+        "0"
+    } else {
+        "x"
+    }
+}
+
 /// A handle the recording did not create, written by what it is.
 fn describe(h: Handle) -> String {
     // SAFETY: queries on a handle the caller passed to a GDI function.
@@ -735,7 +746,7 @@ pub unsafe fn DeleteDC(hdc: Handle) -> i32 {
 pub unsafe fn GetDC(wnd: Handle) -> Handle {
     let dc = unsafe { sys::GetDC(wnd) };
     with(|r| {
-        let w = r.h(wnd);
+        let w = not_gdi(wnd);
         let id = r.new_h(dc);
         r.lines.push(format!("GetDC({w}) = {id}"))
     });
@@ -744,7 +755,7 @@ pub unsafe fn GetDC(wnd: Handle) -> Handle {
 
 pub unsafe fn ReleaseDC(wnd: Handle, hdc: Handle) -> i32 {
     with(|r| {
-        let (w, d) = (r.h(wnd), r.h(hdc));
+        let (w, d) = (not_gdi(wnd), r.h(hdc));
         r.lines.push(format!("ReleaseDC({w}, {d})"));
         r.forget(hdc);
     });
@@ -754,7 +765,7 @@ pub unsafe fn ReleaseDC(wnd: Handle, hdc: Handle) -> i32 {
 pub unsafe fn LoadImageW(inst: Handle, nm: *const u16, kind: u32, cx: i32, cy: i32, load: u32) -> Handle {
     let img = unsafe { sys::LoadImageW(inst, nm, kind, cx, cy, load) };
     with(|r| {
-        let i = r.h(inst);
+        let i = not_gdi(inst);
         let id = r.new_h(img);
         r.lines.push(format!("LoadImageW({i}, {}, {kind}, {cx}, {cy}, {load}) = {id}", name(nm)))
     });
