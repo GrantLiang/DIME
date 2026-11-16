@@ -30,7 +30,7 @@
 
 ### 給開發者
 
-- 預設建置需要 Rust 工具鏈與對應的 target（見 [HOW_TO_BUILD.md](https://github.com/GrantLiang/DIME/blob/master/docs/HOW_TO_BUILD.md)）；`/p:DimeUseRustEngine=false` 仍可建出全 C++ 版本，C++ 實作會保留到這個版本觀察之後才刪除。
+- 預設建置需要 Rust 工具鏈與對應的 target（見 [HOW_TO_BUILD.md](https://github.com/GrantLiang/DIME/blob/master/docs/HOW_TO_BUILD.md)）；全 C++ 的建置（`/p:DimeUseRustEngine=false`）已移除，最後一個可以這樣建置的版本是 v2.0.770。
 - 改寫計畫與進度：[RUST_MIGRATION_PLAN.md](https://github.com/GrantLiang/DIME/blob/master/docs/RUST_MIGRATION_PLAN.md)。
 
 ---

@@ -31,7 +31,7 @@ DIME 是一套適用於 Windows 8/10/11 的輸入法框架，支援多種中文�
 
 - 字典引擎（`.cin` 解析與搜尋）、設定（`CConfig`）、組字緩衝、按鍵分類與路由、候選字產生與翻頁、按鍵處理流程、整句緩衝，以及候選字窗、捲軸、提示窗、陰影窗的繪圖與訊息處理，已移到 `rust/` 的 Cargo workspace（`dime-core`、`dime-config`、`dime-ui`、`dime-settings`、`dime-ffi`）。`DIME.dll` 的 TSF 文字服務外殼仍是 C++。
 - **`DIMESettings.exe` 已是純 Rust 程式**（設定視窗、CLI、碼表轉換、自建詞庫驗證），由 cargo 建置（`crates/dime-settings-exe`），執行期沒有 C++。
-- **預設建置使用 Rust 核心**，需安裝 Rust 工具鏈與對應的 target；`/p:DimeUseRustEngine=false` 仍可建出全 C++ 的 `DIME.dll`（`DIMESettings.exe` 一律是 Rust）。C++ 實作正逐步移除（第 6 階段）。
+- **建置使用 Rust 核心**，需安裝 Rust 工具鏈與對應的 target。全 C++ 的 `DIME.dll`（`/p:DimeUseRustEngine=false`）已移除，最後一個可以這樣建置的版本是 v2.0.770；剩餘的 C++ 實作正逐步移除（第 6 階段）。
 - Rust 版唯一的外部相依是 Microsoft 官方的 [`windows`](https://crates.io/crates/windows) crate（只在 `dime-ui` 使用）。
 - 改寫計畫與設計紀錄：[`RUST_MIGRATION_PLAN.md`](docs/RUST_MIGRATION_PLAN.md)、[`RUST_WINDOW_OWNERSHIP.md`](docs/RUST_WINDOW_OWNERSHIP.md)、[`RUST_TSF_SHELL.md`](docs/RUST_TSF_SHELL.md)。
 
@@ -848,7 +848,7 @@ DIME 是開源專案，歡迎開發者 fork 並基於 DIME 建立衍生專案或
 DIME is an open-source project. Developers are welcome to fork and build derivative projects or software based on DIME.
 
 **專案特色 / Project Highlights:**
-- ✅ **原生 C++ + Rust** / Native C++ + Rust - 本 fork 預設以 Rust 核心建置，唯一外部相依為官方 `windows` crate；`/p:DimeUseRustEngine=false` 可建出 100% C++ 的 `DIME.dll` / This fork builds with a Rust core by default (only external dependency: the official `windows` crate); `/p:DimeUseRustEngine=false` builds an all-C++ `DIME.dll`
+- ✅ **原生 C++ + Rust** / Native C++ + Rust - 本 fork 以 Rust 核心建置，唯一外部相依為官方 `windows` crate（全 C++ 的建置已移除，最後一版是 v2.0.770） / This fork builds with a Rust core (only external dependency: the official `windows` crate); the all-C++ build was removed, v2.0.770 being the last version with it
 - ✅ **BSD 3-Clause 授權** / BSD 3-Clause License - 商業與非商業皆可使用 / Free for commercial and non-commercial use
 - ✅ **多平台支援** / Multi-platform Support - x86/x64/ARM64EC 單一程式碼基底 / Single codebase for all platforms
 - ✅ **完整的 TSF 實作** / Complete TSF Implementation - Windows Text Services Framework 標準實作 / Standard Windows TSF implementation

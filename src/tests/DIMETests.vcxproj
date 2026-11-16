@@ -1179,8 +1179,8 @@
     Only Win32/x64 have a matching Rust target here; other platforms skip the parity tests.
   -->
   <PropertyGroup Label="DimeRust">
-    <!-- Like DIME.dll, the tests build the product code with the Rust core by default;
-         /p:DimeTestRustEngine=false tests the all-C++ build. -->
+    <!-- Like DIME.dll, the tests build the product code with the Rust core. The all-C++
+         test build (/p:DimeTestRustEngine=false) went with the all-C++ DIME.dll (phase 6b). -->
     <DimeTestRustEngine Condition="'$(DimeTestRustEngine)'==''">true</DimeTestRustEngine>
     <DimeRustRoot>$(ProjectDir)..\..\rust\</DimeRustRoot>
     <DimeRustTarget Condition="'$(Platform)'=='Win32'">i686-pc-windows-msvc</DimeRustTarget>
@@ -1225,6 +1225,9 @@
       <PreprocessorDefinitions>DIME_USE_RUST_ENGINE;DIME_USE_RUST_CONFIG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
+  <Target Name="DimeTestRustEngineRequired" BeforeTargets="ClCompile" Condition="'$(DimeRustEnabled)'=='true' And '$(DimeTestRustEngine)'!='true'">
+    <Error Text="DimeTestRustEngine=false (the all-C++ test build) was removed in phase 6b of the Rust migration." />
+  </Target>
   <Target Name="BuildDimeRust" BeforeTargets="ClCompile" Condition="'$(DimeRustEnabled)'=='true'">
     <Exec Command="$(DimeCargoEnv)$(DimeCargo) build --release --locked -p dime-ffi -p dime-settings-exe --target $(DimeRustTarget) --manifest-path &quot;$(DimeRustRoot)Cargo.toml&quot;" />
   </Target>

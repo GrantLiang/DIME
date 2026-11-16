@@ -68,8 +68,6 @@ jobs:
       matrix:
         platform: [Win32, x64]
         configuration: [Debug, Release]
-        # rust: the default build; cpp: the all-C++ build (DimeUseRustEngine=false)
-        engine: [rust, cpp]
     steps:
       - uses: actions/checkout@v4
       - name: Add MSBuild to PATH
@@ -112,12 +110,12 @@ jobs:
           rustup toolchain install stable --profile minimal
           rustup target add i686-pc-windows-msvc x86_64-pc-windows-msvc
       - name: Rust unit tests
-        if: matrix.platform == 'x64' && matrix.configuration == 'Debug' && matrix.engine == 'rust'
+        if: matrix.platform == 'x64' && matrix.configuration == 'Debug'
         run: cargo test --locked --manifest-path rust/Cargo.toml
       - name: Build
         run: |
           cd src
-          msbuild DIME.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:DimeTestRustEngine=${{ matrix.engine == 'rust' }} /p:DimeUseRustEngine=${{ matrix.engine == 'rust' }}
+          msbuild DIME.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
       - name: Run Tests
         run: |
           cd src
@@ -125,5 +123,5 @@ jobs:
       - name: Upload Results
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.platform }}-${{ matrix.configuration }}-${{ matrix.engine }}
+          name: test-results-${{ matrix.platform }}-${{ matrix.configuration }}
           path: src/TestResults/*.trx
