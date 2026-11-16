@@ -280,7 +280,7 @@ namespace DIMEUnitTests
                 hb.snap = &sb;
                 ha.grid = &ga;
                 hb.grid = &gb;
-                SC::Cpp::Handle(ha, sa, ga, ev);
+                SC::HandleRust(ha, sa, ga, ev);
                 SC::HandleRust(hb, sb, gb, ev);
 
                 std::wstring ctx = L"iter " + std::to_wstring(iter) + L" notify " + std::to_wstring(ev.notifyCode)

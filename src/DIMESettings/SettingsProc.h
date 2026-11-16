@@ -45,17 +45,9 @@ public:
 LRESULT Main(Host& host, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT Content(Host& host, UINT msg, WPARAM wParam, LPARAM lParam);
 
-// ---- C++ originals --------------------------------------------------------
-namespace Cpp {
-LRESULT Main(Host& host, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT Content(Host& host, UINT msg, WPARAM wParam, LPARAM lParam);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 namespace Rust {
 LRESULT Main(Host& host, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT Content(Host& host, UINT msg, WPARAM wParam, LPARAM lParam);
 } // namespace Rust
-#endif
 
 } // namespace SettingsProc

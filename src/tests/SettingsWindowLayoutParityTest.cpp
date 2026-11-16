@@ -106,12 +106,12 @@ namespace
         int base, UINT dpi, int scroll, const wchar_t* what, Golden::Chunks& ch)
     {
         for (int y = -40; y < 2200; y += 1) {
-            int cpp = SWL::Cpp::CardListHitTest(y, cards, count, modeMask, expanded, base, dpi, scroll);
+            int cpp = SWL::CardListHitTest(y, cards, count, modeMask, expanded, base, dpi, scroll);
             int rust = dime_settings_card_list_hit_test(y, cards, count, modeMask,
                 reinterpret_cast<const uint8_t*>(expanded), base, dpi, scroll);
             if (cpp != rust)
                 Assert::Fail((std::wstring(what) + L" hit test y=" + std::to_wstring(y) + L" dpi=" + std::to_wstring(dpi)).c_str());
-            SWL::CardListClick a = SWL::Cpp::CardListClickTarget(y, cards, count, modeMask, expanded, base, dpi, scroll);
+            SWL::CardListClick a = SWL::CardListClickTarget(y, cards, count, modeMask, expanded, base, dpi, scroll);
             SWL::CardListClick b = { 7, 7, 7 };
             dime_settings_card_list_click(y, cards, count, modeMask,
                 reinterpret_cast<const uint8_t*>(expanded), base, dpi, scroll, &b);
@@ -124,7 +124,7 @@ namespace
 
     void CheckSubPage(const LayoutCard& card, const SWL::RowContext& ctx, const wchar_t* what, Golden::Chunks& ch)
     {
-        std::vector<SWL::RowSpan> cpp = SWL::Cpp::RowSpans(card, ctx);
+        std::vector<SWL::RowSpan> cpp = SWL::RowSpans(card, ctx);
         size_t count = 0;
         dime_settings_row_spans(&card, &ctx, nullptr, 0, &count);
         Assert::AreEqual(cpp.size(), count, (std::wstring(what) + L" span count").c_str());
@@ -141,7 +141,7 @@ namespace
         }
         Assert::AreEqual(-9, rust[count].startRow, L"wrote past cap");
         for (int y = -40; y < 2400; y++) {
-            SWL::RowCardHit a = SWL::Cpp::RowCardsHit(y, card, ctx);
+            SWL::RowCardHit a = SWL::RowCardsHit(y, card, ctx);
             SWL::RowCardHit b = { 7, 7 };
             dime_settings_row_cards_hit(y, &card, &ctx, &b);
             if (a.spanStart != b.spanStart || a.row != b.row)
@@ -155,7 +155,7 @@ namespace
         const LayoutCard* load, int loadCount, Golden::Chunks& ch)
     {
         std::vector<SWL::Placement> cpp;
-        SWL::PlanResult a = SWL::Cpp::PlanControls(in, ime, imeCount, load, loadCount, cpp);
+        SWL::PlanResult a = SWL::PlanControls(in, ime, imeCount, load, loadCount, cpp);
         size_t count = 0;
         SWL::PlanResult b = { 7, 7, 7 };
         dime_settings_plan_controls(&in, ime, imeCount, load, loadCount, nullptr, 0, &count, &b);
@@ -196,9 +196,9 @@ namespace DIMEUnitTests
                 UINT dpi = RandomDpi(rng);
                 int a = v(rng), b = v(rng), c = v(rng) % 40;
                 bool f = (rng() & 1) != 0, g = (rng() & 1) != 0;
-                Assert::AreEqual(SWL::Cpp::CardWidth(a, dpi, f, c), dime_settings_card_width(a, dpi, f, c), L"CardWidth");
-                Assert::AreEqual(SWL::Cpp::CtrlRight(a, b, dpi, f), dime_settings_ctrl_right(a, b, dpi, f), L"CtrlRight");
-                SWL::CtrlRect r1 = SWL::Cpp::ContentAreaRect(a, b, dpi, f, g), r2 = {};
+                Assert::AreEqual(SWL::CardWidth(a, dpi, f, c), dime_settings_card_width(a, dpi, f, c), L"CardWidth");
+                Assert::AreEqual(SWL::CtrlRight(a, b, dpi, f), dime_settings_ctrl_right(a, b, dpi, f), L"CtrlRight");
+                SWL::CtrlRect r1 = SWL::ContentAreaRect(a, b, dpi, f, g), r2 = {};
                 dime_settings_content_area_rect(a, b, dpi, f, g, &r2);
                 Assert::IsTrue(Same(r1, r2), L"ContentAreaRect");
                 int out[7] = { dime_settings_card_width(a, dpi, f, c), dime_settings_ctrl_right(a, b, dpi, f), r2.x, r2.y, r2.w, r2.h, r2.visH };
@@ -220,19 +220,19 @@ namespace DIMEUnitTests
                 int type = (int)(rng() % 9);
                 int ctrlRight = v(rng), cy = v(rng), ctrlH = v(rng) % 60, btnH = v(rng) % 60;
                 SWL::CtrlRect r1 = { 9, 9, 9, 9, 9 }, r2 = { 9, 9, 9, 9, 9 };
-                bool a = SWL::Cpp::RowControlRect((RowType)type, ctrlRight, cy, ctrlH, btnH, dpi, &r1);
+                bool a = SWL::RowControlRect((RowType)type, ctrlRight, cy, ctrlH, btnH, dpi, &r1);
                 bool b = dime_settings_row_control_rect(type, ctrlRight, cy, ctrlH, btnH, dpi, &r2) != 0;
                 Assert::AreEqual(a, b, L"RowControlRect has control");
                 Assert::IsTrue(Same(r1, r2), L"RowControlRect");
 
                 int idx = (int)(rng() % 6), margin = v(rng) % 100, curY = v(rng);
-                SWL::CtrlRect s1 = SWL::Cpp::SwatchRect(idx, margin, curY, ctrlRight, dpi), s2 = {};
+                SWL::CtrlRect s1 = SWL::SwatchRect(idx, margin, curY, ctrlRight, dpi), s2 = {};
                 dime_settings_swatch_rect(idx, margin, curY, ctrlRight, dpi, &s2);
                 Assert::IsTrue(Same(s1, s2), L"SwatchRect");
 
                 int cardW = v(rng), pad = v(rng) % 30, thisH = v(rng), btnW = v(rng) % 200;
                 SWL::CtrlRect e1 = {}, e2 = {}, f1 = {}, f2 = {};
-                SWL::Cpp::RichEditorRects(margin, cardW, pad, curY, thisH, ctrlRight, btnW, btnH, dpi, &e1, &f1);
+                SWL::RichEditorRects(margin, cardW, pad, curY, thisH, ctrlRight, btnW, btnH, dpi, &e1, &f1);
                 dime_settings_rich_editor_rects(margin, cardW, pad, curY, thisH, ctrlRight, btnW, btnH, dpi, &e2, &f2);
                 Assert::IsTrue(Same(e1, e2) && Same(f1, f2), L"RichEditorRects");
                 int out[] = { b, r2.x, r2.y, r2.w, r2.h, r2.visH, s2.x, s2.y, s2.w, s2.h, s2.visH,
@@ -259,7 +259,7 @@ namespace DIMEUnitTests
                             + std::to_wstring(r) + L" id " + std::to_wstring((int)c.rows[r].id) + L" heights";
                         for (UINT dpi : kDpis) {
                             for (int previewH : { 0, 137, 260 }) {
-                                Assert::AreEqual(SWL::Cpp::RowHeight(c.rows[r], dpi, previewH),
+                                Assert::AreEqual(SWL::RowHeight(c.rows[r], dpi, previewH),
                                     dime_settings_row_height(&c.rows[r], dpi, previewH), L"RowHeight");
                                 line += L" " + std::to_wstring(dime_settings_row_height(&c.rows[r], dpi, previewH));
                             }
@@ -268,7 +268,7 @@ namespace DIMEUnitTests
                         for (int mask = 0; mask < 16; mask++)
                             for (int cm = 0; cm < 5; cm++)
                                 for (int g = 0; g < 2; g++) {
-                                    Assert::AreEqual(SWL::Cpp::RowShown(c.rows[r], mask, cm, g != 0),
+                                    Assert::AreEqual(SWL::RowShown(c.rows[r], mask, cm, g != 0),
                                         dime_settings_row_shown(&c.rows[r], mask, cm, g) != 0, L"RowShown");
                                     line += dime_settings_row_shown(&c.rows[r], mask, cm, g) ? L"1" : L"0";
                                 }
@@ -304,7 +304,7 @@ namespace DIMEUnitTests
             // A null expanded pointer is all collapsed.
             bool none[SWL::kExpandedSlots] = {};
             for (int y = 0; y < 1200; y++)
-                Assert::AreEqual(SWL::Cpp::CardListHitTest(y, ime, imeCount, 1, none, 0, 96, 0),
+                Assert::AreEqual(SWL::CardListHitTest(y, ime, imeCount, 1, none, 0, 96, 0),
                     dime_settings_card_list_hit_test(y, ime, imeCount, 1, nullptr, 0, 96, 0), L"null expanded");
         }
 
@@ -429,7 +429,7 @@ namespace DIMEUnitTests
                 size_t cch = kCch[rng() % 6];
                 int f1 = -5, f2 = -5;
                 std::vector<wchar_t> s1(cch + 1, L'#'), s2(cch + 1, L'#');
-                int a = SWL::Cpp::ValidateBuffer(text.c_str(), text.size(), mode, maxCodes, nullptr,
+                int a = SWL::ValidateBuffer(text.c_str(), text.size(), mode, maxCodes, nullptr,
                     &f1, cch ? s1.data() : nullptr, cch, maxReport);
                 int b = dime_settings_validate_buffer(reinterpret_cast<const uint16_t*>(text.c_str()), text.size(),
                     (int32_t)mode, maxCodes, nullptr, nullptr, maxReport, &f2,
@@ -451,14 +451,14 @@ namespace DIMEUnitTests
             Golden::Log golden;
             Golden::Chunks types(golden, L"types", 16);
             for (UINT type = 0; type < 0x100; type++) {
-                SWL::MsgBoxButtons a = SWL::Cpp::MsgBoxButtonsFor(type), b = {};
+                SWL::MsgBoxButtons a = SWL::MsgBoxButtonsFor(type), b = {};
                 dime_settings_msgbox_buttons(type, &b);
                 Assert::IsTrue(memcmp(&a, &b, sizeof(a)) == 0, L"buttons");
-                Assert::AreEqual(SWL::Cpp::MsgBoxIcon(type), dime_settings_msgbox_icon(type), L"icon");
+                Assert::AreEqual(SWL::MsgBoxIcon(type), dime_settings_msgbox_icon(type), L"icon");
                 for (int def = 0; def < a.count; def++)
                     for (UINT vk = 0; vk < 0x30; vk++)
-                        Assert::AreEqual(SWL::Cpp::MsgBoxKeyResult(a, def, vk), dime_settings_msgbox_key_result(&b, def, vk), L"key");
-                Assert::AreEqual(SWL::Cpp::MsgBoxCloseResult(a), dime_settings_msgbox_close_result(&b), L"close");
+                        Assert::AreEqual(SWL::MsgBoxKeyResult(a, def, vk), dime_settings_msgbox_key_result(&b, def, vk), L"key");
+                Assert::AreEqual(SWL::MsgBoxCloseResult(a), dime_settings_msgbox_close_result(&b), L"close");
                 types.Add(&b, sizeof(b));
                 int out[2] = { dime_settings_msgbox_icon(type), dime_settings_msgbox_close_result(&b) };
                 types.Add(out, sizeof(out));
@@ -477,15 +477,15 @@ namespace DIMEUnitTests
                 bool icon = (rng() & 1) != 0;
                 int count = 1 + (int)(rng() % 3);
                 int tw = (int)(rng() % 700), th = (int)(rng() % 300);
-                Assert::AreEqual(SWL::Cpp::MsgBoxMaxTextWidth(dpi), dime_settings_msgbox_max_text_width(dpi), L"max text");
-                SWL::MsgBoxLayout L1 = SWL::Cpp::MsgBoxLayoutFor(icon, count, tw, th, dpi), L2 = {};
+                Assert::AreEqual(SWL::MsgBoxMaxTextWidth(dpi), dime_settings_msgbox_max_text_width(dpi), L"max text");
+                SWL::MsgBoxLayout L1 = SWL::MsgBoxLayoutFor(icon, count, tw, th, dpi), L2 = {};
                 dime_settings_msgbox_layout(icon, count, tw, th, dpi, &L2);
                 Assert::IsTrue(memcmp(&L1, &L2, sizeof(L1)) == 0, L"layout");
-                Assert::AreEqual(SWL::Cpp::MsgBoxFirstButtonX(L1, count), dime_settings_msgbox_first_button_x(&L2, count), L"first x");
+                Assert::AreEqual(SWL::MsgBoxFirstButtonX(L1, count), dime_settings_msgbox_first_button_x(&L2, count), L"first x");
                 for (int k = 0; k < 200; k++) {
                     int x = (int)(rng() % (L1.rcClient.right + 20)) - 10;
                     int y = (int)(rng() % (L1.rcClient.bottom + 20)) - 10;
-                    Assert::AreEqual(SWL::Cpp::MsgBoxButtonAt(L1, count, x, y), dime_settings_msgbox_button_at(&L2, count, x, y), L"button at");
+                    Assert::AreEqual(SWL::MsgBoxButtonAt(L1, count, x, y), dime_settings_msgbox_button_at(&L2, count, x, y), L"button at");
                     int at = dime_settings_msgbox_button_at(&L2, count, x, y);
                     ch.Add(&at, sizeof(at));
                 }

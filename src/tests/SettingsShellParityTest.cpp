@@ -323,7 +323,7 @@ namespace DIMEUnitTests
                 WINDOWPLACEMENT wp = RandomPlacement(rng);
                 SetWindowPlacement(a, &wp);
                 SetWindowPlacement(b, &wp);
-                bool ra = SS::Cpp::SavePlacement(a, kTestKey, L"C");
+                bool ra = SS::Rust::SavePlacement(a, kTestKey, L"C");
                 bool rb = SS::Rust::SavePlacement(b, kTestKey, L"R");
                 Assert::AreEqual(ra, rb);
                 DWORD ta = 0, tb = 0;
@@ -333,7 +333,7 @@ namespace DIMEUnitTests
                 Assert::AreEqual((size_t)sizeof(WINDOWPLACEMENT), va.size());
             }
             // Save with no window: false, nothing written.
-            Assert::AreEqual(SS::Cpp::SavePlacement(nullptr, kTestKey, L"CN"), SS::Rust::SavePlacement(nullptr, kTestKey, L"RN"));
+            Assert::AreEqual(SS::Rust::SavePlacement(nullptr, kTestKey, L"CN"), SS::Rust::SavePlacement(nullptr, kTestKey, L"RN"));
             Assert::AreEqual(ValueExists(L"CN"), ValueExists(L"RN"));
 
             // Restore: valid, missing, short, long, bad length, wrong type, off-monitor.
@@ -356,7 +356,7 @@ namespace DIMEUnitTests
                 }
                 SetWindowPlacement(a, &base);
                 SetWindowPlacement(b, &base);
-                bool ra = SS::Cpp::RestorePlacement(a, kTestKey, L"V");
+                bool ra = SS::Rust::RestorePlacement(a, kTestKey, L"V");
                 bool rb = SS::Rust::RestorePlacement(b, kTestKey, L"V");
                 Assert::AreEqual(ra, rb, what.c_str());
                 Assert::AreEqual(PlacementText(a), PlacementText(b), what.c_str());
@@ -365,14 +365,14 @@ namespace DIMEUnitTests
 
             // Delete: the value goes; a missing key is not created.
             WriteValue(L"D", REG_BINARY, &base, sizeof(base));
-            SS::Cpp::DeletePlacement(kTestKey, L"D");
+            SS::Rust::DeletePlacement(kTestKey, L"D");
             bool cppGone = !ValueExists(L"D");
             WriteValue(L"D", REG_BINARY, &base, sizeof(base));
             SS::Rust::DeletePlacement(kTestKey, L"D");
             Assert::IsTrue(cppGone);
             Assert::IsFalse(ValueExists(L"D"));
             RegDeleteTreeW(HKEY_CURRENT_USER, kTestKey);
-            SS::Cpp::DeletePlacement(kTestKey, L"D");
+            SS::Rust::DeletePlacement(kTestKey, L"D");
             SS::Rust::DeletePlacement(kTestKey, L"D");
             HKEY k;
             Assert::AreNotEqual((LONG)ERROR_SUCCESS, RegOpenKeyExW(HKEY_CURRENT_USER, kTestKey, 0, KEY_READ, &k));
@@ -389,7 +389,7 @@ namespace DIMEUnitTests
                 t.sidebarBg = (COLORREF)(rng() & 0xFFFFFF);
                 t.contentBg = (COLORREF)(rng() & 0xFFFFFF);
                 t.cardBg = (COLORREF)(rng() & 0xFFFFFF);
-                SS::Brushes a = SS::Cpp::CreateBrushes(t), b = SS::Rust::CreateBrushes(t);
+                SS::Brushes a = SS::Rust::CreateBrushes(t), b = SS::Rust::CreateBrushes(t);
                 HBRUSH ha[3] = { a.sidebarBg, a.contentBg, a.cardBg }, hb[3] = { b.sidebarBg, b.contentBg, b.cardBg };
                 for (int k = 0; k < 3; k++) {
                     LOGBRUSH la = {}, lb = {};
@@ -399,7 +399,7 @@ namespace DIMEUnitTests
                     Assert::AreEqual((DWORD)la.lbColor, (DWORD)lb.lbColor);
                     Assert::AreEqual((ULONG_PTR)la.lbHatch, (ULONG_PTR)lb.lbHatch);
                 }
-                SS::Cpp::DestroyBrushes(a);
+                SS::Rust::DestroyBrushes(a);
                 SS::Rust::DestroyBrushes(b);
                 Assert::IsTrue(!a.sidebarBg && !a.contentBg && !a.cardBg);
                 Assert::IsTrue(!b.sidebarBg && !b.contentBg && !b.cardBg);
@@ -408,7 +408,7 @@ namespace DIMEUnitTests
                 // Null brushes stay null.
                 SS::Brushes z = { nullptr, nullptr, nullptr };
                 SS::Rust::DestroyBrushes(z);
-                SS::Cpp::DestroyBrushes(z);
+                SS::Rust::DestroyBrushes(z);
             }
         }
 
@@ -439,10 +439,10 @@ namespace DIMEUnitTests
                         Dib da(w, h), db(w, h);
                         Source sa = src, sb2 = src;
                         if (content) {
-                            SS::Cpp::PaintContentInto(da.dc, w, h, sa.Get());
+                            SS::Rust::PaintContentInto(da.dc, w, h, sa.Get());
                             SS::Rust::PaintContentInto(db.dc, w, h, sb2.Get());
                         } else {
-                            SS::Cpp::PaintMainInto(da.dc, w, h, sa.Get());
+                            SS::Rust::PaintMainInto(da.dc, w, h, sa.Get());
                             SS::Rust::PaintMainInto(db.dc, w, h, sb2.Get());
                         }
                         Assert::AreEqual(sa.log, sb2.log, (what + L": callbacks").c_str());
@@ -511,7 +511,7 @@ namespace DIMEUnitTests
                         s.hasData = data != 0;
                         InvalidateRect(h, nullptr, TRUE);
                         Assert::IsTrue(GetUpdateRect(h, nullptr, FALSE) != FALSE);
-                        if (side == 0) content ? SS::Cpp::PaintContent(h, s.Get()) : SS::Cpp::PaintMain(h, s.Get());
+                        if (side == 0) content ? SS::Rust::PaintContent(h, s.Get()) : SS::Rust::PaintMain(h, s.Get());
                         else content ? SS::Rust::PaintContent(h, s.Get()) : SS::Rust::PaintMain(h, s.Get());
                         Assert::IsFalse(GetUpdateRect(h, nullptr, FALSE) != FALSE);
                         std::wstring expect = data ? (content ? L"hasData;prepare 1 second;" : L"hasData;prepare 0 nosecond;")
@@ -533,20 +533,20 @@ namespace DIMEUnitTests
             for (int icon : { 0, 1, 32512, 107 }) {
                 std::wstring c = L"DIMEShellParityMainC" + std::to_wstring(icon);
                 std::wstring r = L"DIMEShellParityMainR" + std::to_wstring(icon);
-                bool ra = SS::Cpp::RegisterMainClass(inst, c.c_str(), PlainProc, icon);
+                bool ra = SS::Rust::RegisterMainClass(inst, c.c_str(), PlainProc, icon);
                 bool rb = SS::Rust::RegisterMainClass(inst, r.c_str(), PlainProc, icon);
                 Assert::AreEqual(ra, rb);
                 Assert::AreEqual(ClassInfo(c.c_str()), ClassInfo(r.c_str()));
                 // A second registration fails on both.
-                Assert::AreEqual(SS::Cpp::RegisterMainClass(inst, c.c_str(), PlainProc, icon),
+                Assert::AreEqual(SS::Rust::RegisterMainClass(inst, c.c_str(), PlainProc, icon),
                     SS::Rust::RegisterMainClass(inst, r.c_str(), PlainProc, icon));
                 UnregisterClassW(c.c_str(), inst);
                 UnregisterClassW(r.c_str(), inst);
             }
             // The content class registers unless the name is taken: a second
             // call with another procedure keeps the first registration.
-            SS::Cpp::RegisterContentClass(inst, L"DIMEShellParityContentC", PlainProc);
-            SS::Cpp::RegisterContentClass(inst, L"DIMEShellParityContentC", FailProcForClass);
+            SS::Rust::RegisterContentClass(inst, L"DIMEShellParityContentC", PlainProc);
+            SS::Rust::RegisterContentClass(inst, L"DIMEShellParityContentC", FailProcForClass);
             SS::Rust::RegisterContentClass(inst, L"DIMEShellParityContentR", PlainProc);
             SS::Rust::RegisterContentClass(inst, L"DIMEShellParityContentR", FailProcForClass);
             Assert::AreEqual(ClassInfo(L"DIMEShellParityContentC"), ClassInfo(L"DIMEShellParityContentR"));
@@ -588,7 +588,7 @@ namespace DIMEUnitTests
                     p.placementValue = L"P";
                     p.started = &Started;
                     p.user = &log;
-                    codes[side] = side ? SS::Rust::Run(p) : SS::Cpp::Run(p);
+                    codes[side] = side ? SS::Rust::Run(p) : SS::Rust::Run(p);
                     g_run = nullptr;
                     results[side] = log.log;
                     UnregisterClassW(cls.c_str(), inst);

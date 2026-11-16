@@ -36,10 +36,10 @@ namespace
     std::wstring CheckLine(const wchar_t* line, int& total)
     {
         std::wstring what = line ? L"[" + std::wstring(line) + L"]" : L"null";
-        std::wstring a = D(SL::Cpp::ParseLaunch(line)), b = D(SL::Rust::ParseLaunch(line));
+        std::wstring a = D(SL::Rust::ParseLaunch(line)), b = D(SL::Rust::ParseLaunch(line));
         if (a != b)
             Assert::Fail((L"launch " + what + L"\nC++:  " + a + L"\nRust: " + b).c_str());
-        int ma = (int)SL::Cpp::CopyDataMode(line), mb = (int)SL::Rust::CopyDataMode(line);
+        int ma = (int)SL::Rust::CopyDataMode(line), mb = (int)SL::Rust::CopyDataMode(line);
         if (ma != mb)
             Assert::Fail((L"copydata " + what + L" C++=" + std::to_wstring(ma) + L" Rust=" + std::to_wstring(mb)).c_str());
         total++;
@@ -127,7 +127,7 @@ namespace DIMETests
                 bool ec[SettingsWindowLayout::kExpandedSlots], er[SettingsWindowLayout::kExpandedSlots];
                 memset(ec, 0xCC, sizeof(ec));
                 memset(er, 0x33, sizeof(er));
-                SL::Cpp::DefaultExpanded(a.data(), na, b.data(), nb, ec);
+                SL::Rust::DefaultExpanded(a.data(), na, b.data(), nb, ec);
                 SL::Rust::DefaultExpanded(a.data(), na, b.data(), nb, er);
                 for (int i = 0; i < SettingsWindowLayout::kExpandedSlots; i++) {
                     if (ec[i] != er[i])
@@ -167,7 +167,7 @@ namespace DIMETests
                 if (n % 500 == 0) scrollPos = (n % 1000) ? INT_MIN : INT_MAX;
                 static const UINT dpis[] = { 96u, 120u, 144u, 192u, 0u };
                 UINT dpi = dpis[rng() % 5];
-                std::vector<SL::ScrollAction> a = SL::Cpp::PlanScroll(items, scrollPos, dpi);
+                std::vector<SL::ScrollAction> a = SL::Rust::PlanScroll(items, scrollPos, dpi);
                 std::vector<SL::ScrollAction> b = SL::Rust::PlanScroll(items, scrollPos, dpi);
                 Assert::AreEqual(a.size(), b.size(), L"count");
                 for (size_t i = 0; i < a.size(); i++) {

@@ -4,9 +4,8 @@
 // (UpdateTheme), WM_SETTINGCHANGE, and WM_DPICHANGED are a reducer:
 // Handle() updates the dark-theme flag from one FrameEvent and lists the
 // Win32 effects in order (brushes, fonts, DWM attributes, content area,
-// rebuild, ...); SettingsWindow::RunFrame carries them out. The C++
-// original is SettingsFrame::Cpp; with DIME_USE_RUST_CONFIG the dispatched
-// functions run dime-settings (frame.rs). Change both together.
+// rebuild, ...); SettingsWindow::RunFrame carries them out. The functions
+// run dime-settings (frame.rs); the C++ original was removed in phase 6a-4.
 
 #pragma once
 
@@ -63,17 +62,9 @@ void Handle(FrameState& s, const FrameEvent& ev, std::vector<FrameEffect>& out);
 // The window size Run creates at the screen dpi.
 SIZE InitialSize(UINT dpi);
 
-// ---- C++ originals --------------------------------------------------------
-namespace Cpp {
-void Handle(FrameState& s, const FrameEvent& ev, std::vector<FrameEffect>& out);
-SIZE InitialSize(UINT dpi);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 namespace Rust {
 void Handle(FrameState& s, const FrameEvent& ev, std::vector<FrameEffect>& out);
 SIZE InitialSize(UINT dpi);
 } // namespace Rust
-#endif
 
 } // namespace SettingsFrame

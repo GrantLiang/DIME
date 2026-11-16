@@ -9,163 +9,9 @@
 #include "SettingsNav.h"
 #include "SettingsLifecycle.h"
 #include "SettingsEditor.h"
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 #include "dime_ffi.h"
-#endif
 
 namespace SettingsProc {
-
-namespace Cpp {
-
-LRESULT Main(Host& h, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    bool has = h.HasData();
-    switch (msg) {
-    case WM_CREATE:
-        h.Create(((LPCREATESTRUCT)lParam)->hInstance);
-        return 0;
-
-    case WM_SIZE:
-        if (has) h.Nav(SettingsNav::EV_MAIN_SIZE, LOWORD(lParam), HIWORD(lParam), 0, 0);
-        return 0;
-
-    case WM_PAINT:
-        h.PaintMain();
-        return 0;
-
-    case WM_MOUSEWHEEL:
-        if (has && h.HasContent()) h.Nav(SettingsNav::EV_MAIN_WHEEL, 0, 0, GET_WHEEL_DELTA_WPARAM(wParam), 0);
-        return 0;
-
-    case WM_LBUTTONDOWN:
-    case WM_MOUSEMOVE:
-        // Sidebar click / hover, breadcrumb back link, narrow-mode hamburger
-        if (!has) break;
-        h.Nav(msg == WM_LBUTTONDOWN ? SettingsNav::EV_MAIN_LBUTTON : SettingsNav::EV_MAIN_MOUSEMOVE,
-            GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), 0, 0);
-        return 0;
-
-    case WM_MOUSELEAVE:
-        if (has) h.Nav(SettingsNav::EV_MAIN_MOUSELEAVE, 0, 0, 0, 0);
-        return 0;
-
-    case WM_THEMECHANGED:
-        if (has) h.ThemeChanged();
-        return 0;
-
-    case WM_GETMINMAXINFO:
-    {
-        LPMINMAXINFO mmi = (LPMINMAXINFO)lParam;
-        mmi->ptMinTrackSize = SettingsNav::Cpp::MinTrackSize(h.ScreenDpi());
-        return 0;
-    }
-
-    case WM_COPYDATA:
-    {
-        if (!has) break;
-        COPYDATASTRUCT* pCds = (COPYDATASTRUCT*)lParam;
-        if (pCds && pCds->lpData) {
-            IME_MODE mode = SettingsLifecycle::Cpp::CopyDataMode((const wchar_t*)pCds->lpData);
-            if (mode != IME_MODE::IME_MODE_NONE)
-                h.SwitchMode((int)mode);
-            h.SetForeground();
-        }
-        return TRUE;
-    }
-
-    case WM_SETTINGCHANGE:
-        if (!has) break;
-        h.SettingChanged();
-        return 0;
-
-    case WM_DPICHANGED:
-        if (!has) break;
-        h.DpiChanged(HIWORD(wParam), (const RECT*)lParam);
-        return 0;
-
-    case WM_DESTROY:
-        h.Destroy();
-        h.Quit();
-        return 0;
-    }
-    return h.Default(msg, wParam, lParam);
-}
-
-LRESULT Content(Host& h, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    bool has = h.HasData();
-    switch (msg) {
-    case WM_PAINT:
-        h.PaintContent();
-        return 0;
-
-    case WM_VSCROLL:
-    case WM_MOUSEWHEEL:
-    case WM_MOUSEMOVE:
-    case WM_LBUTTONDOWN:
-        if (!has) break;
-        switch (msg) {
-        case WM_VSCROLL:
-            h.Nav(SettingsNav::EV_CONTENT_VSCROLL, 0, 0, LOWORD(wParam), HIWORD(wParam));
-            break;
-        case WM_MOUSEWHEEL:
-            h.Nav(SettingsNav::EV_CONTENT_WHEEL, 0, 0, GET_WHEEL_DELTA_WPARAM(wParam), 0);
-            break;
-        case WM_MOUSEMOVE:
-            h.Nav(SettingsNav::EV_CONTENT_MOUSEMOVE, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), 0, 0);
-            break;
-        default:
-            h.Nav(SettingsNav::EV_CONTENT_LBUTTON, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), 0, 0);
-            break;
-        }
-        return 0;
-
-    case WM_MOUSELEAVE:
-        if (has) h.Nav(SettingsNav::EV_CONTENT_MOUSELEAVE, 0, 0, 0, 0);
-        break;
-
-    case WM_COMMAND:
-        if (!has) break;
-        h.Command(wParam, lParam);
-        break;
-
-    case SettingsEditor::kMsgRevalidate:   // deferred trigger from the editor subclass
-        if (!has) break;
-        h.EditorRevalidate();
-        return 0;
-
-    case SettingsEditor::kMsgViewport:     // forwarded WM_VSCROLL / WM_MOUSEWHEEL
-        if (!has) break;
-        h.EditorViewport();
-        return 0;
-
-    case WM_DRAWITEM:
-    {
-        if (!has) break;
-        LPDRAWITEMSTRUCT pdis = (LPDRAWITEMSTRUCT)lParam;
-        if (!pdis) break;
-        if (h.DrawItem(pdis)) return TRUE;
-        break;
-    }
-
-    case WM_CTLCOLOREDIT:
-    case WM_CTLCOLORLISTBOX:
-    {
-        if (!has) break;
-        LRESULT brush = 0;
-        if (!h.CtlColor((HDC)wParam, brush)) break;
-        return brush;
-    }
-
-    case WM_ERASEBKGND:
-        return 1;
-    }
-    return h.Default(msg, wParam, lParam);
-}
-
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 
 namespace Rust {
 
@@ -230,13 +76,7 @@ LRESULT Content(Host& host, UINT msg, WPARAM wParam, LPARAM lParam)
 
 } // namespace Rust
 
-#endif
-
-#ifdef DIME_USE_RUST_CONFIG
 namespace Impl = Rust;
-#else
-namespace Impl = Cpp;
-#endif
 
 LRESULT Main(Host& host, UINT msg, WPARAM wParam, LPARAM lParam) { return Impl::Main(host, msg, wParam, lParam); }
 LRESULT Content(Host& host, UINT msg, WPARAM wParam, LPARAM lParam) { return Impl::Content(host, msg, wParam, lParam); }

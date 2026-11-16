@@ -36,11 +36,4 @@ void ValidateViewport(HWND hRE, const EditorContext& ctx);
 // The subclass procedure to install with SetWindowSubclass(hRE, proc, 0, 0).
 SUBCLASSPROC SubclassProc();
 
-namespace Cpp {
-void ViewportLineRange(HWND hRE, int* firstVis, int* lastVis);
-void ValidateViewport(HWND hRE, const EditorContext& ctx);
-LRESULT CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-    UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
-} // namespace Cpp
-
 } // namespace SettingsEditor

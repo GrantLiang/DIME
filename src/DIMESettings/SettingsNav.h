@@ -90,9 +90,4 @@ void Handle(NavState& s, const NavEvent& ev, std::vector<NavEffect>& out);
 // WM_GETMINMAXINFO: minimum track size at the screen dpi.
 POINT MinTrackSize(UINT screenDpi);
 
-namespace Cpp {
-void Handle(NavState& s, const NavEvent& ev, std::vector<NavEffect>& out);
-POINT MinTrackSize(UINT screenDpi);
-} // namespace Cpp
-
 } // namespace SettingsNav

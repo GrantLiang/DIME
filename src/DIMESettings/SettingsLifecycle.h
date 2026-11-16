@@ -54,16 +54,6 @@ void DefaultExpanded(const LayoutCard* ime, int imeCount, const LayoutCard* load
     bool out[SettingsWindowLayout::kExpandedSlots]);
 std::vector<ScrollAction> PlanScroll(const std::vector<ScrollItem>& items, int scrollPos, UINT dpi);
 
-// ---- C++ originals --------------------------------------------------------
-namespace Cpp {
-LaunchArgs ParseLaunch(const wchar_t* cmdLine);
-IME_MODE CopyDataMode(const wchar_t* cmdLine);
-void DefaultExpanded(const LayoutCard* ime, int imeCount, const LayoutCard* load, int loadCount,
-    bool out[SettingsWindowLayout::kExpandedSlots]);
-std::vector<ScrollAction> PlanScroll(const std::vector<ScrollItem>& items, int scrollPos, UINT dpi);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 // ---- Always the Rust port (parity tests) ----------------------------------
 namespace Rust {
 LaunchArgs ParseLaunch(const wchar_t* cmdLine);
@@ -72,6 +62,5 @@ void DefaultExpanded(const LayoutCard* ime, int imeCount, const LayoutCard* load
     bool out[SettingsWindowLayout::kExpandedSlots]);
 std::vector<ScrollAction> PlanScroll(const std::vector<ScrollItem>& items, int scrollPos, UINT dpi);
 } // namespace Rust
-#endif
 
 } // namespace SettingsLifecycle

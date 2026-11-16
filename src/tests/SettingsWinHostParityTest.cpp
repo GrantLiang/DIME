@@ -140,7 +140,7 @@ namespace DIMETests
             for (size_t i = 0; i < texts.size(); i++) {
                 std::wstring pa = dir + L"\\cpp" + std::to_wstring(i) + L".txt";
                 std::wstring pb = dir + L"\\rust" + std::to_wstring(i) + L".txt";
-                bool ra = WH::Cpp::WriteBomFile(pa, texts[i]);
+                bool ra = WH::Rust::WriteBomFile(pa, texts[i]);
                 bool rb = WH::Rust::WriteBomFile(pb, texts[i]);
                 Assert::IsTrue(ra && rb, L"written");
                 std::vector<char> ba = ReadAll(pa), bb = ReadAll(pb);
@@ -153,7 +153,7 @@ namespace DIMETests
                 DeleteFileW(pb.c_str());
             }
             std::wstring missing = dir + L"\\no\\such\\folder\\x.txt";
-            Assert::AreEqual(WH::Cpp::WriteBomFile(missing, L"x"), WH::Rust::WriteBomFile(missing, L"x"), L"missing folder");
+            Assert::AreEqual(WH::Rust::WriteBomFile(missing, L"x"), WH::Rust::WriteBomFile(missing, L"x"), L"missing folder");
             Assert::IsFalse(WH::Rust::WriteBomFile(missing, L"x"), L"missing folder fails");
             RemoveDirectoryW(dir.c_str());
             Golden::Check(L"SettingsWinHost", L"WriteBomFile", golden);
@@ -161,11 +161,11 @@ namespace DIMETests
 
         TEST_METHOD(PathsAndDpi)
         {
-            Assert::AreEqual(WH::Cpp::DocumentsPath(), WH::Rust::DocumentsPath(), L"documents");
+            Assert::AreEqual(WH::Rust::DocumentsPath(), WH::Rust::DocumentsPath(), L"documents");
             Assert::IsFalse(WH::Rust::DocumentsPath().empty(), L"documents exists");
             EditorPair ep;
             for (HWND h : { (HWND)nullptr, ep.parent, ep.a })
-                Assert::AreEqual(WH::Cpp::LogPixelsY(h), WH::Rust::LogPixelsY(h), L"LOGPIXELSY");
+                Assert::AreEqual(WH::Rust::LogPixelsY(h), WH::Rust::LogPixelsY(h), L"LOGPIXELSY");
         }
 
         TEST_METHOD(EditorCalls)
@@ -177,28 +177,28 @@ namespace DIMETests
             Golden::Log golden;
             for (const auto& t : texts) {
                 g_enChange = 0;
-                int la = WH::Cpp::SetEditorTextMuted(ep.a, t);
+                int la = WH::Rust::SetEditorTextMuted(ep.a, t);
                 int lb = WH::Rust::SetEditorTextMuted(ep.b, t);
                 Assert::AreEqual(la, lb, L"line count");
                 Assert::AreEqual(0, g_enChange.load(), L"no EN_CHANGE while muted");
                 Assert::AreEqual((LRESULT)ENM_CHANGE, SendMessageW(ep.b, EM_GETEVENTMASK, 0, 0), L"mask restored");
                 Assert::AreEqual(SendMessageW(ep.a, EM_GETEVENTMASK, 0, 0), SendMessageW(ep.b, EM_GETEVENTMASK, 0, 0), L"masks");
-                std::wstring ta = WH::Cpp::EditorText(ep.a), tb = WH::Rust::EditorText(ep.b);
+                std::wstring ta = WH::Rust::EditorText(ep.a), tb = WH::Rust::EditorText(ep.b);
                 Assert::IsTrue(ta == tb, L"text");
-                Assert::IsTrue(WH::Cpp::EditorText(ep.b) == WH::Rust::EditorText(ep.a), L"text crossed");
-                Assert::AreEqual(WH::Cpp::EditorLineCount(ep.a), WH::Rust::EditorLineCount(ep.b), L"EM_GETLINECOUNT");
+                Assert::IsTrue(WH::Rust::EditorText(ep.b) == WH::Rust::EditorText(ep.a), L"text crossed");
+                Assert::AreEqual(WH::Rust::EditorLineCount(ep.a), WH::Rust::EditorLineCount(ep.b), L"EM_GETLINECOUNT");
                 Golden::Hash hash;
                 hash.Add(tb);
                 std::wstring line = L"text of " + std::to_wstring(t.size()) + L" chars: lines " + std::to_wstring(lb)
                     + L" count " + std::to_wstring(WH::Rust::EditorLineCount(ep.b)) + L" read " + hash.Hex() + L" index";
                 for (int ln : { -2, -1, 0, 1, 2, 3, la - 1, la, la + 1, 100000 }) {
-                    int ia = WH::Cpp::EditorLineIndex(ep.a, ln), ib = WH::Rust::EditorLineIndex(ep.b, ln);
+                    int ia = WH::Rust::EditorLineIndex(ep.a, ln), ib = WH::Rust::EditorLineIndex(ep.b, ln);
                     Assert::AreEqual(ia, ib, L"line index");
                     line += L" " + std::to_wstring(ib);
                 }
                 line += L" focus";
                 for (int cp : { 0, 1, 3, (int)ta.size(), (int)ta.size() + 5, -1 }) {
-                    WH::Cpp::EditorFocusAt(ep.a, cp);
+                    WH::Rust::EditorFocusAt(ep.a, cp);
                     WH::Rust::EditorFocusAt(ep.b, cp);
                     DWORD sa0 = 0, sa1 = 0, sb0 = 0, sb1 = 0;
                     SendMessageW(ep.a, EM_GETSEL, (WPARAM)&sa0, (LPARAM)&sa1);
@@ -226,7 +226,7 @@ namespace DIMETests
                 wcscpy_s(la.lfFaceName, i ? L"Segoe UI" : L"Microsoft JhengHei");
                 lb = la;
                 int pa = -1, pb = -1;
-                bool ra = WithDialog(WM_COMMAND, IDOK, [&]() { return WH::Cpp::PickFont(owner, la, pa); });
+                bool ra = WithDialog(WM_COMMAND, IDOK, [&]() { return WH::Rust::PickFont(owner, la, pa); });
                 bool rb = WithDialog(WM_COMMAND, IDOK, [&]() { return WH::Rust::PickFont(owner, lb, pb); });
                 Assert::IsTrue(ra && rb, L"font OK");
                 Assert::AreEqual(pa, pb, L"point size");
@@ -236,7 +236,7 @@ namespace DIMETests
             // Colour: OK returns the initial colour.
             for (COLORREF c : { RGB(0, 120, 215), RGB(250, 250, 250) }) {
                 COLORREF ca = c, cb = c;
-                bool ra = WithDialog(WM_COMMAND, IDOK, [&]() { return WH::Cpp::PickColor(owner, ca); });
+                bool ra = WithDialog(WM_COMMAND, IDOK, [&]() { return WH::Rust::PickColor(owner, ca); });
                 bool rb = WithDialog(WM_COMMAND, IDOK, [&]() { return WH::Rust::PickColor(owner, cb); });
                 Assert::IsTrue(ra && rb, L"colour OK");
                 Assert::AreEqual((DWORD)ca, (DWORD)cb, L"colour");
@@ -248,24 +248,24 @@ namespace DIMETests
                 la.lfHeight = -16;
                 lb = la;
                 int pa = 7, pb = 7;
-                bool ra = WithDialog(WM_CLOSE, 0, [&]() { return WH::Cpp::PickFont(owner, la, pa); });
+                bool ra = WithDialog(WM_CLOSE, 0, [&]() { return WH::Rust::PickFont(owner, la, pa); });
                 bool rb = WithDialog(WM_CLOSE, 0, [&]() { return WH::Rust::PickFont(owner, lb, pb); });
                 Assert::IsFalse(ra || rb, L"font cancel");
                 Assert::IsTrue(pa == 7 && pb == 7, L"point size untouched");
                 COLORREF ca = RGB(1, 2, 3), cb = ca;
-                Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Cpp::PickColor(owner, ca); }), L"colour cancel C++");
+                Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Rust::PickColor(owner, ca); }), L"colour cancel C++");
                 Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Rust::PickColor(owner, cb); }), L"colour cancel Rust");
                 Assert::IsTrue(ca == RGB(1, 2, 3) && cb == ca, L"colour untouched");
             }
             for (int filter : { 0, 1 }) {
                 std::wstring pa = L"keep", pb = L"keep";
-                Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Cpp::OpenFileDialog(owner, filter, pa); }), L"open cancel C++");
+                Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Rust::OpenFileDialog(owner, filter, pa); }), L"open cancel C++");
                 Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Rust::OpenFileDialog(owner, filter, pb); }), L"open cancel Rust");
                 Assert::IsTrue(pa == L"keep" && pb == L"keep", L"open path untouched");
             }
             {
                 std::wstring pa = L"C:\\x\\DIME-custom.txt", pb = pa;
-                Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Cpp::SaveFileDialog(owner, pa); }), L"save cancel C++");
+                Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Rust::SaveFileDialog(owner, pa); }), L"save cancel C++");
                 Assert::IsFalse(WithDialog(WM_CLOSE, 0, [&]() { return WH::Rust::SaveFileDialog(owner, pb); }), L"save cancel Rust");
                 Assert::IsTrue(pa == pb, L"save path untouched");
             }

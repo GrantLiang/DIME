@@ -76,22 +76,6 @@ void RegisterContentClass(HINSTANCE instance, const wchar_t* name, WNDPROC proc)
 // -1 when the window cannot be created; else WM_QUIT's wParam.
 int Run(const RunParams& p);
 
-namespace Cpp {
-bool SavePlacement(HWND hWnd, const wchar_t* key, const wchar_t* value);
-bool RestorePlacement(HWND hWnd, const wchar_t* key, const wchar_t* value);
-void DeletePlacement(const wchar_t* key, const wchar_t* value);
-Brushes CreateBrushes(const ThemeColors& theme);
-void DestroyBrushes(Brushes& b);
-void PaintMain(HWND hWnd, const PaintSource& src);
-void PaintContent(HWND hWnd, const PaintSource& src);
-void PaintMainInto(HDC target, int w, int h, const PaintSource& src);
-void PaintContentInto(HDC target, int w, int h, const PaintSource& src);
-bool RegisterMainClass(HINSTANCE instance, const wchar_t* name, WNDPROC proc, int iconId);
-void RegisterContentClass(HINSTANCE instance, const wchar_t* name, WNDPROC proc);
-int Run(const RunParams& p);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 namespace Rust {
 bool SavePlacement(HWND hWnd, const wchar_t* key, const wchar_t* value);
 bool RestorePlacement(HWND hWnd, const wchar_t* key, const wchar_t* value);
@@ -106,6 +90,5 @@ bool RegisterMainClass(HINSTANCE instance, const wchar_t* name, WNDPROC proc, in
 void RegisterContentClass(HINSTANCE instance, const wchar_t* name, WNDPROC proc);
 int Run(const RunParams& p);
 } // namespace Rust
-#endif
 
 } // namespace SettingsShell

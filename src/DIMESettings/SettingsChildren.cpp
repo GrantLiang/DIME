@@ -14,9 +14,7 @@
 #include "SettingsChildren.h"
 #include "SettingsController.h"
 #include "SettingsEditor.h"
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 #include "dime_ffi.h"
-#endif
 
 #pragma comment(lib, "ComCtl32.lib")
 #pragma comment(lib, "uxtheme.lib")
@@ -24,153 +22,6 @@
 #pragma comment(lib, "oleacc.lib")
 
 namespace SettingsChildren {
-
-namespace Cpp {
-
-namespace {
-
-// Accessible name through dynamic annotation (phase 5b-14): combo and edit
-// boxes show their value, the label is painted on the card. Needs COM on
-// the thread; without it the control just has no name.
-// Own copies: oleacc.lib does not export these GUIDs on every platform.
-const CLSID kClsidAccPropServices = { 0xb5f8350b, 0x0548, 0x48b1, { 0xa6, 0xee, 0x88, 0xbd, 0x00, 0xb4, 0xa5, 0xe7 } };
-const MSAAPROPID kPropIdAccName = { 0x608d3df8, 0x8128, 0x4aa7, { 0xa4, 0x28, 0xf5, 0x5e, 0x49, 0x26, 0x72, 0x91 } };
-
-bool SetAccName(HWND h, const std::wstring& name)
-{
-    IAccPropServices* svc = nullptr;
-    if (FAILED(CoCreateInstance(kClsidAccPropServices, nullptr, CLSCTX_INPROC_SERVER,
-            IID_PPV_ARGS(&svc))) || !svc)
-        return false;
-    HRESULT hr = svc->SetHwndPropStr(h, (DWORD)OBJID_CLIENT, CHILDID_SELF, kPropIdAccName, name.c_str());
-    svc->Release();
-    return SUCCEEDED(hr);
-}
-
-// Annotations outlive the window unless cleared (and a reused HWND would
-// inherit them).
-void ClearAccName(HWND h)
-{
-    IAccPropServices* svc = nullptr;
-    if (FAILED(CoCreateInstance(kClsidAccPropServices, nullptr, CLSCTX_INPROC_SERVER,
-            IID_PPV_ARGS(&svc))) || !svc)
-        return;
-    MSAAPROPID props[] = { kPropIdAccName };
-    svc->ClearHwndProps(h, (DWORD)OBJID_CLIENT, CHILDID_SELF, props, 1);
-    svc->Release();
-}
-
-// WheelSubclassProc reference data.
-constexpr DWORD_PTR kSubclassNamed = 1;      // has an accessible name to clear
-constexpr DWORD_PTR kSubclassToggleBox = 2;  // a toggle row's check box
-
-// Child controls forward the wheel to the content area so it scrolls.
-LRESULT CALLBACK WheelSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-    UINT_PTR uIdSubclass, DWORD_PTR flags)
-{
-    if (uMsg == WM_MOUSEWHEEL)
-        return SendMessage(GetParent(hWnd), uMsg, wParam, lParam);
-    // A toggle's check box never paints: its empty window region does not
-    // stop the button from drawing itself when the content area is redrawn
-    // with RDW_ALLCHILDREN (scrolling), which covered the switch.
-    if (flags & kSubclassToggleBox) {
-        if (uMsg == WM_PAINT) { ValidateRect(hWnd, nullptr); return 0; }
-        if (uMsg == WM_ERASEBKGND) return 1;
-        if (uMsg == WM_PRINTCLIENT) return 0;
-    }
-    if (uMsg == WM_NCDESTROY) {
-        if (flags & kSubclassNamed) ClearAccName(hWnd);
-        RemoveWindowSubclass(hWnd, WheelSubclassProc, uIdSubclass);
-    }
-    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
-}
-
-// Right after the RichEdit is created: text limit, font, dark colours.
-void SetupRichEditor(const Context& ctx, HWND hRE)
-{
-    // Issue #130: RichEdit50W defaults to ~32K-64K characters; SetWindowTextW
-    // bypasses the cap but typing is then rejected. Raise it to 100 MB.
-    SendMessageW(hRE, EM_EXLIMITTEXT, 0, (LPARAM)(100 * 1024 * 1024));
-    SendMessage(hRE, WM_SETFONT, (WPARAM)ctx.fontBody, TRUE);
-    if (ctx.isDark) {
-        SetWindowTheme(hRE, L"DarkMode_Explorer", nullptr);
-        SendMessage(hRE, EM_SETBKGNDCOLOR, 0, (LPARAM)ctx.cardBg);
-        CHARFORMAT2W cf2 = {};
-        cf2.cbSize = sizeof(cf2);
-        cf2.dwMask = CFM_COLOR;
-        cf2.crTextColor = ctx.textPrimary;
-        SendMessage(hRE, EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&cf2);
-    }
-}
-
-// The saved custom table (encoding-aware reader, issue #130), the editor
-// subclass, EN_CHANGE, then the window validates the visible lines.
-void LoadRichEditor(Host& host, HWND hRE)
-{
-    std::wstring path = host.EditorPath();
-    if (PathFileExistsW(path.c_str())) {
-        CHARFORMAT2W cf = {};
-        cf.cbSize = sizeof(cf);
-        cf.dwMask = CFM_FACE | CFM_SIZE | CFM_WEIGHT;
-        StringCchCopyW(cf.szFaceName, LF_FACESIZE, L"Microsoft JhengHei UI");
-        cf.yHeight = 10 * 20;  // 10pt in twips — RichEdit applies DPI itself
-        cf.wWeight = FW_NORMAL;
-        SendMessageW(hRE, EM_SETCHARFORMAT, SCF_DEFAULT, (LPARAM)&cf);
-
-        size_t wlen = 0;
-        LPWSTR text = SettingsModel::LoadTextFileAsUtf16(path.c_str(), &wlen);
-        if (text) {
-            SetWindowTextW(hRE, text);
-            delete[] text;
-        }
-    }
-    SetWindowSubclass(hRE, SettingsEditor::SubclassProc(), 0, 0);
-    SendMessageW(hRE, EM_SETEVENTMASK, 0, ENM_CHANGE);
-    host.EditorReady(hRE, (int)SendMessageW(hRE, EM_GETLINECOUNT, 0, 0));
-}
-
-} // namespace
-
-void Create(Host& host, const Context& ctx, const std::vector<SettingsControls::ControlSpec>& specs)
-{
-    static HMODULE hMsftEdit = nullptr;
-    for (const auto& spec : specs) {
-        if (spec.controlClass == SettingsControls::CLS_RICHEDIT && !hMsftEdit)
-            hMsftEdit = LoadLibraryW(L"msftedit.dll");
-        HWND h = CreateWindowExW(spec.exStyle, SettingsControls::ClassName(spec.controlClass),
-            spec.hasText ? spec.text.c_str() : nullptr, spec.style,
-            spec.create.left, spec.create.top, spec.create.right, spec.create.bottom,
-            ctx.parent, (HMENU)(UINT_PTR)spec.menuId, ctx.instance, nullptr);
-        if (spec.role == SettingsControls::ROLE_RICH_EDITOR) {
-            // The editor scrolls itself: no wheel forwarder.
-            if (h) SetupRichEditor(ctx, h);
-            host.Added(spec.ctrlId, h, spec.add.left, spec.add.top, spec.add.right, spec.add.bottom, spec.visH);
-            if (h) LoadRichEditor(host, h);
-            continue;
-        }
-        if (h && spec.setFont)
-            SendMessage(h, WM_SETFONT, (WPARAM)ctx.fontBody, TRUE);
-        if (h && ctx.isDark && spec.darkTheme == SettingsControls::DARK_CFD)
-            SetWindowTheme(h, L"DarkMode_CFD", nullptr);
-        else if (h && ctx.isDark && spec.darkTheme == SettingsControls::DARK_EXPLORER)
-            SetWindowTheme(h, L"DarkMode_Explorer", nullptr);
-        // A toggle's check box takes no pixels and no clicks: the content
-        // area paints the switch and handles the row click.
-        if (h && spec.role == SettingsControls::ROLE_TOGGLE)
-            SetWindowRgn(h, CreateRectRgn(0, 0, 0, 0), FALSE);
-        bool named = h && !spec.accName.empty() && SetAccName(h, spec.accName);
-        host.Added(spec.ctrlId, h, spec.add.left, spec.add.top, spec.add.right, spec.add.bottom, spec.visH);
-        if (h) {
-            DWORD_PTR flags = (named ? kSubclassNamed : 0)
-                | (spec.role == SettingsControls::ROLE_TOGGLE ? kSubclassToggleBox : 0);
-            SetWindowSubclass(h, WheelSubclassProc, kWheelSubclassId, flags);
-        }
-    }
-}
-
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 
 static_assert(sizeof(DimeControlSpec) == 88, "DimeControlSpec");
 static_assert(sizeof(DimeSettingsChildContext) == sizeof(Context), "DimeSettingsChildContext");
@@ -245,18 +96,9 @@ void CreateRust(Host& host, const Context& ctx, const std::vector<SettingsContro
     dime_settings_create_children(&kVtbl, &host, &ctx, raw.data(), raw.size(), text.data(), text.size());
 }
 
-#endif
-
-#ifdef DIME_USE_RUST_CONFIG
 void Create(Host& host, const Context& ctx, const std::vector<SettingsControls::ControlSpec>& specs)
 {
     CreateRust(host, ctx, specs);
 }
-#else
-void Create(Host& host, const Context& ctx, const std::vector<SettingsControls::ControlSpec>& specs)
-{
-    Cpp::Create(host, ctx, specs);
-}
-#endif
 
 } // namespace SettingsChildren

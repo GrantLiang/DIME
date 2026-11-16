@@ -103,12 +103,12 @@ namespace
             if (act.button >= 0) {
                 UINT dpi = g_dpi.load();
                 SettingsWindowLayout::MsgBoxLayout L =
-                    SettingsWindowLayout::Cpp::MsgBoxLayoutFor(false, 3, 0, 0, dpi);
+                    SettingsWindowLayout::MsgBoxLayoutFor(false, 3, 0, 0, dpi);
                 // Button geometry depends only on the client width and button count.
-                SettingsWindowLayout::MsgBoxButtons b = SettingsWindowLayout::Cpp::MsgBoxButtonsFor(type);
+                SettingsWindowLayout::MsgBoxButtons b = SettingsWindowLayout::MsgBoxButtonsFor(type);
                 L.rcClient = obs.client;
                 L.btnY = obs.client.bottom - L.margin - L.btnH;
-                int x = SettingsWindowLayout::Cpp::MsgBoxFirstButtonX(L, b.count) + act.button * (L.btnW + L.btnGap) + L.btnW / 2;
+                int x = SettingsWindowLayout::MsgBoxFirstButtonX(L, b.count) + act.button * (L.btnW + L.btnGap) + L.btnW / 2;
                 int y = L.btnY + L.btnH / 2;
                 PostMessageW(h, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x, y));
             } else {
@@ -119,7 +119,8 @@ namespace
             obs.result = dime_settings_message_box(parent, (const uint16_t*)text, (const uint16_t*)caption, type,
                 (const uint16_t*)cls, dark ? 1 : 0, &tc, &TestDpiRaw);
         } else {
-            obs.result = SettingsMsgBox::Cpp::Show(parent, text, caption, type, cls, dark, tc, &TestDpi);
+            obs.result = dime_settings_message_box(parent, (const uint16_t*)text, (const uint16_t*)caption, type,
+                (const uint16_t*)cls, dark ? 1 : 0, &tc, &TestDpiRaw);
         }
         driver.join();
         return obs;
@@ -207,7 +208,7 @@ namespace DIMEUnitTests
             g_dpi = 120;
             Golden::Log golden;
             for (UINT t : { (UINT)MB_YESNOCANCEL, (UINT)MB_YESNO, (UINT)MB_OK }) {
-                int count = SettingsWindowLayout::Cpp::MsgBoxButtonsFor(t).count;
+                int count = SettingsWindowLayout::MsgBoxButtonsFor(t).count;
                 for (int b = 0; b < count; b++) {
                     Compare(parent, L"自訂碼表載入完成。", t, b == 1, { 0, 0, b },
                         L"click type=" + std::to_wstring(t) + L" button=" + std::to_wstring(b), golden);

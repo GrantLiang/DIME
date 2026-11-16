@@ -169,13 +169,13 @@ namespace DIMEUnitTests
                 SendMessageW(b, EM_SETEVENTMASK, 0, ENM_CHANGE | ENM_SCROLL);
 
                 int fa = -1, la = -1, fb = -2, lb = -2;
-                SE::Cpp::ViewportLineRange(a, &fa, &la);
+                SE::ViewportLineRange(a, &fa, &la);
                 dime_settings_editor_viewport(b, &fb, &lb);
                 Assert::AreEqual(fa, fb, L"first visible");
                 Assert::AreEqual(la, lb, L"last visible");
 
                 SE::EditorContext ctx = { (int)(rng() % 4), (UINT)(rng() % 7), (int)(rng() % 2), nullptr };
-                SE::Cpp::ValidateViewport(a, ctx);
+                SE::ValidateViewport(a, ctx);
                 dime_settings_editor_validate_viewport(b, ctx.mode, ctx.maxCodes, ctx.isDark, nullptr, nullptr);
 
                 std::vector<LONG> ca = Colors(a), cb = Colors(b);
@@ -220,7 +220,7 @@ namespace DIMEUnitTests
             std::wstring text = L"abc 中\r\nroc 語\r\nxyz 文字\r\n0123456789abcdef 長\r\n";
             SetWindowTextW(a, text.c_str());
             SetWindowTextW(b, text.c_str());
-            SetWindowSubclass(a, &SE::Cpp::SubclassProc, 0, 0);
+            SetWindowSubclass(a, SE::SubclassProc(), 0, 0);
             SetWindowSubclass(b, reinterpret_cast<SUBCLASSPROC>(dime_settings_editor_subclass_proc()), 0, 0);
 
             struct Step { UINT msg; WPARAM wp; LPARAM lp; LONG selMin; LONG selMax; };

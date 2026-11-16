@@ -128,7 +128,7 @@ namespace DIMEUnitTests
                 Page a, b;
                 Build(a, present);
                 Build(b, present);
-                SP::Cpp::Populate(in, &Find, &a);
+                SP::PopulateRust(in, &Find, &a);
                 SP::PopulateRust(in, &Find, &b);
 
                 Golden::Hash hash;

@@ -84,27 +84,4 @@ void PaintMainFrame(HDC hdc, const PaintContext& main, bool hasContent);
 // `content` has the content area's client size; `main` the main window's.
 void PaintContentFrame(HDC hdc, const PaintContext& content, const PaintContext& main);
 
-// ---- C++ originals --------------------------------------------------------
-namespace Cpp {
-void PaintMainFrame(HDC hdc, const PaintContext& main, bool hasContent);
-void PaintContentFrame(HDC hdc, const PaintContext& content, const PaintContext& main);
-void CreateFonts(UINT dpi, Fonts* out);
-void DrawCardWithShadow(HDC hdc, int x, int y, int w, int h, int cornerR,
-    COLORREF cardBg, COLORREF cardBorder, COLORREF contentBg, bool isHover, COLORREF hoverColor);
-void PaintToggleSwitch(HDC hdc, RECT rc, bool isOn, bool isHover, const ThemeColors& tc);
-int CandidatePreviewHeight(HDC hdc, const SettingsSnapshot& s, UINT dpi);
-void PaintCandidatePreview(HDC hdc, const SettingsSnapshot& s, int margin, int curY,
-    int cardW, int totalH, UINT dpi, COLORREF sysFace);
-void PaintSidebar(HDC hdc, const PaintContext& ctx);
-void PaintContent(HDC hdc, const PaintContext& ctx);
-void PaintBreadcrumb(HDC hdc, const PaintContext& ctx);
-void PaintHamburger(HDC hdc, const PaintContext& ctx, RECT rc, HBRUSH bg);
-void PaintOwnerButton(HDC hdc, RECT rc, const wchar_t* text, bool pressed, bool disabled,
-    const ThemeColors& tc, HFONT font, UINT dpi);
-void PaintSwatch(HDC hdc, RECT rc, COLORREF color, COLORREF border, int radius);
-void PaintMsgBox(HDC hdc, const SettingsWindowLayout::MsgBoxLayout& L, const wchar_t* text,
-    const wchar_t* const* labels, int btnCount, int hoverBtn, int defaultBtn,
-    const ThemeColors& tc, HFONT font, HICON icon, UINT dpi);
-} // namespace Cpp
-
 } // namespace SettingsWindowPaint

@@ -46,15 +46,8 @@ struct ControlSpec {
 std::vector<ControlSpec> BuildSpecs(const SettingsWindowLayout::PlanInput& in, int cardW,
     const LayoutCard* ime, int imeCount, const LayoutCard* load, int loadCount);
 
-namespace Cpp {
-std::vector<ControlSpec> BuildSpecs(const SettingsWindowLayout::PlanInput& in, int cardW,
-    const LayoutCard* ime, int imeCount, const LayoutCard* load, int loadCount);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 std::vector<ControlSpec> BuildSpecsRust(const SettingsWindowLayout::PlanInput& in, int cardW,
     const LayoutCard* ime, int imeCount, const LayoutCard* load, int loadCount);
-#endif
 
 // Class name for CreateWindowEx.
 const wchar_t* ClassName(int controlClass);

@@ -22,11 +22,4 @@ typedef UINT (*DpiForWindowFn)(HWND hWnd);
 // Theme from CConfig::IsSystemDarkTheme(), dpi from CConfig::GetDpiForHwnd.
 int Show(HWND hParent, const wchar_t* text, const wchar_t* caption, UINT type);
 
-namespace Cpp {
-// Modal: returns IDOK / IDYES / IDNO / IDCANCEL (or MessageBoxW's result when
-// the window cannot be created).
-int Show(HWND hParent, const wchar_t* text, const wchar_t* caption, UINT type,
-    const wchar_t* className, bool isDark, const ThemeColors& tc, DpiForWindowFn dpiFor);
-} // namespace Cpp
-
 } // namespace SettingsMsgBox

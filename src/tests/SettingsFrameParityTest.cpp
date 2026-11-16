@@ -1,13 +1,13 @@
 ﻿/********************************************************************************
-* SettingsFrameParityTest: C++ (SettingsFrame::Cpp, formerly inline in
-* WM_CREATE / UpdateTheme / WM_SETTINGCHANGE / WM_DPICHANGED) vs Rust
-* (dime-settings frame.rs through SettingsFrame::Rust). Every event kind
-* over both dark flags, system themes, content present or not, several dpis
-* and client sizes, plus random event sequences: the new dark flag and every
-* effect (kind, argument, rectangle) must match.
-*
-* Golden files (src/tests/golden/SettingsFrame): every case's Rust result,
-* the initial sizes, and one hash per random sequence.
+* SettingsFrameParityTest: WM_CREATE / WM_THEMECHANGED / WM_SETTINGCHANGE /
+* WM_DPICHANGED of the settings window (dime-settings frame.rs through
+* SettingsFrame::Rust). Every event kind over both dark flags, system
+* themes, content present or not, several dpis and client sizes, plus random
+* event sequences: the new dark flag and every effect (kind, argument,
+* rectangle) must match the golden files (src/tests/golden/SettingsFrame),
+* recorded when the C++ original (SettingsFrame::Cpp, removed in phase 6a-4)
+* still matched them: every case, the initial sizes, and one hash per random
+* sequence.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -34,19 +34,16 @@ namespace
         return s;
     }
 
-    // Runs one event on both; returns the number of effects. `rust` gets
-    // the Rust side's result for the golden file.
-    size_t Check(SF::FrameState& a, SF::FrameState& b, const SF::FrameEvent& ev, const std::wstring& what,
+    // Runs one event on `b` (a follows it); returns the number of effects.
+    // `rust` gets the result for the golden file.
+    size_t Check(SF::FrameState& a, SF::FrameState& b, const SF::FrameEvent& ev, const std::wstring&,
         std::wstring* rust = nullptr)
     {
-        std::vector<SF::FrameEffect> ea, eb;
-        SF::Cpp::Handle(a, ev, ea);
+        std::vector<SF::FrameEffect> eb;
         SF::Rust::Handle(b, ev, eb);
-        std::wstring da = D(ea, a.isDark), db = D(eb, b.isDark);
-        if (da != db)
-            Assert::Fail((what + L"\nC++:  " + da + L"\nRust: " + db).c_str());
-        if (rust) *rust = db;
-        return ea.size();
+        a = b;
+        if (rust) *rust = D(eb, b.isDark);
+        return eb.size();
     }
 }
 
@@ -86,8 +83,7 @@ namespace DIMETests
                                 }
             Assert::IsTrue(effects > 1000, L"effects");
             for (UINT dpi : { 0u, 96u, 120u, 144u, 168u, 192u, 288u }) {
-                SIZE a = SF::Cpp::InitialSize(dpi), b = SF::Rust::InitialSize(dpi);
-                Assert::IsTrue(a.cx == b.cx && a.cy == b.cy, (L"initial size dpi=" + std::to_wstring(dpi)).c_str());
+                SIZE b = SF::Rust::InitialSize(dpi);
                 golden.Add(L"initial size dpi=" + std::to_wstring(dpi) + L": " + std::to_wstring(b.cx) + L"x"
                     + std::to_wstring(b.cy));
             }

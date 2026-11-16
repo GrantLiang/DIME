@@ -105,36 +105,4 @@ int MsgBoxButtonAt(const MsgBoxLayout& L, int btnCount, int x, int y);
 int MsgBoxKeyResult(const MsgBoxButtons& b, int defaultBtn, UINT vk);   // -1 = not handled
 int MsgBoxCloseResult(const MsgBoxButtons& b);                          // -1 = keep result
 
-// ---- C++ originals --------------------------------------------------------
-namespace Cpp {
-int CardWidth(int clientRight, UINT dpi, bool sidebarTakesSpace, int vscrollW);
-int CtrlRight(int margin, int cardW, UINT dpi, bool hasChevron);
-int RowHeight(const LayoutRow& lr, UINT dpi, int previewH);
-bool RowShown(const LayoutRow& lr, int modeMask, int colorMode, bool gridExpanded);
-int CardListHitTest(int y, const LayoutCard* cards, int cardCount, int modeMask,
-    const bool* cardExpanded, int expandBaseIdx, UINT dpi, int scrollPos);
-CardListClick CardListClickTarget(int y, const LayoutCard* cards, int cardCount, int modeMask,
-    const bool* cardExpanded, int expandBaseIdx, UINT dpi, int scrollPos);
-std::vector<RowSpan> RowSpans(const LayoutCard& card, const RowContext& ctx);
-RowCardHit RowCardsHit(int y, const LayoutCard& card, const RowContext& ctx);
-PlanResult PlanControls(const PlanInput& in, const LayoutCard* ime, int imeCount,
-    const LayoutCard* load, int loadCount, std::vector<Placement>& out);
-bool RowControlRect(RowType type, int ctrlRight, int cy, int ctrlH, int btnH, UINT dpi, CtrlRect* out);
-CtrlRect SwatchRect(int index, int margin, int curY, int ctrlRight, UINT dpi);
-void RichEditorRects(int margin, int cardW, int pad, int curY, int thisH, int ctrlRight,
-    int btnW, int btnH, UINT dpi, CtrlRect* editor, CtrlRect* save);
-CtrlRect ContentAreaRect(int clientW, int clientH, UINT dpi, bool sidebarTakesSpace, bool hasBreadcrumb);
-int ValidateBuffer(const wchar_t* text, size_t wlen, IME_MODE mode, UINT maxCodes,
-    CCompositionProcessorEngine* pEng, int* outFirstErrLine, wchar_t* outSummary,
-    size_t summaryCch, int maxReport);
-MsgBoxButtons MsgBoxButtonsFor(UINT type);
-int MsgBoxIcon(UINT type);
-int MsgBoxMaxTextWidth(UINT dpi);
-MsgBoxLayout MsgBoxLayoutFor(bool hasIcon, int btnCount, int textW, int textH, UINT dpi);
-int MsgBoxFirstButtonX(const MsgBoxLayout& L, int btnCount);
-int MsgBoxButtonAt(const MsgBoxLayout& L, int btnCount, int x, int y);
-int MsgBoxKeyResult(const MsgBoxButtons& b, int defaultBtn, UINT vk);
-int MsgBoxCloseResult(const MsgBoxButtons& b);
-} // namespace Cpp
-
 } // namespace SettingsWindowLayout

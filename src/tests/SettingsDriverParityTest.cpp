@@ -295,24 +295,24 @@ namespace DIMETests
                         SN::NavEvent ev = RandomNav(rng, dpi);
                         what = L"nav " + std::to_wstring(ev.kind) + L" (" + std::to_wstring(ev.x) + L","
                             + std::to_wstring(ev.y) + L"," + std::to_wstring(ev.delta) + L"," + std::to_wstring(ev.thumb) + L")";
-                        SD::Cpp::Nav(a, &sa, ev);
+                        SD::Rust::Nav(a, &sa, ev);
                         SD::Rust::Nav(b, &sb, ev);
                         ops[0]++;
                     } else if (op < 8) {
                         SF::FrameEvent ev = RandomFrame(rng, dpi);
                         what = L"frame " + std::to_wstring(ev.kind);
-                        SD::Cpp::Frame(a, &sa, ev);
+                        SD::Rust::Frame(a, &sa, ev);
                         SD::Rust::Frame(b, &sb, ev);
                         ops[1]++;
                     } else if (op == 8) {
                         int mode = R(rng, 0, 3);
                         what = L"switch " + std::to_wstring(mode);
-                        SD::Cpp::SwitchMode(a, &sa, mode);
+                        SD::Rust::SwitchMode(a, &sa, mode);
                         SD::Rust::SwitchMode(b, &sb, mode);
                         ops[2]++;
                     } else {
                         what = L"rebuild";
-                        SD::Cpp::Rebuild(a, &sa);
+                        SD::Rust::Rebuild(a, &sa);
                         SD::Rust::Rebuild(b, &sb);
                         ops[3]++;
                     }

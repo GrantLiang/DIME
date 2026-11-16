@@ -30,17 +30,9 @@ bool DrawItem(const DRAWITEMSTRUCT* dis, const Context& ctx);
 // in *brush when null). False in the light theme (not handled).
 bool CtlColor(HDC hdc, bool isDark, const ThemeColors& theme, HBRUSH* brush);
 
-// ---- C++ originals --------------------------------------------------------
-namespace Cpp {
-bool DrawItem(const DRAWITEMSTRUCT* dis, const Context& ctx);
-bool CtlColor(HDC hdc, bool isDark, const ThemeColors& theme, HBRUSH* brush);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 namespace Rust {
 bool DrawItem(const DRAWITEMSTRUCT* dis, const Context& ctx);
 bool CtlColor(HDC hdc, bool isDark, const ThemeColors& theme, HBRUSH* brush);
 } // namespace Rust
-#endif
 
 } // namespace SettingsOwnerDraw

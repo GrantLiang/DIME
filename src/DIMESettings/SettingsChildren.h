@@ -49,12 +49,6 @@ constexpr UINT_PTR kWheelSubclassId = 1;
 // ---- Dispatched (Rust under DIME_USE_RUST_CONFIG) -------------------------
 void Create(Host& host, const Context& ctx, const std::vector<SettingsControls::ControlSpec>& specs);
 
-namespace Cpp {
-void Create(Host& host, const Context& ctx, const std::vector<SettingsControls::ControlSpec>& specs);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 void CreateRust(Host& host, const Context& ctx, const std::vector<SettingsControls::ControlSpec>& specs);
-#endif
 
 } // namespace SettingsChildren

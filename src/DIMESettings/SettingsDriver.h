@@ -110,21 +110,11 @@ void Frame(Host& host, State* st, SettingsFrame::FrameEvent ev);
 void SwitchMode(Host& host, State* st, int mode);
 void Rebuild(Host& host, State* st);
 
-// ---- C++ originals --------------------------------------------------------
-namespace Cpp {
-void Nav(Host& host, State* st, SettingsNav::NavEvent ev);
-void Frame(Host& host, State* st, SettingsFrame::FrameEvent ev);
-void SwitchMode(Host& host, State* st, int mode);
-void Rebuild(Host& host, State* st);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 namespace Rust {
 void Nav(Host& host, State* st, SettingsNav::NavEvent ev);
 void Frame(Host& host, State* st, SettingsFrame::FrameEvent ev);
 void SwitchMode(Host& host, State* st, int mode);
 void Rebuild(Host& host, State* st);
 } // namespace Rust
-#endif
 
 } // namespace SettingsDriver

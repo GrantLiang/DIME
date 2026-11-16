@@ -117,7 +117,7 @@ namespace DIMEUnitTests
                 for (int step = 0; step < 40; step++) {
                     SN::NavEvent ev = RandomEvent(rng, dpi);
                     std::vector<SN::NavEffect> fa;
-                    SN::Cpp::Handle(a, ev, fa);
+                    SN::Handle(a, ev, fa);
                     SN::NavEffect fb[32];
                     size_t count = 0;
                     dime_settings_nav_handle(&b, &ev, fb, 32, &count);
@@ -165,7 +165,7 @@ namespace DIMEUnitTests
         {
             Golden::Log golden;
             for (UINT dpi : { 72u, 96u, 120u, 144u, 192u, 288u }) {
-                POINT a = SN::Cpp::MinTrackSize(dpi), b = {};
+                POINT a = SN::MinTrackSize(dpi), b = {};
                 dime_settings_nav_min_track_size(dpi, &b);
                 Assert::AreEqual(a.x, b.x);
                 Assert::AreEqual(a.y, b.y);

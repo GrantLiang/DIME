@@ -152,7 +152,7 @@ namespace
 
         Ctx(bool dark, UINT dpi, int snapVariant, bool forceNoMdl2 = false)
         {
-            SWP::Cpp::CreateFonts(dpi, &fonts);
+            SWP::CreateFonts(dpi, &fonts);
             ctx.theme = ComputeThemeColors(dark);
             ctx.snapshot = MakeSnapshot(snapVariant);
             sidebar = CreateSolidBrush(ctx.theme.sidebarBg);
@@ -207,7 +207,7 @@ namespace DIMEUnitTests
             GoldenScope scope(golden);
             for (UINT dpi : { 96u, 120u, 144u, 192u }) {
                 SWP::Fonts a = {}, b = {};
-                SWP::Cpp::CreateFonts(dpi, &a);
+                SWP::CreateFonts(dpi, &a);
                 dime_settings_create_fonts(dpi, &b);
                 Assert::AreEqual(a.hasMDL2, b.hasMDL2, L"hasMDL2");
                 HFONT fa[] = { a.title, a.cardHeader, a.body, a.desc, a.mdl2, a.mdl2Icon };
@@ -241,30 +241,30 @@ namespace DIMEUnitTests
                     int r = MulDiv(8, dpi, 96);
                     for (int hover = 0; hover < 2; hover++) {
                         ExpectSame(400, 120, tc.contentBg,
-                            [&](HDC dc) { SWP::Cpp::DrawCardWithShadow(dc, 10, 12, 360, 80, r, tc.cardBg, tc.cardBorder, tc.contentBg, hover != 0, tc.rowHover); },
+                            [&](HDC dc) { SWP::DrawCardWithShadow(dc, 10, 12, 360, 80, r, tc.cardBg, tc.cardBorder, tc.contentBg, hover != 0, tc.rowHover); },
                             [&](HDC dc) { dime_settings_draw_card(dc, 10, 12, 360, 80, r, tc.cardBg, tc.cardBorder, tc.contentBg, hover, tc.rowHover); },
                             L"card");
                     }
                     for (int on = 0; on < 2; on++) {
                         RECT rc = { 7, 5, 7 + MulDiv(40, dpi, 96), 5 + MulDiv(20, dpi, 96) };
                         ExpectSame(120, 60, tc.cardBg,
-                            [&](HDC dc) { SWP::Cpp::PaintToggleSwitch(dc, rc, on != 0, false, tc); },
+                            [&](HDC dc) { SWP::PaintToggleSwitch(dc, rc, on != 0, false, tc); },
                             [&](HDC dc) { dime_settings_paint_toggle(dc, &rc, on, 0, &tc); },
                             L"toggle");
                     }
                     RECT sw = { 3, 4, 3 + MulDiv(28, dpi, 96), 4 + MulDiv(28, dpi, 96) };
                     ExpectSame(80, 80, tc.cardBg,
-                        [&](HDC dc) { SWP::Cpp::PaintSwatch(dc, sw, RGB(200, 30, 90), tc.cardBorder, MulDiv(4, dpi, 96)); },
+                        [&](HDC dc) { SWP::PaintSwatch(dc, sw, RGB(200, 30, 90), tc.cardBorder, MulDiv(4, dpi, 96)); },
                         [&](HDC dc) { dime_settings_paint_swatch(dc, &sw, RGB(200, 30, 90), tc.cardBorder, MulDiv(4, dpi, 96)); },
                         L"swatch");
 
                     SWP::Fonts f = {};
-                    SWP::Cpp::CreateFonts(dpi, &f);
+                    SWP::CreateFonts(dpi, &f);
                     for (int state = 0; state < 3; state++) {
                         for (const wchar_t* text : { L"載入", L"還原預設值", L"" }) {
                             RECT rc = { 2, 3, 2 + MulDiv(120, dpi, 96), 3 + MulDiv(28, dpi, 96) };
                             ExpectSame(300, 80, RGB(255, 0, 255),
-                                [&](HDC dc) { SWP::Cpp::PaintOwnerButton(dc, rc, text, state == 1, state == 2, tc, f.body, dpi); },
+                                [&](HDC dc) { SWP::PaintOwnerButton(dc, rc, text, state == 1, state == 2, tc, f.body, dpi); },
                                 [&](HDC dc) { dime_settings_paint_button(dc, &rc, (const uint16_t*)text, state == 1, state == 2, &tc, f.body, dpi); },
                                 L"button");
                         }
@@ -284,12 +284,12 @@ namespace DIMEUnitTests
                 for (UINT dpi : { 96u, 144u }) {
                     for (COLORREF face : { RGB(240, 240, 240), RGB(32, 32, 32) }) {
                         HDC screen = GetDC(nullptr);
-                        int a = SWP::Cpp::CandidatePreviewHeight(screen, s, dpi);
+                        int a = SWP::CandidatePreviewHeight(screen, s, dpi);
                         int b = dime_settings_preview_height(screen, &s, dpi);
                         ReleaseDC(nullptr, screen);
                         Assert::AreEqual(a, b, L"preview height");
                         ExpectSame(600, a + 40, face,
-                            [&](HDC dc) { SWP::Cpp::PaintCandidatePreview(dc, s, 20, 20, 500, a, dpi, face); },
+                            [&](HDC dc) { SWP::PaintCandidatePreview(dc, s, 20, 20, 500, a, dpi, face); },
                             [&](HDC dc) { dime_settings_paint_preview(dc, &s, 20, 20, 500, a, dpi, face); },
                             L"preview " + std::to_wstring(v));
                     }
@@ -311,18 +311,18 @@ namespace DIMEUnitTests
                         c.ctx.currentCardIndex = sel % 3;
                         c.ctx.sidebarNarrowMode = sel % 2;
                         ExpectSame(MulDiv(300, dpi, 96), c.ctx.clientH, RGB(255, 0, 255),
-                            [&](HDC dc) { SWP::Cpp::PaintSidebar(dc, c.ctx); },
+                            [&](HDC dc) { SWP::PaintSidebar(dc, c.ctx); },
                             [&](HDC dc) { dime_settings_paint_sidebar(dc, &c.ctx); },
                             L"sidebar");
                         ExpectSame(c.ctx.clientW, MulDiv(44, dpi, 96), c.ctx.theme.contentBg,
-                            [&](HDC dc) { SWP::Cpp::PaintBreadcrumb(dc, c.ctx); },
+                            [&](HDC dc) { SWP::PaintBreadcrumb(dc, c.ctx); },
                             [&](HDC dc) { dime_settings_paint_breadcrumb(dc, &c.ctx); },
                             L"breadcrumb");
                         for (int noMdl2 = 0; noMdl2 < 2; noMdl2++) {
                             Ctx h(dark, dpi, sel, noMdl2 != 0);
                             RECT rc = { 4, 2, 4 + MulDiv(36, dpi, 96), 2 + MulDiv(36, dpi, 96) };
                             ExpectSame(80, 80, RGB(255, 0, 255),
-                                [&](HDC dc) { SWP::Cpp::PaintHamburger(dc, h.ctx, rc, h.content); },
+                                [&](HDC dc) { SWP::PaintHamburger(dc, h.ctx, rc, h.content); },
                                 [&](HDC dc) { dime_settings_paint_hamburger(dc, &h.ctx, &rc, h.content); },
                                 L"hamburger");
                         }
@@ -330,7 +330,7 @@ namespace DIMEUnitTests
                     Ctx collapsed(dark, dpi, 0);
                     collapsed.ctx.sidebarCollapsed = 1;
                     ExpectSame(200, 200, RGB(255, 0, 255),
-                        [&](HDC dc) { SWP::Cpp::PaintSidebar(dc, collapsed.ctx); },
+                        [&](HDC dc) { SWP::PaintSidebar(dc, collapsed.ctx); },
                         [&](HDC dc) { dime_settings_paint_sidebar(dc, &collapsed.ctx); },
                         L"collapsed sidebar", false);
                 }
@@ -365,7 +365,7 @@ namespace DIMEUnitTests
                             for (int i = 0; i < SWP::kToggleSlots; i++)
                                 c.ctx.toggleOn[i] = (BYTE)(rng() % 2);
                             ExpectSame(c.ctx.clientW, c.ctx.clientH, RGB(255, 0, 255),
-                                [&](HDC dc) { SWP::Cpp::PaintContent(dc, c.ctx); },
+                                [&](HDC dc) { SWP::PaintContent(dc, c.ctx); },
                                 [&](HDC dc) { dime_settings_paint_content(dc, &c.ctx); },
                                 L"page mode=" + std::to_wstring(mode) + L" card=" + std::to_wstring(nav)
                                     + L" dpi=" + std::to_wstring(dpi) + (dark ? L" dark" : L" light"));
@@ -378,7 +378,7 @@ namespace DIMEUnitTests
                         for (int i = 0; i < SettingsWindowLayout::kExpandedSlots; i++)
                             c.ctx.cardExpanded[i] = exp != 0;
                         ExpectSame(c.ctx.clientW, c.ctx.clientH, RGB(255, 0, 255),
-                            [&](HDC dc) { SWP::Cpp::PaintContent(dc, c.ctx); },
+                            [&](HDC dc) { SWP::PaintContent(dc, c.ctx); },
                             [&](HDC dc) { dime_settings_paint_content(dc, &c.ctx); },
                             L"load-table page");
                     }
@@ -412,13 +412,13 @@ namespace DIMEUnitTests
                                     content.clientH = m.ctx.clientH - (nav == 1 && sel < 4 ? MulDiv(44, dpi, 96) : 0);
                                     for (int hasContent = 0; hasContent < 2; hasContent++) {
                                         ExpectSame(m.ctx.clientW, m.ctx.clientH, RGB(255, 0, 255),
-                                            [&](HDC dc) { SWP::Cpp::PaintMainFrame(dc, m.ctx, hasContent != 0); },
+                                            [&](HDC dc) { SWP::PaintMainFrame(dc, m.ctx, hasContent != 0); },
                                             [&](HDC dc) { dime_settings_paint_main_frame(dc, &m.ctx, hasContent); },
                                             L"main frame", collapsed == 0 || (nav == 1 && sel < 4 && hasContent != 0));
                                         frames++;
                                     }
                                     ExpectSame(content.clientW, content.clientH, RGB(255, 0, 255),
-                                        [&](HDC dc) { SWP::Cpp::PaintContentFrame(dc, content, m.ctx); },
+                                        [&](HDC dc) { SWP::PaintContentFrame(dc, content, m.ctx); },
                                         [&](HDC dc) { dime_settings_paint_content_frame(dc, &content, &m.ctx); },
                                         L"content frame narrow=" + std::to_wstring(narrow) + L" collapsed=" + std::to_wstring(collapsed)
                                             + L" nav=" + std::to_wstring(nav) + L" sel=" + std::to_wstring(sel));
@@ -448,7 +448,7 @@ namespace DIMEUnitTests
             for (bool dark : { false, true }) {
                 for (UINT dpi : { 96u, 144u, 0u }) {
                     SWP::Fonts f = {};
-                    SWP::Cpp::CreateFonts(dpi ? dpi : 96, &f);
+                    SWP::CreateFonts(dpi ? dpi : 96, &f);
                     SettingsOwnerDraw::Context ctx = {};
                     ctx.theme = ComputeThemeColors(dark);
                     ctx.fontBody = f.body;
@@ -478,7 +478,7 @@ namespace DIMEUnitTests
                                 bool ra = false, rb = false;
                                 bool ours = (it.type == ODT_BUTTON) || (it.type == ODT_STATIC && it.id >= 4000 && it.id < 4006);
                                 ExpectSame(w, h, RGB(255, 0, 255),
-                                    [&](HDC dc) { DRAWITEMSTRUCT d = dis; d.hDC = dc; ra = SettingsOwnerDraw::Cpp::DrawItem(&d, ctx); },
+                                    [&](HDC dc) { DRAWITEMSTRUCT d = dis; d.hDC = dc; ra = SettingsOwnerDraw::Rust::DrawItem(&d, ctx); },
                                     [&](HDC dc) { DRAWITEMSTRUCT d = dis; d.hDC = dc; rb = SettingsOwnerDraw::Rust::DrawItem(&d, ctx); },
                                     L"draw item type=" + std::to_wstring(it.type) + L" id=" + std::to_wstring(it.id)
                                         + L" state=" + std::to_wstring(state) + L" dark=" + std::to_wstring(dark)
@@ -514,7 +514,7 @@ namespace DIMEUnitTests
                     SetBkColor(da, RGB(4, 5, 6)); SetBkColor(db, RGB(4, 5, 6));
                     HBRUSH given = preset ? CreateSolidBrush(RGB(9, 9, 9)) : nullptr;
                     HBRUSH ba = given, bb = given;
-                    bool ra = SettingsOwnerDraw::Cpp::CtlColor(da, dark, tc, &ba);
+                    bool ra = SettingsOwnerDraw::Rust::CtlColor(da, dark, tc, &ba);
                     bool rb = SettingsOwnerDraw::Rust::CtlColor(db, dark, tc, &bb);
                     std::wstring what = L"dark=" + std::to_wstring(dark) + L" preset=" + std::to_wstring(preset);
                     Assert::AreEqual(ra, rb, (what + L" handled").c_str());
@@ -561,10 +561,10 @@ namespace DIMEUnitTests
                         for (int icon = 0; icon < 2; icon++) {
                             HICON hIcon = icon ? LoadIcon(nullptr, IDI_WARNING) : nullptr;
                             SettingsWindowLayout::MsgBoxLayout L =
-                                SettingsWindowLayout::Cpp::MsgBoxLayoutFor(hIcon != nullptr, count, 250, 40, dpi);
+                                SettingsWindowLayout::MsgBoxLayoutFor(hIcon != nullptr, count, 250, 40, dpi);
                             const wchar_t* text = L"儲存失敗：偵測到 3 個格式錯誤行，第一個錯誤在第 2 行。";
                             ExpectSame(L.rcClient.right, L.rcClient.bottom, RGB(255, 0, 255),
-                                [&](HDC dc) { SWP::Cpp::PaintMsgBox(dc, L, text, labels, count, count - 1, 0, tc, font, hIcon, dpi); },
+                                [&](HDC dc) { SWP::PaintMsgBox(dc, L, text, labels, count, count - 1, 0, tc, font, hIcon, dpi); },
                                 [&](HDC dc) { dime_settings_paint_msgbox(dc, &L, (const uint16_t*)text, (const uint16_t* const*)labels, count, count - 1, 0, &tc, font, hIcon, dpi); },
                                 L"msgbox");
                         }

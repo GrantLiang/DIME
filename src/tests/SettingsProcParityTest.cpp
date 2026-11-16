@@ -146,7 +146,7 @@ namespace
                     if (rng() % 3 == 0) la = lb = 0;
                     break;
                 }
-                LRESULT ra = content ? SP::Cpp::Content(a, msg, w, la) : SP::Cpp::Main(a, msg, w, la);
+                LRESULT ra = content ? SP::Rust::Content(a, msg, w, la) : SP::Rust::Main(a, msg, w, la);
                 LRESULT rb = content ? SP::Rust::Content(b, msg, w, lb) : SP::Rust::Main(b, msg, w, lb);
                 std::wstring what = std::wstring(content ? L"content" : L"main") + L" seq " + std::to_wstring(n)
                     + L" step " + std::to_wstring(step) + L" msg " + std::to_wstring(msg);

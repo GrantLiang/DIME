@@ -274,7 +274,7 @@ namespace
                     for (bool& e : in.expanded) e = true;
                     Page p;
                     p.name = L"sel " + std::to_wstring(sel) + L" nav " + std::to_wstring(nav) + L" card " + std::to_wstring(card);
-                    p.specs = SC::Cpp::BuildSpecs(in, 700, ime, imeCount, lt, ltCount);
+                    p.specs = SC::BuildSpecsRust(in, 700, ime, imeCount, lt, ltCount);
                     if (!p.specs.empty()) out.push_back(p);
                 }
             }
@@ -298,7 +298,7 @@ namespace
         SCH::Context ctx = { parent, GetModuleHandleW(nullptr), font, dark ? 1 : 0, RGB(43, 43, 43), RGB(240, 240, 240) };
         Recorder rec(path);
         if (rust) SCH::CreateRust(rec, ctx, specs);
-        else SCH::Cpp::Create(rec, ctx, specs);
+        else SCH::CreateRust(rec, ctx, specs);
         Pump();
         hostLog = rec.log;
         std::vector<std::wstring> out;

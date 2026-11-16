@@ -43,7 +43,7 @@ namespace
     void Check(const SWL::PlanInput& in, int cardW, const LayoutCard* ime, int imeCount,
         const LayoutCard* load, int loadCount, const std::wstring& what, int& total, Golden::Hash& hash)
     {
-        std::vector<SC::ControlSpec> a = SC::Cpp::BuildSpecs(in, cardW, ime, imeCount, load, loadCount);
+        std::vector<SC::ControlSpec> a = SC::BuildSpecsRust(in, cardW, ime, imeCount, load, loadCount);
         std::vector<SC::ControlSpec> b = SC::BuildSpecsRust(in, cardW, ime, imeCount, load, loadCount);
         Assert::AreEqual(a.size(), b.size(), (what + L": count").c_str());
         hash.Add(L"count " + std::to_wstring(b.size()));

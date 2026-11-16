@@ -34,12 +34,6 @@ typedef HWND (*FindControlFn)(void* ctx, SettingsControlId id);
 // ---- Dispatched (Rust under DIME_USE_RUST_CONFIG) -------------------------
 void Populate(const Inputs& in, FindControlFn find, void* ctx);
 
-namespace Cpp {
-void Populate(const Inputs& in, FindControlFn find, void* ctx);
-} // namespace Cpp
-
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 void PopulateRust(const Inputs& in, FindControlFn find, void* ctx);
-#endif
 
 } // namespace SettingsPopulate
