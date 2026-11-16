@@ -218,6 +218,14 @@
   - **6e**：拿掉 `DimeUseRustEngine`／`DimeTestRustEngine`／`DimeTestRustConfig` 開關與 `DIME_USE_RUST_*`／`DIME_RUST_AVAILABLE` 條件編譯、`TestStubs.cpp`、CI 的全 C++ 矩陣。
   - **6f**：文件（`CLAUDE.md`、`HOW_TO_BUILD.md`、README、本文件）。
 - 每個子步驟單獨 commit，並跑完整測試（x64 與 Win32）。
+- **進度（2026-11-16，6a-1、6a-2）**：✅ 在 `build/phase6` 分支。`src/tests/Golden.*`：`Golden::Check`（錄製或比對 `src/tests/golden/<group>/<name>.txt`，`DIME_GOLDEN_RECORD=1` 重錄）、`Golden::Log`、`Golden::Hash`（FNV-1a）、`Golden::Chunks`（每 N 個項目一行雜湊；比對失敗時把該段的實際輸出寫到測試的標準輸出，斷言訊息會被測試框架截斷）、`Golden::Pick`（只用 `std::mt19937` 的原始輸出，`uniform_int_distribution` 的換算沒有標準規定，換工具鏈就會變）、`Golden::PlatformSuffix`。15 個不比像素的設定對拍（Nav、Frame、Lifecycle、Controls、Populate、Proc、Command、Driver、Editor、WinHost、WindowLayout、App、Main、CinConvert、CliHost）都加了黃金檔；過渡期間仍同時對拍 C++。CI 的 8 個組合（x64／Win32 × Debug／Release × Rust／全 C++）全部通過。讓黃金檔跨機器、跨組態穩定的處理：
+    - WPARAM／LPARAM 的值在 Win32 與 x64 不同：`SettingsProc` 分平台存檔。
+    - 測試自己的結構位址、暫存資料夾、行程 ID 換成名稱（`<cs>`、`<base>`）；機器的深色模式在 App 的記錄中遮掉。
+    - RichEdit 可見的行取決於字型與 dpi：`SettingsEditor` 的黃金檔改用夠高、所有行都可見的編輯器記錄全文的顏色。
+    - 系統的亮／暗主題影響系統色彩模式的即時顏色：新增 `CConfig::testSystemDarkOverride`（`DIME_UNIT_TESTING`）與 `dime_settings_set_system_dark_for_test`（`appenv::SYSTEM_DARK_OVERRIDE`），-1 照常讀系統；App 測試固定亮色。
+    - `Global::isWindows1809OrLater` 在測試行程裡取決於先跑過的測試：App 與 CliHost 測試期間設成 TRUE（`DllMain`／`wWinMain` 的值）並還原。C++ 自己讀 3D 高亮系統色，env 不能固定，黃金檔假設預設（白色）。
+    - Debug CRT 的 `wcscpy_s` 會把 NUL 之後的緩衝區填 0xFE：會進雜湊的緩衝區改用清零的複製（`CopyZ`）。
+    - 機器事實（文件資料夾、`LOGPIXELSY`、對話框結果、反查清單、`SystemFacts`）不錄，6a-4 刪 C++ 時改成對 Rust 結果的絕對斷言。
 
 ## 4. 順序與相依
 
