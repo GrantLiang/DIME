@@ -136,7 +136,7 @@ namespace DIMEUnitTests
                     }
                 }
             }
-            Golden::Check(L"SettingsControls", L"ShippedPages", golden.lines);
+            Golden::Check(L"SettingsControls", L"ShippedPages", golden);
             Assert::IsTrue(total > 2000, (L"specs checked: " + std::to_wstring(total)).c_str());
         }
 
@@ -166,7 +166,7 @@ namespace DIMEUnitTests
                     hash = Golden::Hash();
                 }
             }
-            Golden::Check(L"SettingsControls", L"SyntheticPages", golden.lines);
+            Golden::Check(L"SettingsControls", L"SyntheticPages", golden);
             Assert::IsTrue(total > 3000, (L"specs checked: " + std::to_wstring(total)).c_str());
         }
     };

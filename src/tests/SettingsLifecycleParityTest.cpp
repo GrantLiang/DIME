@@ -96,7 +96,7 @@ namespace DIMETests
                     hash = Golden::Hash();
                 }
             }
-            Golden::Check(L"SettingsLifecycle", L"LaunchAndCopyData", golden.lines);
+            Golden::Check(L"SettingsLifecycle", L"LaunchAndCopyData", golden);
             Assert::IsTrue(total > 20000, L"command lines");
         }
 
@@ -144,7 +144,7 @@ namespace DIMETests
                 }
                 cases++;
             }
-            Golden::Check(L"SettingsLifecycle", L"DefaultExpanded", golden.lines);
+            Golden::Check(L"SettingsLifecycle", L"DefaultExpanded", golden);
             Assert::AreEqual(3000, cases);
         }
 
@@ -184,7 +184,7 @@ namespace DIMETests
                     hash = Golden::Hash();
                 }
             }
-            Golden::Check(L"SettingsLifecycle", L"PlanScroll", golden.lines);
+            Golden::Check(L"SettingsLifecycle", L"PlanScroll", golden);
             Assert::IsTrue(actions > 1000, L"show / hide coverage");
         }
     };

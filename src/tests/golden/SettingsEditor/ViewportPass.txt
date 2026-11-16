@@ -1,60 +1,60 @@
-iter 0 visible 0..10 chars 613 sel 532,532 colours 12110735100ae667
-iter 1 visible 13..18 chars 258 sel 120,123 colours 1adef5fee89d1cb1
-iter 2 visible 38..54 chars 802 sel 42,42 colours 2bc3de2029fda065
-iter 3 visible 0..3 chars 24 sel 18,18 colours 4b17ffe8a76ece19
-iter 4 visible 33..38 chars 601 sel 208,209 colours 1607531b32343fe1
-iter 5 visible 42..47 chars 731 sel 16,19 colours a0d03f09ad4c6d41
-iter 6 visible 6..16 chars 424 sel 14,14 colours 8719e0290eac7383
-iter 7 visible 28..28 chars 214 sel 186,186 colours e905564dfd34e203
-iter 8 visible 17..28 chars 325 sel 198,200 colours 1a2f2bbec5cacc86
-iter 9 visible 13..25 chars 249 sel 189,193 colours 06ee6cf02f40dc98
-iter 10 visible 9..19 chars 243 sel 189,192 colours 25f2802ab7387c43
-iter 11 visible 0..7 chars 75 sel 53,53 colours be2118e1ac9ce341
-iter 12 visible 12..12 chars 88 sel 74,77 colours e68c3e8ccc5382ea
-iter 13 visible 14..24 chars 660 sel 48,48 colours 1e5aa90318fe1b51
-iter 14 visible 10..24 chars 326 sel 261,263 colours 1c9fd702f45149d1
-iter 15 visible 41..56 chars 605 sel 163,164 colours 8961f014dc84bef7
-iter 16 visible 12..24 chars 758 sel 560,560 colours 8fc4963ff0a5ba23
-iter 17 visible 19..31 chars 714 sel 615,615 colours b873a6466942dba3
-iter 18 visible 48..62 chars 864 sel 206,209 colours 18e3f2531b9b8551
-iter 19 visible 50..50 chars 372 sel 253,254 colours 4dfc6e29fea882cd
-iter 20 visible 13..18 chars 129 sel 56,57 colours 0ca4500ea67add46
-iter 21 visible 16..16 chars 125 sel 32,34 colours 419a6a2e8da04fe1
-iter 22 visible 6..13 chars 849 sel 484,488 colours ed2b4d33c664889c
-iter 23 visible 19..24 chars 617 sel 388,388 colours aca8b5dc47cadab3
-iter 24 visible 33..43 chars 552 sel 69,73 colours 2e427c928e15bc11
-iter 25 visible 37..42 chars 317 sel 245,245 colours 00073f061c3784f5
-iter 26 visible 25..33 chars 638 sel 114,114 colours bbd4c297c82270e5
-iter 27 visible 37..42 chars 298 sel 65,67 colours 0e8cce85b1176e51
-iter 28 visible 25..35 chars 230 sel 57,60 colours ed60852e6293fefc
-iter 29 visible 0..5 chars 38 sel 15,16 colours 2cc02bbf0ebf7f1a
-iter 30 visible 46..51 chars 656 sel 438,439 colours e5b71c63aa233ff8
-iter 31 visible 56..72 chars 743 sel 4,8 colours 955024698c114ad7
-iter 32 visible 3..16 chars 666 sel 546,548 colours 5b6b199e31b163a3
-iter 33 visible 30..30 chars 229 sel 85,85 colours 5a03bf2133e0c819
-iter 34 visible 57..63 chars 444 sel 381,381 colours 7a9142d538bf022d
-iter 35 visible 47..59 chars 598 sel 514,514 colours c6297b9e8fdd69b2
-iter 36 visible 16..25 chars 784 sel 406,407 colours e1065a71166ac531
-iter 37 visible 4..13 chars 285 sel 45,46 colours 134dea1447f38633
-iter 38 visible 42..48 chars 780 sel 137,140 colours 4de863210d3f8cb1
-iter 39 visible 42..55 chars 449 sel 310,310 colours a54691692ae60f65
-iter 40 visible 41..51 chars 368 sel 170,170 colours eb676e74c1527e37
-iter 41 visible 37..37 chars 258 sel 76,78 colours 6d9967d00e7e5cf3
-iter 42 visible 26..36 chars 741 sel 244,248 colours cf8047c788c59b61
-iter 43 visible 27..37 chars 535 sel 436,439 colours a51d1d9894f95f01
-iter 44 visible 20..31 chars 282 sel 12,16 colours a410987c21393a67
-iter 45 visible 41..41 chars 293 sel 235,238 colours 2c0140228992b407
-iter 46 visible 31..31 chars 236 sel 205,205 colours 07d93985ca8d73c3
-iter 47 visible 19..31 chars 764 sel 6,9 colours e93b8753f260ff9e
-iter 48 visible 20..30 chars 509 sel 232,233 colours 8d85fc9e7a99feb1
-iter 49 visible 0..2 chars 24 sel 18,21 colours 1dbeff01e92e69d8
-iter 50 visible 52..61 chars 416 sel 268,272 colours 24c890719c5f918d
-iter 51 visible 9..22 chars 780 sel 448,452 colours 7018737f605d842f
-iter 52 visible 39..48 chars 335 sel 247,248 colours 874652be60265515
-iter 53 visible 0..0 chars 7 sel 2,2 colours f815e29606362353
-iter 54 visible 31..32 chars 208 sel 90,94 colours 037255ba9cc29431
-iter 55 visible 46..51 chars 359 sel 308,308 colours 0cfa8bb5def4338a
-iter 56 visible 7..23 chars 573 sel 488,489 colours 592c5ef0c64b8b9b
-iter 57 visible 6..14 chars 790 sel 639,639 colours 10181f22c3e530e3
-iter 58 visible 9..9 chars 67 sel 26,26 colours 66ac1957a6f202b3
-iter 59 visible 48..54 chars 404 sel 350,350 colours 592124a84b768031
+iter 0 lines 0..81 chars 613 colours cc7611385c6ab73d
+iter 1 lines 0..36 chars 258 colours b7d46bd114bb8263
+iter 2 lines 0..105 chars 802 colours 7355f326af0ef82b
+iter 3 lines 0..3 chars 24 colours 4b17ffe8a76ece19
+iter 4 lines 0..78 chars 601 colours 85afb3b5608fcc73
+iter 5 lines 0..101 chars 731 colours a9a26b7176288b31
+iter 6 lines 0..63 chars 424 colours 39a05baec97bf383
+iter 7 lines 0..28 chars 214 colours ce650d503c7aa018
+iter 8 lines 0..47 chars 325 colours 5dc293ca8134edad
+iter 9 lines 0..32 chars 249 colours 265e1e7506737452
+iter 10 lines 0..33 chars 243 colours bfe48e46116e14a5
+iter 11 lines 0..8 chars 75 colours da6df409f337e8c1
+iter 12 lines 0..12 chars 88 colours ff1831250ea83cf9
+iter 13 lines 0..83 chars 660 colours cbb1052afc1d4ac3
+iter 14 lines 0..47 chars 326 colours 67e368cde9b4fa57
+iter 15 lines 0..83 chars 605 colours 22ad27883796d413
+iter 16 lines 0..103 chars 758 colours 07e4bbc3142a3523
+iter 17 lines 0..99 chars 714 colours 900683174a73b951
+iter 18 lines 0..117 chars 864 colours c193fe627698edf1
+iter 19 lines 0..50 chars 372 colours 01e37cb6b60b7200
+iter 20 lines 0..18 chars 129 colours 20bf69693c0cd537
+iter 21 lines 0..16 chars 125 colours 7171ef58dd124121
+iter 22 lines 0..110 chars 849 colours 511bef7c14a213ac
+iter 23 lines 0..85 chars 617 colours d38c18c475838053
+iter 24 lines 0..81 chars 552 colours 22a5ba685dfb4171
+iter 25 lines 0..42 chars 317 colours 4cffcdf187ab29b7
+iter 26 lines 0..88 chars 638 colours 793eea2a8d764241
+iter 27 lines 0..42 chars 298 colours fd17b4db980f1251
+iter 28 lines 0..35 chars 230 colours 045e97fba8e9ae20
+iter 29 lines 0..5 chars 38 colours 2cc02bbf0ebf7f1a
+iter 30 lines 0..85 chars 656 colours 28f236648054b6f6
+iter 31 lines 0..96 chars 743 colours 4aaa1aaf2568c045
+iter 32 lines 0..91 chars 666 colours f4862922e1e943e3
+iter 33 lines 0..30 chars 229 colours ddc5b01abb2bb284
+iter 34 lines 0..63 chars 444 colours d491cab86953f747
+iter 35 lines 0..84 chars 598 colours fb15683c0f35581b
+iter 36 lines 0..108 chars 784 colours b3fcd19115dbc2e3
+iter 37 lines 0..39 chars 285 colours 038032bc01bdcaa1
+iter 38 lines 0..106 chars 780 colours 93a0fa59b01552e8
+iter 39 lines 0..62 chars 449 colours 6aaa55d1f61821e7
+iter 40 lines 0..53 chars 368 colours 1a5cf6dea9d42e77
+iter 41 lines 0..37 chars 258 colours 69f3488c961cfea4
+iter 42 lines 0..104 chars 741 colours 7cffa36ae535bde7
+iter 43 lines 0..69 chars 535 colours 307bd69dd215d001
+iter 44 lines 0..40 chars 282 colours 8f255d26ee7149e5
+iter 45 lines 0..41 chars 293 colours 4944eadbc0916745
+iter 46 lines 0..31 chars 236 colours 9006a9b6d72ceba3
+iter 47 lines 0..107 chars 764 colours f839c24377cc7e5c
+iter 48 lines 0..72 chars 509 colours 66f16a0933df50b7
+iter 49 lines 0..2 chars 24 colours 1dbeff01e92e69d8
+iter 50 lines 0..61 chars 416 colours aabd462e450e4bf0
+iter 51 lines 0..112 chars 780 colours 02ba9a11182cb071
+iter 52 lines 0..49 chars 335 colours 9888e3c0621c0e41
+iter 53 lines 0..0 chars 7 colours f815e29606362353
+iter 54 lines 0..32 chars 208 colours 7b9f6521eb5c92d5
+iter 55 lines 0..51 chars 359 colours 274cab827ba1bc9c
+iter 56 lines 0..79 chars 573 colours 6c7a3ff32a2ce224
+iter 57 lines 0..106 chars 790 colours 9e3f65eecad6ff71
+iter 58 lines 0..9 chars 67 colours 5371e341e2dbc3c6
+iter 59 lines 0..54 chars 404 colours a116f01926bc8d71

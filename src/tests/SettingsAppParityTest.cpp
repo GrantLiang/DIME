@@ -620,7 +620,7 @@ namespace DIMEUnitTests
                 }
                 ch.Finish();
             }
-            Golden::Check(L"SettingsApp", L"RandomOperations", golden.lines);
+            Golden::Check(L"SettingsApp", L"RandomOperations", golden);
             Assert::IsTrue(loads > 100, std::to_wstring(loads).c_str());
         }
 
@@ -664,7 +664,7 @@ namespace DIMEUnitTests
             Global::imeMode = savedMode;
             RemoveTree(base);
             Assert::IsTrue(failure.empty(), failure.c_str());
-            Golden::Check(L"SettingsApp", L"EngineKeys", golden.lines);
+            Golden::Check(L"SettingsApp", L"EngineKeys", golden);
             Logger::WriteMessage((L"engine states with radical keys: " + std::to_wstring(keyed) + L"\n").c_str());
             Assert::IsTrue(keyed >= 8, std::to_wstring(keyed).c_str());
         }

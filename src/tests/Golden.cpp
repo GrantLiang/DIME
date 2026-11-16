@@ -53,7 +53,7 @@ void Record(const std::wstring& group, const std::wstring& name, const std::vect
 }
 
 void CompareFile(const std::wstring& group, const std::wstring& name, const std::vector<std::wstring>& lines,
-    const std::wstring& who)
+    const std::wstring& who, const std::vector<std::wstring>* details = nullptr)
 {
     std::wstring path = PathOf(group, name);
     std::ifstream f(path, std::ios::binary);
@@ -71,9 +71,12 @@ void CompareFile(const std::wstring& group, const std::wstring& name, const std:
         std::wstring a = i < lines.size() ? Escape(lines[i]) : L"<end of output>";
         if (e != a) {
             std::wstring before = i > 0 && i - 1 < expected.size() ? expected[i - 1] : L"";
+            std::wstring detail;
+            if (details && i < details->size() && !(*details)[i].empty())
+                detail = L"\n  actual output behind this line:\n" + (*details)[i].substr(0, 6000);
             Assert::Fail((group + L"/" + name + (who.empty() ? L"" : L" (" + who + L")") + L" line "
-                + std::to_wstring(i + 1) + L"\n  expected: " + e + L"\n    actual: " + a + L"\n    before: " + before)
-                    .c_str());
+                + std::to_wstring(i + 1) + L"\n  expected: " + e + L"\n    actual: " + a + L"\n    before: " + before
+                + detail).c_str());
         }
     }
 }
@@ -104,6 +107,12 @@ void Check(const std::wstring& group, const std::wstring& name, const std::vecto
     else CompareFile(group, name, lines, L"");
 }
 
+void Check(const std::wstring& group, const std::wstring& name, const Log& log)
+{
+    if (Recording()) Record(group, name, log.lines);
+    else CompareFile(group, name, log.lines, L"", &log.details);
+}
+
 void Compare(const std::wstring& group, const std::wstring& name, const std::vector<std::wstring>& lines,
     const std::wstring& who)
 {
@@ -115,8 +124,8 @@ void Log::AddText(const std::wstring& text)
     size_t start = 0;
     while (start < text.size()) {
         size_t nl = text.find(L'\n', start);
-        if (nl == std::wstring::npos) { lines.push_back(text.substr(start)); break; }
-        lines.push_back(text.substr(start, nl - start));
+        if (nl == std::wstring::npos) { Add(text.substr(start)); break; }
+        Add(text.substr(start, nl - start));
         start = nl + 1;
     }
 }
@@ -150,12 +159,31 @@ std::wstring Hash::Hex() const
     return buf;
 }
 
+void Chunks::Add(const std::wstring& line)
+{
+    hash.Add(line);
+    if (detail.size() < 20000) detail += line + L"\n";
+}
+
+void Chunks::Add(const void* bytes, size_t n)
+{
+    hash.Add(bytes, n);
+    if (detail.size() < 20000) {
+        static const wchar_t* d = L"0123456789abcdef";
+        detail += L"[" + std::to_wstring(n) + L" bytes] ";
+        const unsigned char* p = (const unsigned char*)bytes;
+        for (size_t i = 0; i < n && i < 256; i++) { detail += d[p[i] >> 4]; detail += d[p[i] & 15]; }
+        detail += L"\n";
+    }
+}
+
 void Chunks::Next()
 {
     items++;
     if (items - first == size) {
-        log.Add(label + L" " + std::to_wstring(first) + L".." + std::to_wstring(items - 1) + L" " + hash.Hex());
+        log.Add(label + L" " + std::to_wstring(first) + L".." + std::to_wstring(items - 1) + L" " + hash.Hex(), detail);
         hash = Hash();
+        detail.clear();
         first = items;
     }
 }
@@ -163,8 +191,9 @@ void Chunks::Next()
 void Chunks::Finish()
 {
     if (items > first)
-        log.Add(label + L" " + std::to_wstring(first) + L".." + std::to_wstring(items - 1) + L" " + hash.Hex());
+        log.Add(label + L" " + std::to_wstring(first) + L".." + std::to_wstring(items - 1) + L" " + hash.Hex(), detail);
     hash = Hash();
+    detail.clear();
     first = items;
 }
 

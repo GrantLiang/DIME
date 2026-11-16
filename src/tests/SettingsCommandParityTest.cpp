@@ -243,7 +243,7 @@ namespace DIMEUnitTests
             static const wchar_t* edits[] = { L"4", L"7", L"0", L"12", L"\xFF15", L"x", L"", L" 3", L"99999999999" };
             int calls = 0, messages = 0, applies = 0;
             Golden::Log golden;
-            Golden::Hash hash;
+            Golden::Chunks hash(golden, L"iters", 100);
             for (int iter = 0; iter < 20000; iter++) {
                 Script sc = RandomScript(rng);
                 SC::CommandEvent ev = {};
@@ -288,12 +288,10 @@ namespace DIMEUnitTests
                 for (const auto& line : hb.log) hash.Add(line);
                 hash.Add(&sb, sizeof(sb));
                 hash.Add(L"grid " + std::to_wstring(gb));
-                if (iter % 100 == 99) {
-                    golden.Add(L"iters " + std::to_wstring(iter - 99) + L".." + std::to_wstring(iter) + L" " + hash.Hex());
-                    hash = Golden::Hash();
-                }
+                hash.Next();
             }
-            Golden::Check(L"SettingsCommand", L"RandomCommands", golden.lines);
+            hash.Finish();
+            Golden::Check(L"SettingsCommand", L"RandomCommands", golden);
             Assert::IsTrue(calls > 20000 && messages > 300 && applies > 1000,
                 (L"coverage: calls " + std::to_wstring(calls) + L" messages " + std::to_wstring(messages)
                     + L" applies " + std::to_wstring(applies)).c_str());

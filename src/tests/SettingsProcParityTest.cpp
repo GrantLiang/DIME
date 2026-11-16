@@ -169,7 +169,7 @@ namespace
         }
         // WPARAM / LPARAM are 32 bits on Win32: the logged values differ by platform.
         Golden::Check(L"SettingsProc", std::wstring(content ? L"ContentArea" : L"MainWindow") + Golden::PlatformSuffix(),
-            golden.lines);
+            golden);
         Assert::IsTrue(calls >= sequences * steps, L"messages");
     }
 }

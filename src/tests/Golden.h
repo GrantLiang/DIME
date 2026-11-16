@@ -32,6 +32,10 @@ const wchar_t* PlatformSuffix();
 // Records `lines` as <group>/<name> when recording; otherwise compares them
 // with the file and fails at the first difference.
 void Check(const std::wstring& group, const std::wstring& name, const std::vector<std::wstring>& lines);
+class Log;
+// The same for a Log; a failure also shows the details behind the line (the
+// output a Chunks hash stands for), to compare with a local run.
+void Check(const std::wstring& group, const std::wstring& name, const Log& log);
 
 // Compares only (never records): for a second implementation that must
 // produce the recorded output too, e.g. the C++ side while it still exists.
@@ -42,10 +46,15 @@ void Compare(const std::wstring& group, const std::wstring& name, const std::vec
 // Collects lines for one golden file.
 class Log {
 public:
-    void Add(const std::wstring& line) { lines.push_back(line); }
+    void Add(const std::wstring& line, const std::wstring& detail = std::wstring())
+    {
+        lines.push_back(line);
+        details.push_back(detail);
+    }
     // Several lines, split at '\n' (a trailing '\n' adds no empty line).
     void AddText(const std::wstring& text);
     std::vector<std::wstring> lines;
+    std::vector<std::wstring> details;   // per line; shown when it differs
 };
 
 // A value in [lo, hi] from the raw output of `rng`. std::mt19937's sequence
@@ -71,8 +80,8 @@ private:
 class Chunks {
 public:
     Chunks(Log& log, const std::wstring& label, int size) : log(log), label(label), size(size) {}
-    void Add(const std::wstring& line) { hash.Add(line); }
-    void Add(const void* bytes, size_t n) { hash.Add(bytes, n); }
+    void Add(const std::wstring& line);
+    void Add(const void* bytes, size_t n);
     // Ends one item.
     void Next();
     // Writes the last, shorter chunk.
@@ -83,6 +92,7 @@ private:
     int size;
     int items = 0, first = 0;
     Hash hash;
+    std::wstring detail;
 };
 
 // `s` with every occurrence of `from` replaced by `to`.

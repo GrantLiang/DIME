@@ -155,7 +155,7 @@ namespace DIMEUnitTests
                 }
                 golden.Add(L"run " + std::to_wstring(run) + L" " + Describe(b) + L" " + hash.Hex());
             }
-            Golden::Check(L"SettingsNav", L"RandomEventSequences", golden.lines);
+            Golden::Check(L"SettingsNav", L"RandomEventSequences", golden);
             Assert::IsTrue(effects > 20000 && switches > 100 && toggles > 50 && rebuilds > 500,
                 (L"coverage: effects " + std::to_wstring(effects) + L" switches " + std::to_wstring(switches)
                     + L" toggles " + std::to_wstring(toggles) + L" rebuilds " + std::to_wstring(rebuilds)).c_str());
@@ -171,7 +171,7 @@ namespace DIMEUnitTests
                 Assert::AreEqual(a.y, b.y);
                 golden.Add(L"dpi " + std::to_wstring(dpi) + L": " + std::to_wstring(b.x) + L"x" + std::to_wstring(b.y));
             }
-            Golden::Check(L"SettingsNav", L"MinTrackSize", golden.lines);
+            Golden::Check(L"SettingsNav", L"MinTrackSize", golden);
         }
     };
 }

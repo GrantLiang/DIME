@@ -332,7 +332,7 @@ namespace DIMETests
                 }
                 golden.Add(L"run " + std::to_wstring(run) + L" " + Describe(sb) + L" " + hash.Hex());
             }
-            Golden::Check(L"SettingsDriver", L"RandomOperationSequences", golden.lines);
+            Golden::Check(L"SettingsDriver", L"RandomOperationSequences", golden);
             std::wstring cov = L"coverage: nav " + std::to_wstring(ops[0]) + L" frame " + std::to_wstring(ops[1])
                 + L" switch " + std::to_wstring(ops[2]) + L" rebuild " + std::to_wstring(ops[3])
                 + L" calls " + std::to_wstring(calls) + L" toggles " + std::to_wstring(toggles)

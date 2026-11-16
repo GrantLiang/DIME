@@ -246,7 +246,7 @@ namespace DIMETests
                 golden.Add(L"fixed " + std::to_wstring(i) + L": " + std::to_wstring(rust.size()) + L" bytes " + h.Hex());
             }
             ch.Finish();
-            Golden::Check(L"SettingsMain", L"ConsoleWrite", golden.lines);
+            Golden::Check(L"SettingsMain", L"ConsoleWrite", golden);
             DeleteFileW((dir + L"\\cpp.bin").c_str());
             DeleteFileW((dir + L"\\rust.bin").c_str());
             RemoveDirectoryW(dir.c_str());
@@ -275,7 +275,7 @@ namespace DIMETests
                 Assert::AreEqual(UcrtCmdLine(line), got, line.c_str());
                 golden.Add(L"[" + line + L"] -> [" + got + L"]");
             }
-            Golden::Check(L"SettingsMain", L"ProgramName", golden.lines);
+            Golden::Check(L"SettingsMain", L"ProgramName", golden);
         }
 
         TEST_METHOD(ExecutableCli)
@@ -327,7 +327,7 @@ namespace DIMETests
                 golden.Add(L"[" + line + L"] exit " + std::to_wstring(got) + L" stdout " + std::to_wstring(out.size()) + L" "
                     + ho.Hex() + L" stderr " + std::to_wstring(err.size()) + L" " + he.Hex());
             }
-            Golden::Check(L"SettingsMain", L"ExecutableCli", golden.lines);
+            Golden::Check(L"SettingsMain", L"ExecutableCli", golden);
             for (const wchar_t* n : { L"cpp_out.txt", L"cpp_err.txt", L"rust_out.txt", L"rust_err.txt" })
                 DeleteFileW((dir + L"\\" + n).c_str());
             RemoveDirectoryW(dir.c_str());

@@ -9,9 +9,10 @@
 * wheel, focus) and must post / forward the same messages to the parent and
 * leave the same selection.
 *
-* Golden files (src/tests/golden/SettingsEditor): per viewport case the Rust
-* side's visible range, a hash of the colours, and the selection; per
-* subclass step the parent messages and the selection.
+* Golden files (src/tests/golden/SettingsEditor): per viewport case the
+* colours the Rust pass gives the whole text in an editor tall enough to show
+* every line (which lines a normal editor shows depends on the machine's
+* font and dpi); per subclass step the parent messages and the selection.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -189,16 +190,25 @@ namespace DIMEUnitTests
                 Assert::IsTrue(sa.cpMin == before.cpMin && sa.cpMax == before.cpMax, L"C++ kept the selection");
                 Assert::IsTrue(sb.cpMin == before.cpMin && sb.cpMax == before.cpMax, L"Rust kept the selection");
                 Assert::AreEqual((LRESULT)(ENM_CHANGE | ENM_SCROLL), SendMessageW(b, EM_GETEVENTMASK, 0, 0), L"mask restored");
+                // Which lines are visible depends on the machine's font and
+                // dpi, so the golden file uses an editor tall enough to show
+                // every line: the colours of the whole text.
+                HWND tall = MakeEditor(parent, w, 8000);
+                SetWindowTextW(tall, text.c_str());
+                int ft = -1, lt = -1;
+                dime_settings_editor_viewport(tall, &ft, &lt);
+                dime_settings_editor_validate_viewport(tall, ctx.mode, ctx.maxCodes, ctx.isDark, nullptr, nullptr);
+                std::vector<LONG> ct = Colors(tall);
                 Golden::Hash colours;
-                colours.Add(cb.data(), cb.size() * sizeof(LONG));
-                golden.Add(L"iter " + std::to_wstring(iter) + L" visible " + std::to_wstring(fb) + L".." + std::to_wstring(lb)
-                    + L" chars " + std::to_wstring(cb.size()) + L" sel " + std::to_wstring(sb.cpMin) + L","
-                    + std::to_wstring(sb.cpMax) + L" colours " + colours.Hex());
+                colours.Add(ct.data(), ct.size() * sizeof(LONG));
+                golden.Add(L"iter " + std::to_wstring(iter) + L" lines " + std::to_wstring(ft) + L".." + std::to_wstring(lt)
+                    + L" chars " + std::to_wstring(ct.size()) + L" colours " + colours.Hex());
+                DestroyWindow(tall);
                 DestroyWindow(a);
                 DestroyWindow(b);
             }
             DestroyWindow(parent);
-            Golden::Check(L"SettingsEditor", L"ViewportPass", golden.lines);
+            Golden::Check(L"SettingsEditor", L"ViewportPass", golden);
             Assert::IsTrue(painted > 100, L"some characters got error colours");
         }
 
@@ -253,7 +263,7 @@ namespace DIMEUnitTests
                 golden.Add(what + L": parent" + msgs + L" sel " + std::to_wstring(sb.cpMin) + L"," + std::to_wstring(sb.cpMax)
                     + L" text " + std::to_wstring(GetWindowTextLengthW(b)));
             }
-            Golden::Check(L"SettingsEditor", L"SubclassProc", golden.lines);
+            Golden::Check(L"SettingsEditor", L"SubclassProc", golden);
             // The focus step resets the selection to the start.
             CHARRANGE cr = { 6, 9 };
             SendMessageW(b, EM_EXSETSEL, 0, (LPARAM)&cr);

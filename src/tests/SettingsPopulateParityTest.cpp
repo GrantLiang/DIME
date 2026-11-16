@@ -143,7 +143,7 @@ namespace DIMEUnitTests
                 }
                 golden.Add(L"iter " + std::to_wstring(iter) + L" " + hash.Hex());
             }
-            Golden::Check(L"SettingsPopulate", L"RandomSnapshots", golden.lines);
+            Golden::Check(L"SettingsPopulate", L"RandomSnapshots", golden);
         }
     };
 }

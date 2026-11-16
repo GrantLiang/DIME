@@ -91,7 +91,7 @@ namespace DIMETests
                 golden.Add(L"initial size dpi=" + std::to_wstring(dpi) + L": " + std::to_wstring(b.cx) + L"x"
                     + std::to_wstring(b.cy));
             }
-            Golden::Check(L"SettingsFrame", L"EveryEvent", golden.lines);
+            Golden::Check(L"SettingsFrame", L"EveryEvent", golden);
         }
 
         TEST_METHOD(RandomSequences)
@@ -119,7 +119,7 @@ namespace DIMETests
                 }
                 golden.Add(L"sequence " + std::to_wstring(n) + L" " + hash.Hex());
             }
-            Golden::Check(L"SettingsFrame", L"RandomSequences", golden.lines);
+            Golden::Check(L"SettingsFrame", L"RandomSequences", golden);
             Assert::IsTrue(effects > 50000, L"effects");
         }
     };

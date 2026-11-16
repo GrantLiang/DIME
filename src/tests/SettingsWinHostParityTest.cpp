@@ -156,7 +156,7 @@ namespace DIMETests
             Assert::AreEqual(WH::Cpp::WriteBomFile(missing, L"x"), WH::Rust::WriteBomFile(missing, L"x"), L"missing folder");
             Assert::IsFalse(WH::Rust::WriteBomFile(missing, L"x"), L"missing folder fails");
             RemoveDirectoryW(dir.c_str());
-            Golden::Check(L"SettingsWinHost", L"WriteBomFile", golden.lines);
+            Golden::Check(L"SettingsWinHost", L"WriteBomFile", golden);
         }
 
         TEST_METHOD(PathsAndDpi)
@@ -209,7 +209,7 @@ namespace DIMETests
                 }
                 golden.Add(line);
             }
-            Golden::Check(L"SettingsWinHost", L"EditorCalls", golden.lines);
+            Golden::Check(L"SettingsWinHost", L"EditorCalls", golden);
         }
 
         TEST_METHOD(Dialogs)

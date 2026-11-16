@@ -206,7 +206,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"Widths", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"Widths", golden);
         }
 
         TEST_METHOD(ControlRects)
@@ -241,7 +241,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"ControlRects", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"ControlRects", golden);
         }
 
         TEST_METHOD(RowsOfShippedTables)
@@ -277,7 +277,7 @@ namespace DIMEUnitTests
                 }
                 pageNo++;
             }
-            Golden::Check(L"SettingsWindowLayout", L"RowsOfShippedTables", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"RowsOfShippedTables", golden);
         }
 
         TEST_METHOD(CardListsOfShippedTables)
@@ -300,7 +300,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"CardListsOfShippedTables", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"CardListsOfShippedTables", golden);
             // A null expanded pointer is all collapsed.
             bool none[SWL::kExpandedSlots] = {};
             for (int y = 0; y < 1200; y++)
@@ -323,7 +323,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"SyntheticCardLists", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"SyntheticCardLists", golden);
         }
 
         TEST_METHOD(SubPagesOfShippedTables)
@@ -342,7 +342,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"SubPagesOfShippedTables", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"SubPagesOfShippedTables", golden);
         }
 
         TEST_METHOD(SyntheticSubPages)
@@ -358,7 +358,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"SyntheticSubPages", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"SyntheticSubPages", golden);
         }
 
         TEST_METHOD(PlanControlsShippedTables)
@@ -384,7 +384,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"PlanControlsShippedTables", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"PlanControlsShippedTables", golden);
         }
 
         TEST_METHOD(PlanControlsSynthetic)
@@ -408,7 +408,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"PlanControlsSynthetic", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"PlanControlsSynthetic", golden);
         }
 
         TEST_METHOD(ValidateBuffer)
@@ -443,7 +443,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"ValidateBuffer", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"ValidateBuffer", golden);
         }
 
         TEST_METHOD(ThemedMessageBoxLayout)
@@ -495,7 +495,7 @@ namespace DIMEUnitTests
                 ch.Next();
             }
             ch.Finish();
-            Golden::Check(L"SettingsWindowLayout", L"ThemedMessageBoxLayout", golden.lines);
+            Golden::Check(L"SettingsWindowLayout", L"ThemedMessageBoxLayout", golden);
         }
     };
 }

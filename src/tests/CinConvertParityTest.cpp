@@ -259,7 +259,7 @@ namespace DIMEUnitTests
                 cases++;
             }
             ch.Finish();
-            Golden::Check(L"CinConvert", L"RandomTables", golden.lines);
+            Golden::Check(L"CinConvert", L"RandomTables", golden);
             Logger::WriteMessage((std::to_wstring(cases) + L" random sources\n").c_str());
         }
 
@@ -280,7 +280,7 @@ namespace DIMEUnitTests
                 golden.Add(name + L": " + Compare(d, dir + name, false, name));
                 n++;
             }
-            Golden::Check(L"CinConvert", L"InstallerTables", golden.lines);
+            Golden::Check(L"CinConvert", L"InstallerTables", golden);
             Logger::WriteMessage((std::to_wstring(n) + L" installer tables\n").c_str());
             Assert::IsTrue(n >= 8, std::to_wstring(n).c_str());
         }
@@ -313,7 +313,7 @@ namespace DIMEUnitTests
                 }
             }
             ch.Finish();
-            Golden::Check(L"CinConvert", L"Utf8Pieces", golden.lines);
+            Golden::Check(L"CinConvert", L"Utf8Pieces", golden);
             Logger::WriteMessage((std::to_wstring(n) + L" piece cases\n").c_str());
         }
         TEST_METHOD(MissingSource)
@@ -328,7 +328,7 @@ namespace DIMEUnitTests
             int rr = dime_settings_parse_cin_file((const uint16_t*)d.src.c_str(), (const uint16_t*)d.base.c_str(), 0, 1);
             Assert::AreEqual(rc ? 1 : 0, rr, L"destination is a folder");
             golden.Add(L"destination is a folder: " + std::to_wstring(rr));
-            Golden::Check(L"CinConvert", L"MissingSource", golden.lines);
+            Golden::Check(L"CinConvert", L"MissingSource", golden);
         }
     };
 }

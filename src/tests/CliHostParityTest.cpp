@@ -304,7 +304,7 @@ namespace DIMEUnitTests
                 h.Add(result);
                 golden.Add(result.substr(0, result.find(L'\n')) + L" " + h.Hex());
             }
-            Golden::Check(L"CliHost", L"Commands", golden.lines);
+            Golden::Check(L"CliHost", L"Commands", golden);
             Logger::WriteMessage((std::to_wstring(c.size()) + L" commands, " + std::to_wstring(withFiles) + L" with files\n").c_str());
         }
     };
