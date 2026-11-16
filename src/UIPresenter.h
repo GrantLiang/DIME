@@ -207,6 +207,15 @@ private:
 	void _LayoutChangeApply(const PresenterLayoutFacts& facts);
 	void _LayoutChangeApplyCpp(const PresenterLayoutFacts& facts);
 	void _ReadLayoutFacts(const RECT& comp, BOOL firstCall, PresenterLayoutFacts& facts);
+#ifdef DIME_UNIT_TESTING
+public:
+	// Tests: when set, _ReadLayoutFacts takes hasParent and caret from it
+	// instead of the context view / foreground window and its caret (what
+	// is in the foreground, and where, is the machine's state), and does
+	// not recreate the default font for that window.
+	static const PresenterLayoutFacts* testLayoutFacts;
+private:
+#endif
 	BOOL _NotifyLocationForShow(const PresenterShowFacts& facts);      // caretUpdated
 	BOOL _NotifyLocationForShowCpp(const PresenterShowFacts& facts);
 	void _RestackForShow(BOOL caretUpdated);

@@ -1120,11 +1120,23 @@ VOID CUIPresenter::_LayoutChangeNotification(_In_ RECT *lpRect, BOOL firstCall)
 	_LayoutChangeApply(facts);
 }
 
+#ifdef DIME_UNIT_TESTING
+const PresenterLayoutFacts* CUIPresenter::testLayoutFacts = nullptr;
+#endif
+
 void CUIPresenter::_ReadLayoutFacts(const RECT& comp, BOOL firstCall, PresenterLayoutFacts& facts)
 {
 	facts = {};
 	facts.comp = comp;
 	facts.firstCall = firstCall;
+#ifdef DIME_UNIT_TESTING
+	if (testLayoutFacts)
+	{
+		facts.hasParent = testLayoutFacts->hasParent;
+		facts.caret = testLayoutFacts->caret;
+		return;
+	}
+#endif
 
 	ITfContext *pContext =  _GetContextDocument();
 	ITfContextView * pView = nullptr;

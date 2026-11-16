@@ -310,6 +310,12 @@ namespace DIMEUnitTests
             int savedDark = CConfig::testSystemDarkOverride;
             CConfig::testDpiOverride = 96;
             CConfig::testSystemDarkOverride = 0;   // a light system theme whatever the machine
+            // Show(TRUE) reads the foreground window and its caret (_ReadLayoutFacts):
+            // the same for all three presenters, whatever is in the foreground.
+            PresenterLayoutFacts fixedFacts = {};
+            fixedFacts.hasParent = TRUE;
+            fixedFacts.caret = { 640, 360 };
+            CUIPresenter::testLayoutFacts = &fixedFacts;
             const DimeRect kWork = { 0, 0, 1920, 1040 };
             Golden::Log golden;
             Golden::Chunks ch(golden, L"steps", 5);
@@ -487,6 +493,7 @@ namespace DIMEUnitTests
             DeleteObject(font);
             CConfig::testDpiOverride = savedDpi;
             CConfig::testSystemDarkOverride = savedDark;
+            CUIPresenter::testLayoutFacts = nullptr;
             ch.Finish();
             Golden::Check(L"PresenterLayout", L"Decisions", golden);
             Logger::WriteMessage((std::to_wstring(steps) + L" steps compared (" + std::to_wstring(layoutPlaced) + L" layout changes, " +
