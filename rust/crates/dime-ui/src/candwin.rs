@@ -25,10 +25,8 @@ use std::cell::Cell;
 use std::ffi::c_void;
 use std::rc::Rc;
 use windows::Win32::Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
-use windows::Win32::Graphics::Gdi::{
-    CreateRoundRectRgn, CreateSolidBrush, DeleteObject, GetMonitorInfoW, InvalidateRect, MonitorFromPoint,
-    ScreenToClient, SetWindowRgn, HBRUSH, HDC, HFONT, MONITORINFO, MONITOR_DEFAULTTONEAREST, PAINTSTRUCT,
-};
+use windows::Win32::Graphics::Gdi::{GetMonitorInfoW, InvalidateRect, MonitorFromPoint, ScreenToClient, HBRUSH, HDC, HFONT, MONITORINFO, MONITOR_DEFAULTTONEAREST, PAINTSTRUCT};
+use crate::gdi::{CreateRoundRectRgn, CreateSolidBrush, DeleteObject, SetWindowRgn};
 use windows::Win32::UI::Input::KeyboardAndMouse::{GetCapture, ReleaseCapture, SetCapture};
 use windows::Win32::UI::WindowsAndMessaging::{
     GetClassWord, GetClientRect, GetWindow, GetWindowLongW, GetWindowRect, IsWindow, IsWindowVisible, KillTimer,

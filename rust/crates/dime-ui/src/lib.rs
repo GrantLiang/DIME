@@ -21,6 +21,8 @@ pub mod candproc;
 #[cfg(windows)]
 pub mod candwin;
 pub mod candwnd;
+#[cfg(windows)]
+pub mod gdi;
 pub mod layout;
 #[cfg(windows)]
 pub mod notify;

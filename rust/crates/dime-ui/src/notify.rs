@@ -10,11 +10,8 @@ use crate::candwnd;
 use crate::layout::{Point, Rect};
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, LRESULT, POINT, RECT, SIZE, WPARAM};
-use windows::Win32::Graphics::Gdi::{
-    BeginPaint, CreateRoundRectRgn, EndPaint, ExtTextOutW, FillRect, GetDC, GetTextExtentPoint32W, MapWindowPoints,
-    ReleaseDC, SelectObject, SetBkColor, SetBkMode, SetTextColor, SetWindowRgn, ETO_OPAQUE, HBRUSH, HDC, HFONT,
-    HGDIOBJ, PAINTSTRUCT, TRANSPARENT,
-};
+use windows::Win32::Graphics::Gdi::{BeginPaint, EndPaint, MapWindowPoints, ETO_OPAQUE, HBRUSH, HDC, HFONT, HGDIOBJ, PAINTSTRUCT, TRANSPARENT};
+use crate::gdi::{CreateRoundRectRgn, ExtTextOutW, FillRect, GetDC, GetTextExtentPoint32W, ReleaseDC, SelectObject, SetBkColor, SetBkMode, SetTextColor, SetWindowRgn};
 use windows::Win32::UI::WindowsAndMessaging::{
     DefWindowProcW, GetClientRect, GetCursorPos, LoadCursorW, SetCursor, SetWindowPos, IDC_ARROW, IDC_HAND,
     MA_NOACTIVATE, SWP_HIDEWINDOW, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER, WINDOWPOS, WM_CREATE, WM_DESTROY,

@@ -1,0 +1,10 @@
+[package]
+name = "dime-gdi"
+description = "The GDI / GDI+ calls of DIME's Rust windows (settings window, candidate / notify windows), with a per-thread recorder for the golden tests."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-link = "0.2.1"

@@ -134,6 +134,9 @@ _T_SetThreadDpiAwarenessContext CConfig::_SetThreadDpiAwarenessContext = nullptr
 
 UINT CConfig::GetDpiForHwnd(HWND hWnd)
 {
+#ifdef DIME_UNIT_TESTING
+	if (testDpiOverride) return testDpiOverride;
+#endif
 	if (hWnd && _GetDpiForMonitor)
 	{
 		HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
@@ -289,6 +292,7 @@ void CConfig::SaveColorsForMode(IME_COLOR_MODE mode)
 
 #ifdef DIME_UNIT_TESTING
 int CConfig::testSystemDarkOverride = -1;
+UINT CConfig::testDpiOverride = 0;
 #endif
 
 // Detect Windows dark theme (safe on Win7/8/10/11)

@@ -23,6 +23,9 @@ pub use windows::core::PCWSTR;
 use windows::core::{s, w};
 pub use windows::Win32::Foundation::HINSTANCE;
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+// GetStockObject straight from the system: registering a class is not drawing
+// (and when it happens depends on the test configuration), so it stays out of
+// the golden GDI recordings.
 use windows::Win32::Graphics::Gdi::{GetStockObject, HBRUSH, LTGRAY_BRUSH};
 use windows::Win32::System::LibraryLoader::{GetModuleHandleW, GetProcAddress};
 use windows::Win32::UI::WindowsAndMessaging::{

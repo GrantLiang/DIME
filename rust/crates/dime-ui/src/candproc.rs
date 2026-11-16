@@ -15,10 +15,8 @@ use windows::core::PCWSTR;
 pub use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::Foundation::{POINT, RECT};
 pub use windows::Win32::Graphics::Gdi::PAINTSTRUCT;
-use windows::Win32::Graphics::Gdi::{
-    BeginPaint, BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, EndPaint, GetDC,
-    GetTextExtentPoint32W, MapWindowPoints, ReleaseDC, SelectObject, HBRUSH, HDC, HFONT, SRCCOPY,
-};
+use windows::Win32::Graphics::Gdi::{BeginPaint, EndPaint, MapWindowPoints, HBRUSH, HDC, HFONT, SRCCOPY};
+use crate::gdi::{BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDC, GetTextExtentPoint32W, ReleaseDC, SelectObject};
 use windows::Win32::UI::Accessibility::NotifyWinEvent;
 use windows::Win32::UI::Input::KeyboardAndMouse::{SetCapture, TrackMouseEvent, TME_LEAVE, TRACKMOUSEEVENT};
 use windows::Win32::UI::WindowsAndMessaging::{

@@ -297,6 +297,9 @@ public:
 	// -1: read the system; 0 / 1: IsSystemDarkTheme returns this (tests whose
 	// recorded results must not depend on the machine's theme).
 	static int testSystemDarkOverride;
+	// 0: read the monitor; otherwise GetDpiForHwnd returns this (golden
+	// recordings of the candidate / notify windows, phase 6b-2).
+	static UINT testDpiOverride;
 #endif
 
 	

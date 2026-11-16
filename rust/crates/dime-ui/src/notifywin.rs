@@ -18,7 +18,8 @@ use std::cell::{Cell, RefCell};
 use std::ffi::c_void;
 use std::rc::Rc;
 use windows::Win32::Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, RECT, WPARAM};
-use windows::Win32::Graphics::Gdi::{CreateSolidBrush, DeleteObject, InvalidateRect, HBRUSH, HDC, HFONT, PAINTSTRUCT};
+use windows::Win32::Graphics::Gdi::{InvalidateRect, HBRUSH, HDC, HFONT, PAINTSTRUCT};
+use crate::gdi::{CreateSolidBrush, DeleteObject};
 use windows::Win32::UI::Input::KeyboardAndMouse::ReleaseCapture;
 use windows::Win32::UI::WindowsAndMessaging::{
     GetClientRect, GetWindowRect, IsWindowVisible, KillTimer, SetTimer, SetWindowPos, SWP_NOACTIVATE, SWP_NOSIZE,

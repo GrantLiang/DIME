@@ -1,4 +1,4 @@
-//! The GDI / GDI+ calls of the settings window's painting, with a recorder
+//! The GDI / GDI+ calls of the Rust windows' painting, with a recorder
 //! for tests (phase 6a-3, Windows only).
 //!
 //! Each function here has the signature of the system function it wraps and
@@ -140,6 +140,13 @@ struct LogFontW {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
+}
+
+#[repr(C)]
 pub struct BlendFunction {
     pub op: u8,
     pub flags: u8,
@@ -157,6 +164,11 @@ mod sys {
     windows_link::link!("gdi32.dll" "system" fn DeleteObject(obj: Handle) -> i32);
     windows_link::link!("gdi32.dll" "system" fn RoundRect(hdc: Handle, l: i32, t: i32, r: i32, b: i32, w: i32, h: i32) -> i32);
     windows_link::link!("gdi32.dll" "system" fn CreateRoundRectRgn(l: i32, t: i32, r: i32, b: i32, w: i32, h: i32) -> Handle);
+    windows_link::link!("gdi32.dll" "system" fn CreateFontIndirectW(lf: *const c_void) -> Handle);
+    windows_link::link!("gdi32.dll" "system" fn Polygon(hdc: Handle, pts: *const Point, n: i32) -> i32);
+    windows_link::link!("gdi32.dll" "system" fn CreateCompatibleBitmap(hdc: Handle, cx: i32, cy: i32) -> Handle);
+    windows_link::link!("gdi32.dll" "system" fn BitBlt(hdc: Handle, x: i32, y: i32, cx: i32, cy: i32, src: Handle, x1: i32, y1: i32, rop: u32) -> i32);
+    windows_link::link!("user32.dll" "system" fn SetWindowRgn(wnd: Handle, rgn: Handle, redraw: i32) -> i32);
     windows_link::link!("gdi32.dll" "system" fn CreateRectRgn(l: i32, t: i32, r: i32, b: i32) -> Handle);
     windows_link::link!("gdi32.dll" "system" fn FillRgn(hdc: Handle, rgn: Handle, brush: Handle) -> i32);
     windows_link::link!("gdi32.dll" "system" fn MoveToEx(hdc: Handle, x: i32, y: i32, old: *mut c_void) -> i32);
@@ -592,6 +604,72 @@ pub unsafe fn CreateFontW(
         r.fonts.insert(key, (h, f));
     });
     font
+}
+
+/// `lf` points to a LOGFONTW.
+pub unsafe fn CreateFontIndirectW(lf: *const c_void) -> Handle {
+    let font = unsafe { sys::CreateFontIndirectW(lf) };
+    with(|r| {
+        let key = r.fresh(font);
+        let id = r.h(font);
+        // SAFETY: the caller's LOGFONTW.
+        let (h, f) = if lf.is_null() {
+            (0, Vec::new())
+        } else {
+            let l = unsafe { &*(lf as *const LogFontW) };
+            (l.height, l.face.iter().copied().take_while(|&c| c != 0).collect::<Vec<u16>>())
+        };
+        r.lines.push(format!("CreateFontIndirectW({h}, {}) = {id}", text(&f)));
+        r.fonts.insert(key, (h, f));
+    });
+    font
+}
+
+/// Not recorded: a query (the caller reads a font's LOGFONT).
+pub unsafe fn GetObjectW(obj: Handle, size: i32, out: *mut c_void) -> i32 {
+    unsafe { sys::GetObjectW(obj, size, out) }
+}
+
+pub unsafe fn Polygon(hdc: Handle, pts: *const Point, n: i32) -> i32 {
+    with(|r| {
+        let d = r.h(hdc);
+        let mut p = String::new();
+        for i in 0..n.max(0) as usize {
+            // SAFETY: the caller's `n` points.
+            let q = unsafe { *pts.add(i) };
+            let _ = write!(p, " {},{}", q.x, q.y);
+        }
+        r.lines.push(format!("Polygon({d},{p})"))
+    });
+    unsafe { sys::Polygon(hdc, pts, n) }
+}
+
+pub unsafe fn CreateCompatibleBitmap(hdc: Handle, cx: i32, cy: i32) -> Handle {
+    let bmp = unsafe { sys::CreateCompatibleBitmap(hdc, cx, cy) };
+    with(|r| {
+        let a = r.h(hdc);
+        let id = r.new_h(bmp);
+        r.lines.push(format!("CreateCompatibleBitmap({a}, {cx}, {cy}) = {id}"))
+    });
+    bmp
+}
+
+pub unsafe fn BitBlt(hdc: Handle, x: i32, y: i32, cx: i32, cy: i32, src: Handle, x1: i32, y1: i32, rop: u32) -> i32 {
+    with(|r| {
+        let (d, s) = (r.h(hdc), r.h(src));
+        r.lines.push(format!("BitBlt({d}, {x}, {y}, {cx}, {cy}, {s}, {x1}, {y1}, {rop:x})"))
+    });
+    unsafe { sys::BitBlt(hdc, x, y, cx, cy, src, x1, y1, rop) }
+}
+
+/// The system owns `rgn` afterwards: the recording forgets it.
+pub unsafe fn SetWindowRgn(wnd: Handle, rgn: Handle, redraw: i32) -> i32 {
+    with(|r| {
+        let g = r.h(rgn);
+        r.lines.push(format!("SetWindowRgn({g}, {redraw})"));
+        r.forget(rgn);
+    });
+    unsafe { sys::SetWindowRgn(wnd, rgn, redraw) }
 }
 
 pub unsafe fn CreateRoundRectRgn(l: i32, t: i32, rr: i32, b: i32, w: i32, h: i32) -> Handle {

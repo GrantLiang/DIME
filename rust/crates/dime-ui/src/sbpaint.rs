@@ -9,10 +9,8 @@
 use crate::candwnd::{self, ScrollInfo};
 use crate::layout::Rect;
 use windows::Win32::Foundation::{COLORREF, HWND, LPARAM, RECT, WPARAM};
-use windows::Win32::Graphics::Gdi::{
-    CreateSolidBrush, DeleteObject, FillRect, GetStockObject, Polygon, RoundRect, SelectObject, BLACK_BRUSH, HBRUSH,
-    HDC, NULL_PEN,
-};
+use windows::Win32::Graphics::Gdi::{BLACK_BRUSH, HBRUSH, HDC, NULL_PEN};
+use crate::gdi::{CreateSolidBrush, DeleteObject, FillRect, GetStockObject, Polygon, RoundRect, SelectObject};
 use windows::Win32::UI::WindowsAndMessaging::{
     GetParent, GetWindowLongW, SendMessageW, GWL_EXSTYLE, WM_CTLCOLORSCROLLBAR, WS_EX_LAYERED,
 };

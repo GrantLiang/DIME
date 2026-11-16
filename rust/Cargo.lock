@@ -25,11 +25,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dime-gdi"
+version = "0.1.0"
+dependencies = [
+ "windows-link",
+]
+
+[[package]]
 name = "dime-settings"
 version = "0.1.0"
 dependencies = [
  "dime-config",
  "dime-core",
+ "dime-gdi",
  "windows",
  "windows-link",
 ]
@@ -46,6 +54,7 @@ name = "dime-ui"
 version = "0.1.0"
 dependencies = [
  "dime-core",
+ "dime-gdi",
  "windows",
 ]
 

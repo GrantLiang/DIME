@@ -35,7 +35,7 @@ pub mod command;
 pub mod controls;
 pub mod driver;
 #[cfg(windows)]
-pub mod gdi;
+pub use dime_gdi as gdi;
 #[cfg(windows)]
 pub mod editor;
 pub mod frame;

@@ -15,11 +15,8 @@ use crate::candwnd::{self, CandMetrics};
 use crate::layout::Rect;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{COLORREF, RECT, SIZE};
-use windows::Win32::Graphics::Gdi::{
-    CreateFontIndirectW, CreateSolidBrush, DeleteObject, DrawTextW, ExtTextOutW, FillRect, GetObjectW, GetStockObject,
-    GetTextExtentPoint32W, GetTextMetricsW, RoundRect, SelectObject, SetBkColor, SetBkMode, SetTextColor, DT_RIGHT,
-    DT_SINGLELINE, DT_VCENTER, ETO_OPAQUE, ETO_OPTIONS, LOGFONTW, NULL_PEN, OPAQUE, TEXTMETRICW, TRANSPARENT,
-};
+use windows::Win32::Graphics::Gdi::{DT_RIGHT, DT_SINGLELINE, DT_VCENTER, ETO_OPAQUE, ETO_OPTIONS, LOGFONTW, NULL_PEN, OPAQUE, TEXTMETRICW, TRANSPARENT};
+use crate::gdi::{CreateFontIndirectW, CreateSolidBrush, DeleteObject, DrawTextW, ExtTextOutW, FillRect, GetObjectW, GetStockObject, GetTextExtentPoint32W, GetTextMetricsW, RoundRect, SelectObject, SetBkColor, SetBkMode, SetTextColor};
 pub use windows::Win32::Graphics::Gdi::{HBRUSH, HDC, HFONT, HGDIOBJ};
 
 /// The character `_DrawList` measures for the width of one candidate.

@@ -23,6 +23,8 @@
 #include "../BaseStructure.h"
 #include "../Config.h"
 #include "WindowClassTestHelper.h"
+#include "Golden.h"
+#include "dime_ffi.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -141,6 +143,26 @@ namespace
         return L"cxTitle=" + std::to_wstring(s.cxTitle) + L" cyRow=" + std::to_wstring(s.cyRow) +
             L" padding=" + std::to_wstring(s.padding) + L" wndWidth=" + std::to_wstring(s.wndWidth);
     }
+
+    // The golden record of a paint (phase 6b-2): what Paint returned except
+    // the pixels and the window's position, and the GDI calls.
+    void AddGolden(Golden::Chunks& ch, const std::wstring& where, const PaintResult& g, const std::vector<std::wstring>& calls)
+    {
+        ch.Add(where + L" " + Describe(g.state) + L" size " + std::to_wstring(g.window.right - g.window.left) + L"x" +
+            std::to_wstring(g.window.bottom - g.window.top) + L" highlight " + std::to_wstring(g.highlight.left) + L"," +
+            std::to_wstring(g.highlight.top) + L"," + std::to_wstring(g.highlight.right) + L"," + std::to_wstring(g.highlight.bottom) +
+            L" r=" + std::to_wstring(g.highlightRadius) + L" c=" + std::to_wstring(g.highlightColor));
+        for (const std::wstring& c : calls) ch.Add(c);
+        ch.Next();
+    }
+
+    // Golden recordings run at 96 dpi whatever the monitor (CConfig::GetDpiForHwnd).
+    struct Dpi96
+    {
+        UINT saved = CConfig::testDpiOverride;
+        Dpi96() { CConfig::testDpiOverride = 96; }
+        ~Dpi96() { CConfig::testDpiOverride = saved; }
+    };
 }
 
 namespace DIMEUnitTests
@@ -165,6 +187,12 @@ namespace DIMEUnitTests
 
             std::mt19937 rng(31);
             int scenarios = 0, compared = 0, withIndicator = 0, truncatedOrWidened = 0;
+            Dpi96 dpi96;
+            // G: a third window, the Rust one, created and painted only while
+            // the GDI calls are recorded with synthetic text metrics, so its
+            // sizes and calls do not depend on the machine's fonts.
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"paints", 4);
             for (const wchar_t* face : faces)
             for (int height : heights)
             {
@@ -193,15 +221,27 @@ namespace DIMEUnitTests
                     Assert::IsNotNull(rw._GetWnd(), L"a real Rust window");
                     w->_SetCandStringLength(wndWidth);
                     rw._SetCandStringLength(wndWidth);
+                    std::vector<std::wstring> setup;
+                    CRustCandidateWindow gw(NoCallback, nullptr, &range, FALSE);
+                    {
+                        Golden::GdiRecording rec;
+                        gw._SetClassesForTest(RustCandidateTestClasses());
+                        gw._Create(wndWidth, 12, nullptr);
+                        gw._SetCandStringLength(wndWidth);
+                        setup = rec.Take();
+                    }
+                    Assert::IsNotNull(gw._GetWnd(), L"the golden window");
 
-                    std::vector<CCandidateListItem> items(count), rustItems(count);
+                    std::vector<CCandidateListItem> items(count), rustItems(count), goldenItems(count);
                     for (UINT i = 0; i < count; i++)
                     {
                         const std::wstring& t = pool[rng() % ARRAYSIZE(pool)];
                         items[i]._ItemString.Set(t.c_str(), t.size());
                         rustItems[i]._ItemString.Set(t.c_str(), t.size());
+                        goldenItems[i]._ItemString.Set(t.c_str(), t.size());
                         w->_AddString(&items[i], FALSE);
                         rw._AddString(&rustItems[i], FALSE);
+                        gw._AddString(&goldenItems[i], FALSE);
                     }
                     UINT pages = count ? (count + rowsInPage - 1) / rowsInPage : 0;
                     std::vector<UINT> pageIndex(pages);
@@ -210,6 +250,7 @@ namespace DIMEUnitTests
                     {
                         w->_SetPageIndex(pageIndex.data(), pages);
                         rw._SetPageIndex(pageIndex.data(), pages);
+                        gw._SetPageIndex(pageIndex.data(), pages);
                     }
                     w->_SetScrollInfo(count, rowsInPage);
                     rw._SetScrollInfo(count, rowsInPage);
@@ -224,6 +265,16 @@ namespace DIMEUnitTests
                     rw._SetTextColor(colors[2], colors[3]);
                     rw._SetSelectedTextColor(colors[4], colors[5]);
                     rw._SetFillColor(colors[6]);
+                    {
+                        Golden::GdiRecording rec;
+                        gw._SetScrollInfo(count, rowsInPage);
+                        gw._SetNumberColor(colors[0], colors[1]);
+                        gw._SetTextColor(colors[2], colors[3]);
+                        gw._SetSelectedTextColor(colors[4], colors[5]);
+                        gw._SetFillColor(colors[6]);
+                        std::vector<std::wstring> more = rec.Take();
+                        setup.insert(setup.end(), more.begin(), more.end());
+                    }
 
                     // A few selections per window: first item, random ones (any page), none.
                     for (int sel = 0; sel < 4; sel++)
@@ -233,6 +284,7 @@ namespace DIMEUnitTests
                             int index = sel == 0 ? 0 : (int)(rng() % count);
                             w->_SetSelection(index, FALSE);
                             rw._SetSelection(index, FALSE);
+                            gw._SetSelection(index, FALSE);
                         }
                         CCandidateWindow::LayoutStateForTest start = { (int)(rng() % 300), 20, 10, wndWidth };
 
@@ -255,17 +307,29 @@ namespace DIMEUnitTests
                             if (c.pixels[i] != r.pixels[i])
                                 Assert::Fail((where + L": pixel " + std::to_wstring(i) + L" differs").c_str());
                         }
+                        {
+                            Target gt;
+                            gt.rust = &gw;
+                            Golden::GdiRecording rec;
+                            PaintResult g = Paint(gt, start);
+                            std::vector<std::wstring> calls = rec.Take();
+                            if (sel == 0) calls.insert(calls.begin(), setup.begin(), setup.end());
+                            AddGolden(ch, where, g, calls);
+                        }
                         if (pages > 1) withIndicator++;
                         if (c.state.wndWidth != wndWidth) truncatedOrWidened++;
                         compared++;
                     }
                     rw._Destroy();
+                    gw._Destroy();
                     DestroyAndDelete(w);
                     scenarios++;
                 }
                 Global::defaultlFontHandle = savedFont;
                 DeleteObject(font);
             }
+            ch.Finish();
+            Golden::Check(L"CandidatePaint", L"Paint", golden);
             Logger::WriteMessage((std::to_wstring(scenarios) + L" windows, " + std::to_wstring(compared) + L" paints compared, " +
                 std::to_wstring(withIndicator) + L" with a page indicator, " + std::to_wstring(truncatedOrWidened) + L" widened").c_str());
             Assert::IsTrue(withIndicator > 0 && truncatedOrWidened > 0, L"coverage");
@@ -285,6 +349,8 @@ namespace DIMEUnitTests
 
             std::mt19937 rng(37);
             int compared = 0, layeredPaints = 0, plainPaints = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"scroll bars", 16);
             for (int s = 0; s < 20; s++)
             {
                 int rowsInPage = 1 + (int)(rng() % 9);
@@ -366,6 +432,40 @@ namespace DIMEUnitTests
                         DeleteDC(mem);
                         ReleaseDC(nullptr, screen);
                     }
+                    {
+                        // Golden: the Rust scroll bar painting (dime_ui_sb_paint, what the
+                        // Rust scroll bar window paints with) for these inputs on a
+                        // 16 x 200 scroll bar, recorded.
+                        HDC screen = GetDC(nullptr);
+                        HDC mem = CreateCompatibleDC(screen);
+                        HBITMAP bmp = CreateCompatibleBitmap(screen, 16, 200);
+                        HGDIOBJ oldBmp = SelectObject(mem, bmp);
+                        // hwnd: the Rust scroll bar of side 1 (its layered style and
+                        // its candidate window's fill decide the background).
+                        DimeSbPaint in = {};
+                        in.hwnd = sbh[1];
+                        in.has_paint = withPaintStruct;
+                        in.paint = { 0, 0, 16, 200 };
+                        in.client = { 0, 0, 16, 200 };
+                        in.dpi = 96;
+                        in.si = { si.nMax, si.nPage, si.nPos };
+                        in.dark = CConfig::GetEffectiveDarkMode() ? 1 : 0;
+                        in.full = hovered;
+                        in.highlight = { hl.left, hl.top, hl.right, hl.bottom };
+                        in.highlight_radius = radius;
+                        in.highlight_color = hlColor;
+                        Golden::GdiRecording rec;
+                        dime_ui_sb_paint(mem, &in);
+                        std::vector<std::wstring> calls = rec.Take();
+                        ch.Add(L"max=" + std::to_wstring(si.nMax) + L" page=" + std::to_wstring(si.nPage) + L" pos=" + std::to_wstring(si.nPos) +
+                            L" hovered=" + std::to_wstring(hovered) + L" dark=" + std::to_wstring(in.dark) + L" layered=" + std::to_wstring(layered));
+                        for (const std::wstring& c : calls) ch.Add(c);
+                        ch.Next();
+                        SelectObject(mem, oldBmp);
+                        DeleteObject(bmp);
+                        DeleteDC(mem);
+                        ReleaseDC(nullptr, screen);
+                    }
                     Assert::AreEqual(pixels[0].size(), pixels[1].size(), L"scroll bar size");
                     for (size_t i = 0; i < pixels[0].size(); i++)
                     {
@@ -384,6 +484,8 @@ namespace DIMEUnitTests
             CConfig::SetColorMode(savedMode);
             Global::defaultlFontHandle = savedFont;
             DeleteObject(font);
+            ch.Finish();
+            Golden::Check(L"CandidatePaint", L"ScrollBar", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" scroll bar paints compared (" + std::to_wstring(layeredPaints) +
                 L" layered, " + std::to_wstring(plainPaints) + L" not)").c_str());
             Assert::IsTrue(layeredPaints > 0 && plainPaints > 0, L"coverage");

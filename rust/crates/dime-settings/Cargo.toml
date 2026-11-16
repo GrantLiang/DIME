@@ -9,6 +9,7 @@ publish.workspace = true
 [dependencies]
 dime-config = { path = "../dime-config" }
 dime-core = { path = "../dime-core" }
+dime-gdi = { path = "../dime-gdi" }
 
 [target.'cfg(windows)'.dependencies]
 windows-link = "0.2.1"
