@@ -34,6 +34,7 @@
 #include "CppUnitTest.h"
 #include <Windows.h>
 #include <gdiplus.h>
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -377,6 +378,10 @@ namespace
         }
     };
 
+    // The golden window's largest size: it fits a 1024 x 768 screen, which
+    // otherwise cuts the window (and its layout) to the screen.
+    const int kGoldenMaxW = 1000, kGoldenMaxH = 720;
+
     // A fixed snapshot: CConfig's depends on the tests that ran before.
     SettingsSnapshot FixedSnapshot()
     {
@@ -510,7 +515,9 @@ namespace
             c.Resize(sz.w, sz.h);
             r.Resize(sz.w, sz.h);
             rec.reset(new Golden::GdiRecording());
-            g.Resize(sz.w, sz.h);
+            // Within a 1024 x 768 screen (CI's): a bigger window is cut to
+            // the screen, so its size would depend on the machine.
+            g.Resize((std::min)(sz.w, kGoldenMaxW), (std::min)(sz.h, kGoldenMaxH));
             rec->Take();
             rec.reset();
             for (const Page& p : Pages()) {

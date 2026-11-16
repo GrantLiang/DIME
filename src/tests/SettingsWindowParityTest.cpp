@@ -23,6 +23,7 @@
 #include "pch.h"
 #include "CppUnitTest.h"
 #include <Windows.h>
+#include <algorithm>
 #include <memory>
 #include <random>
 #include <string>
@@ -232,7 +233,10 @@ namespace
                     mainCls.c_str(), contentCls.c_str(), kTestKey, L"C");
             }
             Assert::IsNotNull(main);
-            SetWindowPos(main, nullptr, 100, 100, 1000, 760, SWP_NOZORDER | SWP_NOACTIVATE);
+            // The golden window fits a 1024 x 768 screen (CI's): a bigger
+            // window is cut to the screen, so its size would depend on the
+            // machine (kGoldenMax; Apply keeps it that small).
+            SetWindowPos(main, nullptr, 100, 100, 1000, tag == L"G" ? 720 : 760, SWP_NOZORDER | SWP_NOACTIVATE);
         }
 
         std::wstring NewLog()
@@ -361,6 +365,7 @@ namespace
         switch (op.kind) {
         case 0: {   // resize, including narrow widths (narrow sidebar mode)
             int w = (op.c % 6 == 0) ? 420 + op.a % 300 : 820 + op.a % 600, h = 420 + op.b % 500;
+            if (s.tag == L"G") { w = (std::min)(w, 1000); h = (std::min)(h, 720); }   // see kGoldenMax
             SetWindowPos(main, nullptr, 0, 0, w, h, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
             break;
         }
@@ -410,6 +415,10 @@ namespace
             UINT dpi = dpis[op.a % 3];
             s.app.dpi = dpi;
             RECT rc = { 100, 100, 100 + 600 + op.b % 500, 100 + 450 + op.c % 400 };
+            if (s.tag == L"G") {   // see kGoldenMax
+                rc.right = (std::min)(rc.right, (LONG)(100 + 1000));
+                rc.bottom = (std::min)(rc.bottom, (LONG)(100 + 720));
+            }
             SendMessageW(main, WM_DPICHANGED, MAKEWPARAM(dpi, dpi), (LPARAM)&rc);
             break;
         }
