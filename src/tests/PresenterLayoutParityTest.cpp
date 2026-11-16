@@ -1,21 +1,27 @@
 ﻿/********************************************************************************
-* PresenterLayoutParityTest: CUIPresenter's placement decisions, the C++
-* originals vs dime-ui::presenter (phase 4b-1, docs/RUST_TSF_SHELL.md).
+* PresenterLayoutParityTest: CUIPresenter with the Rust presenter
+* (dime-ui::presenter / presenterwin: the location state, the notify stack and
+* the candidate window and list are Rust's) against the golden file
+* src/tests/golden/PresenterLayout, recorded while the C++ presenter and windows
+* (DIME_CPP_PRESENTER, removed in phase 6b-3) still matched it side by side.
 *
-* Two presenters with the same real windows (a candidate window with a list,
-* shown or hidden, or none; each notify slot missing, hidden or shown with its
-* own text), one deciding in C++ and one in Rust, start from the same location
-* state and get the same random facts: _LayoutChangeApply (compositions of any
-* size including empty and inverted, first calls, with and without a parent,
-* the caret inside or outside), _NotifyLocationForShow (transient or not,
-* empty or real rcCaret) and _RestackForShow. Phase 4b-2a: in the Rust
-* presenter the location state and the notify stack are Rust's
-* (dime-ui::presenterwin), so the steps also make, retext, show, hide, dispose
-* and clear slots, set the colors, show the UI, reset the composition range
-* and restack. After each step: the location state, the return value, the
-* presenter's queries (IsNotifyShown, hint visible, which slots exist,
-* GetCandLocation, GetCompRangeHeight), and every window's rectangle,
-* visibility and title size.
+* A presenter with real windows (a candidate window with a list, shown or
+* hidden, or none; each notify slot missing, hidden or shown with its own
+* text) gets random facts and operations, only while the GDI calls are recorded
+* with synthetic text metrics, at 96 dpi and in a fixed work area:
+* _LayoutChangeApply (compositions of any size including empty and inverted,
+* first calls, with and without a parent, the caret inside or outside),
+* _NotifyLocationForShow (transient or not, empty or real rcCaret),
+* _RestackForShow; making, retexting, showing, hiding, disposing and clearing
+* slots, the colors, showing the UI, resetting the composition range,
+* restacking; the candidate list and window operations. After each step: the
+* location state, the return value, the presenter's queries (IsNotifyShown,
+* hint visible, which slots exist, GetCandLocation, GetCompRangeHeight, the
+* candidate list), every window's rectangle, visibility and title size, and
+* the GDI calls of painting them.
+*
+* The random draws are the ones the recording was made with: do not reorder
+* them (DIME_GOLDEN_RECORD=1 re-records after a deliberate change).
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -40,22 +46,8 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 class PresenterLayoutParityAccess
 {
 public:
-    // Golden mode (phase 6b-2): Observe paints the windows into scratch bitmaps
-    // for the GDI recording instead of hashing their pixels.
-    static inline bool golden = false;
-    static void UseRust(CUIPresenter* p, BOOL rust)
-    {
-        p->_useRustPresenter = rust;
-#ifndef DIME_USE_RUST_ENGINE
-        // The C++ build registers DIME.NotifyWindow with CBaseWindow's procedure: Rust classes here.
-        if (rust)
-        {
-            DimeNotifyClasses c = RustNotifyTestClasses();
-            p->_SetNotifyClassesForTest(c.notify, c.notify_shadow);
-            p->_SetCandidateClassesForTest(RustCandidateTestClasses());
-        }
-#endif
-    }
+    // Observe paints the windows into scratch bitmaps for the GDI recording
+    // (the "hash" it writes is the constant of an unhashed bitmap, as recorded).
     static BOOL UsesRust(const CUIPresenter* p) { return p->_RustPresenter(); }
     static void SetState(CUIPresenter* p, POINT cand, POINT notify, RECT comp) { p->_SetPlacement(cand, notify, comp); }
     // The selection keys: the window keeps the pointer (as the engine's range), so they outlive the test.
@@ -214,9 +206,7 @@ public:
         p->_PaintNotifySlotForTest(type, mem, &ps);
         GdiFlush();
         unsigned long long hash = 1469598103934665603ULL;
-        if (!golden)
-            for (size_t i = 0; i < (size_t)cx * cy; i++)
-                hash = (hash ^ ((const DWORD*)bits)[i]) * 1099511628211ULL;
+
         SelectObject(mem, old);
         DeleteObject(dib);
         DeleteDC(mem);
@@ -249,9 +239,7 @@ public:
         p->_PaintCandidateForTest(mem, &ps);
         GdiFlush();
         unsigned long long hash = 1469598103934665603ULL;
-        if (!golden)
-            for (size_t i = 0; i < (size_t)cx * cy; i++)
-                hash = (hash ^ ((const DWORD*)bits)[i]) * 1099511628211ULL;
+
         SelectObject(mem, old);
         DeleteObject(dib);
         DeleteDC(mem);
@@ -303,9 +291,9 @@ namespace DIMEUnitTests
             HFONT savedFont = Global::defaultlFontHandle;
             HFONT font = CreateFont(-20, 0, 0, 0, FW_NORMAL, FALSE, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Microsoft JhengHei");
             Global::defaultlFontHandle = font;
-            // G: a third presenter, Rust, driven like the pair but only with
-            // the GDI calls recorded (synthetic metrics), at 96 dpi and in a
-            // fixed work area (the real one is the machine's screen).
+            // The presenter is driven only with the GDI calls recorded (synthetic
+            // metrics), at 96 dpi and in a fixed work area (the real one is the
+            // machine's screen).
             UINT savedDpi = CConfig::testDpiOverride;
             int savedDark = CConfig::testSystemDarkOverride;
             CConfig::testDpiOverride = 96;
@@ -332,55 +320,43 @@ namespace DIMEUnitTests
                 // The production default: the Rust decisions exactly in the Rust build.
                 CDIME* d = new CDIME();
                 CUIPresenter* q = new CUIPresenter(d, nullptr);
-#ifdef DIME_USE_RUST_ENGINE
-                Assert::IsTrue(PresenterLayoutParityAccess::UsesRust(q) != FALSE, L"Rust decisions by default");
-#else
-                Assert::IsFalse(PresenterLayoutParityAccess::UsesRust(q) != FALSE, L"C++ decisions by default");
-#endif
+                Assert::IsTrue(PresenterLayoutParityAccess::UsesRust(q) != FALSE, L"the Rust presenter");
                 q->Release();
                 d->Release();
             }
             for (int scenario = 0; scenario < 60; scenario++)
             {
-                CDIME* dime[3] = { new CDIME(), new CDIME(), new CDIME() };
-                CUIPresenter* p[3] = { new CUIPresenter(dime[0], nullptr), new CUIPresenter(dime[1], nullptr), new CUIPresenter(dime[2], nullptr) };
-                PresenterLayoutParityAccess::UseRust(p[0], FALSE);
-                PresenterLayoutParityAccess::UseRust(p[1], TRUE);
-                PresenterLayoutParityAccess::UseRust(p[2], TRUE);
-                // f(0), f(1): the pair; f(2): G, recorded, in the fixed work area.
-                auto each = [&](const std::function<void(int)>& f) {
-                    f(0);
-                    f(1);
+                CDIME* dime = new CDIME();
+                CUIPresenter* p = new CUIPresenter(dime, nullptr);
+                auto each = [&](const std::function<void()>& f) {
                     dime_ui_set_work_area_for_test(&kWork);
                     Golden::GdiRecording rec;
-                    f(2);
+                    f();
                     std::vector<std::wstring> c = rec.Take();
                     dime_ui_set_work_area_for_test(nullptr);
                     gcalls.insert(gcalls.end(), c.begin(), c.end());
                 };
-
                 int candKind = in(0, 3);   // 0: none, 1: hidden, 2-3: shown
                 int candCount = in(1, 12);
                 UINT candWidth = (UINT)in(3, 8);   // characters, as GetCandidateWindowWidth()
                 int slotKind[4];
                 for (int& k : slotKind) k = in(0, 2);   // 0: missing, 1: hidden, 2: shown
-                each([&](int k) {
+                each([&]() {
                     if (candKind != 0)
                     {
-                        PresenterLayoutParityAccess::MakeCandidate(p[k], candCount, candWidth);
-                        PresenterLayoutParityAccess::Show(p[k], candKind >= 2);
+                        PresenterLayoutParityAccess::MakeCandidate(p, candCount, candWidth);
+                        PresenterLayoutParityAccess::Show(p, candKind >= 2);
                     }
                     for (int i = 0; i < 4; i++)
                         if (slotKind[i] != 0)
-                            PresenterLayoutParityAccess::MakeSlot(p[k], types[i], slotTexts[i], slotKind[i] == 2);
+                            PresenterLayoutParityAccess::MakeSlot(p, types[i], slotTexts[i], slotKind[i] == 2);
                 });
                 POINT cand = { in(-1, 1600), in(-1, 900) };
                 POINT notify = { in(-1, 1600), in(-1, 900) };
                 RECT comp = { in(0, 1500), in(0, 900), 0, 0 };
                 comp.right = comp.left + in(-10, 300);
                 comp.bottom = comp.top + in(-10, 40);
-                each([&](int k) { PresenterLayoutParityAccess::SetState(p[k], cand, notify, comp); });
-                Assert::AreEqual(PresenterLayoutParityAccess::Observe(p[0]), PresenterLayoutParityAccess::Observe(p[1]), L"set up alike");
+                each([&]() { PresenterLayoutParityAccess::SetState(p, cand, notify, comp); });
 
                 for (int step = 0; step < 40; step++)
                 {
@@ -389,7 +365,7 @@ namespace DIMEUnitTests
                     // 13 the candidate list and window (4b-2b)
                     int op = r30 < 5 ? 0 : r30 < 8 ? 1 : r30 < 10 ? 2 : r30 < 20 ? r30 - 7 : 13;
                     std::wstring where = L"scenario " + std::to_wstring(scenario) + L" step " + std::to_wstring(step) + L" op " + std::to_wstring(op);
-                    BOOL r[3] = {};
+                    BOOL r = FALSE;
                     if (op == 0)
                     {
                         PresenterLayoutFacts f = {};
@@ -405,7 +381,7 @@ namespace DIMEUnitTests
                         f.hasParent = in(0, 3) != 0;
                         f.caret = in(0, 1) ? POINT{ f.comp.left + in(0, max(0, w)), f.comp.top + in(0, max(0, h)) }
                                            : POINT{ in(-50, 1800), in(-50, 1000) };
-                        each([&](int k) { PresenterLayoutParityAccess::LayoutChange(p[k], f); });
+                        each([&]() { PresenterLayoutParityAccess::LayoutChange(p, f); });
                         layoutPlaced++;
                     }
                     else if (op == 1)
@@ -418,54 +394,51 @@ namespace DIMEUnitTests
                         if (in(0, 3) == 0)
                         {
                             // An uninitialised location (ResetCompRange) for the fallbacks.
-                            each([&](int k) { PresenterLayoutParityAccess::SetState(p[k], cand, { UI::DEFAULT_WINDOW_X, UI::DEFAULT_WINDOW_Y }, comp); });
+                            each([&]() { PresenterLayoutParityAccess::SetState(p, cand, { UI::DEFAULT_WINDOW_X, UI::DEFAULT_WINDOW_Y }, comp); });
                         }
-                        each([&](int k) { r[k] = PresenterLayoutParityAccess::LocationForShow(p[k], f); });
-                        where += L" ret=" + std::to_wstring(r[2]);
-                        Assert::AreEqual((int)r[0], (int)r[1], (where + L": caretUpdated").c_str());
-                        if (r[0]) updated++;
+                        each([&]() { r = PresenterLayoutParityAccess::LocationForShow(p, f); });
+                        where += L" ret=" + std::to_wstring(r);
+                        if (r) updated++;
                     }
                     else if (op == 2)
                     {
                         BOOL caretUpdated = in(0, 1);
-                        each([&](int k) { PresenterLayoutParityAccess::RestackForShow(p[k], caretUpdated); });
+                        each([&]() { PresenterLayoutParityAccess::RestackForShow(p, caretUpdated); });
                         restacked++;
                     }
                     else if (op == 13)
                     {
                         int cop = in(0, 10), a = in(0, 1000), b = in(0, 1000);
                         where += L" cand " + std::to_wstring(cop) + L" " + std::to_wstring(a) + L" " + std::to_wstring(b);
-                        each([&](int k) { PresenterLayoutParityAccess::CandOp(p[k], cop, a, b); });
+                        each([&]() { PresenterLayoutParityAccess::CandOp(p, cop, a, b); });
                         candOps++;
                     }
                     else
                     {
                         NOTIFY_TYPE t = (NOTIFY_TYPE)in(0, (int)NOTIFY_TYPE::NOTIFY_COUNT - 1);
                         std::wstring text = stackTexts[in(0, 5)];
-                        each([&](int k) {
+                        each([&]() {
                             switch (op)
                             {
-                            case 3: case 4: PresenterLayoutParityAccess::Make(p[k], t, text); break;
-                            case 5: PresenterLayoutParityAccess::SetText(p[k], t, text); break;
-                            case 6: case 7: PresenterLayoutParityAccess::ShowSlot(p[k], t, op == 6); break;
-                            case 8: PresenterLayoutParityAccess::Dispose(p[k], t); break;
-                            case 9: PresenterLayoutParityAccess::Clear(p[k]); break;
-                            case 10: PresenterLayoutParityAccess::Colors(p[k], RGB(10 * (int)t, 20, 30), RGB(250, 240 - (int)t, 230)); break;
-                            case 11: if (text.size() % 2) PresenterLayoutParityAccess::ShowUI(p[k]); else PresenterLayoutParityAccess::Reset(p[k]); break;
-                            default: PresenterLayoutParityAccess::Restack(p[k], text.size() % 2 ? TRUE : FALSE); break;
+                            case 3: case 4: PresenterLayoutParityAccess::Make(p, t, text); break;
+                            case 5: PresenterLayoutParityAccess::SetText(p, t, text); break;
+                            case 6: case 7: PresenterLayoutParityAccess::ShowSlot(p, t, op == 6); break;
+                            case 8: PresenterLayoutParityAccess::Dispose(p, t); break;
+                            case 9: PresenterLayoutParityAccess::Clear(p); break;
+                            case 10: PresenterLayoutParityAccess::Colors(p, RGB(10 * (int)t, 20, 30), RGB(250, 240 - (int)t, 230)); break;
+                            case 11: if (text.size() % 2) PresenterLayoutParityAccess::ShowUI(p); else PresenterLayoutParityAccess::Reset(p); break;
+                            default: PresenterLayoutParityAccess::Restack(p, text.size() % 2 ? TRUE : FALSE); break;
                             }
                         });
                         stackOps++;
                     }
                     {
-                        // G's step: what it answers and shows, and every GDI call.
+                        // The step: what the presenter answers and shows, and every GDI call.
                         dime_ui_set_work_area_for_test(&kWork);
-                        PresenterLayoutParityAccess::golden = true;
                         Golden::GdiRecording rec;
-                        std::wstring obs = PresenterLayoutParityAccess::Queries(p[2]) + L" " + PresenterLayoutParityAccess::CandQueries(p[2]) +
-                            L" " + PresenterLayoutParityAccess::Observe(p[2]);
+                        std::wstring obs = PresenterLayoutParityAccess::Queries(p) + L" " + PresenterLayoutParityAccess::CandQueries(p) +
+                            L" " + PresenterLayoutParityAccess::Observe(p);
                         std::vector<std::wstring> c = rec.Take();
-                        PresenterLayoutParityAccess::golden = false;
                         dime_ui_set_work_area_for_test(nullptr);
                         ch.Add(where + L" " + obs);
                         for (const std::wstring& line : gcalls) ch.Add(line);
@@ -473,21 +446,10 @@ namespace DIMEUnitTests
                         ch.Next();
                         gcalls.clear();
                     }
-                    std::wstring qa = PresenterLayoutParityAccess::Queries(p[0]) + L" " + PresenterLayoutParityAccess::CandQueries(p[0]);
-                    std::wstring qb = PresenterLayoutParityAccess::Queries(p[1]) + L" " + PresenterLayoutParityAccess::CandQueries(p[1]);
-                    if (qa != qb)
-                        Assert::Fail((where + L"\nC++:  " + qa + L"\nRust: " + qb).c_str());
-                    std::wstring a = PresenterLayoutParityAccess::Observe(p[0]);
-                    std::wstring b = PresenterLayoutParityAccess::Observe(p[1]);
-                    if (a != b)
-                        Assert::Fail((where + L"\nC++:  " + a + L"\nRust: " + b + L"\nqueries: " + qa).c_str());
                     steps++;
                 }
-                for (int k = 0; k < 3; k++)
-                {
-                    p[k]->Release();   // destroys the windows; releases the text service once
-                    dime[k]->Release();
-                }
+                p->Release();   // destroys the windows; releases the text service once
+                dime->Release();
             }
             Global::defaultlFontHandle = savedFont;
             DeleteObject(font);
@@ -496,7 +458,7 @@ namespace DIMEUnitTests
             CUIPresenter::testLayoutFacts = nullptr;
             ch.Finish();
             Golden::Check(L"PresenterLayout", L"Decisions", golden);
-            Logger::WriteMessage((std::to_wstring(steps) + L" steps compared (" + std::to_wstring(layoutPlaced) + L" layout changes, " +
+            Logger::WriteMessage((std::to_wstring(steps) + L" steps (" + std::to_wstring(layoutPlaced) + L" layout changes, " +
                                   std::to_wstring(restacked) + L" restacks, " + std::to_wstring(updated) + L" caret updates, " + std::to_wstring(stackOps) + L" stack operations, " + std::to_wstring(candOps) + L" candidate operations)").c_str());
         }
     };
