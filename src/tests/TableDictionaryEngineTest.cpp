@@ -55,6 +55,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../File.h"
 #include "../Globals.h"
 #include "../BaseStructure.h"
+#include <algorithm>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -258,8 +259,11 @@ namespace DIMEUnitTests
             // Log what we found for debugging
             if (results.Count() > 0)
             {
+                // A CStringRange is not NUL terminated: print its length only
+                // (%s read past it and could overflow msg, failing in Release).
                 wchar_t msg[256];
-                swprintf_s(msg, L"Found result: %s\n", results.GetAt(0)->Get());
+                swprintf_s(msg, L"Found result: %.*s\n", (int)(std::min<DWORD_PTR>)(results.GetAt(0)->GetLength(), 200),
+                    results.GetAt(0)->Get());
                 Logger::WriteMessage(msg);
             }
 
