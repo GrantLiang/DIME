@@ -5,6 +5,13 @@
 * thread under their own class names. A driver thread waits for the window,
 * records its rectangle and client pixels, then dismisses it with a key, a
 * click, or WM_CLOSE; the returned button ids must match too.
+*
+* Golden files (src/tests/golden/SettingsMsgBox): per case, a separate Rust
+* box laid out with synthetic text metrics (Golden::GdiRecording): the
+* result and the client size. How often the modal loop repaints depends on
+* the driver thread's timing, so the GDI calls are only the failure details
+* (the painting itself is SettingsWindowPaint's ThemedMessageBoxPaint); the
+* window position depends on the screen and is not recorded.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -18,6 +25,7 @@
 #include "../DIMESettings/SettingsMsgBox.h"
 #include "../DIMESettings/SettingsWindowLayout.h"
 #include "dime_ffi.h"
+#include "Golden.h"
 
 #pragma comment(lib, "gdiplus.lib")
 
@@ -117,7 +125,8 @@ namespace
         return obs;
     }
 
-    void Compare(HWND parent, const wchar_t* text, UINT type, bool dark, const Action& act, const std::wstring& what)
+    void Compare(HWND parent, const wchar_t* text, UINT type, bool dark, const Action& act, const std::wstring& what,
+        Golden::Log& golden)
     {
         Observed a = Run(false, parent, text, L"DIME 測試", type, dark, act);
         Observed b = Run(true, parent, text, L"DIME 測試", type, dark, act);
@@ -133,6 +142,19 @@ namespace
                 Assert::Fail((what + L": pixel (" + std::to_wstring(i % w) + L"," + std::to_wstring(i / w) + L")").c_str());
             }
         }
+        // The golden file: a separate Rust box, recorded.
+        std::vector<std::wstring> calls;
+        Observed c;
+        {
+            Golden::GdiRecording rec;
+            c = Run(true, parent, text, L"DIME 測試", type, dark, act);
+            calls = rec.Take();
+        }
+        Assert::IsTrue(c.found, (what + L": recorded window not found").c_str());
+        std::wstring detail;
+        for (const std::wstring& call : calls) detail += call + L"\n";
+        golden.Add(what + L": result " + std::to_wstring(c.result) + L" client " + std::to_wstring(c.client.right) + L"x"
+            + std::to_wstring(c.client.bottom), detail);
     }
 }
 
@@ -159,14 +181,17 @@ namespace DIMEUnitTests
             const wchar_t* text = L"儲存失敗：偵測到 3 個格式錯誤行，第一個錯誤在第 2 行。\n\n  第 2 行\n  第 5 行\n";
             UINT types[] = { MB_OK, MB_ICONWARNING | MB_OK, MB_YESNO | MB_ICONQUESTION, MB_YESNOCANCEL, MB_OKCANCEL | MB_ICONINFORMATION };
             Action acts[] = { { WM_KEYDOWN, VK_RETURN, -1 }, { WM_KEYDOWN, VK_ESCAPE, -1 }, { WM_CLOSE, 0, -1 } };
+            Golden::Log golden;
             for (UINT dpi : { 96u, 144u }) {
                 g_dpi = dpi;
                 for (UINT t : types)
                     for (const Action& a : acts)
                         Compare(nullptr, text, t, (t & 1) != 0, a,
-                            L"type=" + std::to_wstring(t) + L" msg=" + std::to_wstring(a.msg) + L" dpi=" + std::to_wstring(dpi));
+                            L"type=" + std::to_wstring(t) + L" msg=" + std::to_wstring(a.msg) + L" dpi=" + std::to_wstring(dpi),
+                            golden);
             }
             g_dpi = 96;
+            Golden::Check(L"SettingsMsgBox", L"KeysAndClose", golden);
         }
 
         TEST_METHOD(ButtonClicksWithParent)
@@ -180,17 +205,19 @@ namespace DIMEUnitTests
                 200, 150, 700, 500, nullptr, nullptr, wc.hInstance, nullptr);
             Assert::IsNotNull(parent);
             g_dpi = 120;
+            Golden::Log golden;
             for (UINT t : { (UINT)MB_YESNOCANCEL, (UINT)MB_YESNO, (UINT)MB_OK }) {
                 int count = SettingsWindowLayout::Cpp::MsgBoxButtonsFor(t).count;
                 for (int b = 0; b < count; b++) {
                     Compare(parent, L"自訂碼表載入完成。", t, b == 1, { 0, 0, b },
-                        L"click type=" + std::to_wstring(t) + L" button=" + std::to_wstring(b));
+                        L"click type=" + std::to_wstring(t) + L" button=" + std::to_wstring(b), golden);
                     Assert::IsTrue(IsWindowEnabled(parent) != 0, L"parent re-enabled");
                 }
             }
             g_dpi = 96;
             DestroyWindow(parent);
             UnregisterClassW(wc.lpszClassName, wc.hInstance);
+            Golden::Check(L"SettingsMsgBox", L"ButtonClicksWithParent", golden);
         }
     };
 }

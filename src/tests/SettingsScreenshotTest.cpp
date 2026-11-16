@@ -20,12 +20,21 @@
 * %TEMP%\DIMESettingsScreenshots. Set DIME_SETTINGS_SCREENSHOT_DIR to save
 * every picture (for the manual review in docs/SETTINGS_MANUAL_CHECKLIST.md).
 *
+* Golden files (src/tests/golden/SettingsScreenshot): a third, Rust-only
+* window runs with synthetic text metrics recorded (Golden::GdiRecording);
+* per size and page, a hash of the GDI calls of navigating there and of one
+* paint of each WM_PAINT body into a scratch bitmap, and of the child
+* controls' layout (a combo box's height is the system's and left out). The
+* system draws the controls themselves, so their pixels are not recorded.
+* The snapshot is fixed (CConfig's depends on the tests that ran before).
+*
 * Source is ASCII only (the project compiles with code page 950).
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
 #include <Windows.h>
 #include <gdiplus.h>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -34,6 +43,7 @@
 #include "../DIMESettings/SettingsPageLayout.h"
 #include "dime_ffi.h"
 #include "SettingsFakeApp.h"
+#include "Golden.h"
 
 #pragma comment(lib, "gdiplus.lib")
 
@@ -307,6 +317,8 @@ namespace
         bool rust;
         FakeApp app;
         HWND main = nullptr;
+        // Class suffix and placement value: C, R, or G (the golden window).
+        std::wstring tag = rust ? L"R" : L"C";
 
         void Create(const std::wstring& dir, bool dark, UINT dpi, const SettingsSnapshot& snap)
         {
@@ -314,13 +326,13 @@ namespace
             app.dark = dark;
             app.dpi = dpi;
             app.snap = snap;
-            std::wstring sfx = rust ? L"_R" : L"_C";
+            std::wstring sfx = L"_" + tag;
             std::wstring mainCls = L"DIMEShotMain" + sfx, contentCls = L"DIMEShotContent" + sfx;
             if (rust) {
                 main = (HWND)dime_settings_window_create(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
                     static_cast<SettingsApp::Host*>(&app), GetModuleHandleW(nullptr), 0, (const uint16_t*)kCaption,
                     (const uint16_t*)mainCls.c_str(), (const uint16_t*)contentCls.c_str(), (const uint16_t*)kTestKey,
-                    (const uint16_t*)L"R", 10);
+                    (const uint16_t*)tag.c_str(), 10);
             } else {
                 main = SettingsWindow::CreateForTest(&app, GetModuleHandleW(nullptr), IME_MODE::IME_MODE_DAYI, kCaption,
                     mainCls.c_str(), contentCls.c_str(), kTestKey, L"C");
@@ -331,7 +343,11 @@ namespace
             SetWindowLongW(main, GWL_EXSTYLE,
                 GetWindowLongW(main, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW);
             SetLayeredWindowAttributes(main, 0, 0, LWA_ALPHA);
-            SetWindowPos(main, nullptr, 40, 40, 1000, 760, SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+            // The golden window stays hidden: shown, the system repaints its
+            // controls on its own (WM_CTLCOLOR* / WM_DRAWITEM with DCs from a
+            // cache), which would make the recorded calls vary.
+            SetWindowPos(main, nullptr, 40, 40, 1000, 760,
+                SWP_NOZORDER | SWP_NOACTIVATE | (tag == L"G" ? 0 : SWP_SHOWWINDOW));
             Pump();
         }
 
@@ -360,6 +376,74 @@ namespace
             Pump();
         }
     };
+
+    // A fixed snapshot: CConfig's depends on the tests that ran before.
+    SettingsSnapshot FixedSnapshot()
+    {
+        SettingsSnapshot s = {};
+        const wchar_t face[] = L"Microsoft JhengHei";   // zero after the NUL
+        memcpy(s.fontFaceName, face, sizeof(face));
+        s.fontSize = 16;
+        s.fontWeight = FW_NORMAL;
+        s.itemColor = RGB(0, 0, 0);
+        s.phraseColor = RGB(0, 128, 0);
+        s.numberColor = RGB(0, 0, 255);
+        s.itemBGColor = RGB(250, 250, 250);
+        s.selectedColor = RGB(255, 255, 255);
+        s.selectedBGColor = RGB(0, 120, 215);
+        s.maxCodes = 4;
+        return s;
+    }
+
+    // One paint of a window's WM_PAINT body into a scratch bitmap (only the
+    // recorded GDI calls matter).
+    void PaintBody(HWND h, bool content)
+    {
+        RECT rc; GetClientRect(h, &rc);
+        if (rc.right <= 0 || rc.bottom <= 0) return;
+        HDC screen = GetDC(nullptr);
+        HDC dc = CreateCompatibleDC(screen);
+        HBITMAP bmp = CreateCompatibleBitmap(screen, rc.right, rc.bottom);
+        ReleaseDC(nullptr, screen);
+        HGDIOBJ old = SelectObject(dc, bmp);
+        dime_settings_window_paint(h, dc, rc.right, rc.bottom, content ? 1 : 0);
+        SelectObject(dc, old);
+        DeleteObject(bmp);
+        DeleteDC(dc);
+    }
+
+    // The golden window's layout: main and content sizes, scroll bar, and
+    // every child (a combo box's height left out: the system sizes it).
+    std::wstring Layout(HWND main)
+    {
+        RECT mc; GetClientRect(main, &mc);
+        std::wstring out = L"main " + std::to_wstring(mc.right) + L"x" + std::to_wstring(mc.bottom) + L"\n";
+        HWND content = nullptr;
+        for (HWND c = GetWindow(main, GW_CHILD); c; c = GetWindow(c, GW_HWNDNEXT))
+            if (ClassOf(c) == L"DIMEShotContent") content = c;
+        if (!content) return out + L"no content\n";
+        RECT cr; GetWindowRect(content, &cr);
+        MapWindowPoints(nullptr, main, (POINT*)&cr, 2);
+        SCROLLINFO si = { sizeof(si), SIF_ALL };
+        GetScrollInfo(content, SB_VERT, &si);
+        out += L"content " + std::to_wstring(cr.left) + L"," + std::to_wstring(cr.top) + L"," + std::to_wstring(cr.right) + L","
+            + std::to_wstring(cr.bottom) + L" scroll " + std::to_wstring(si.nMax) + L" page " + std::to_wstring(si.nPage)
+            + L" pos " + std::to_wstring(si.nPos) + L"\n";
+        for (HWND c = GetWindow(content, GW_CHILD); c; c = GetWindow(c, GW_HWNDNEXT)) {
+            std::wstring cls = ClassOf(c);
+            RECT rc; GetWindowRect(c, &rc);
+            MapWindowPoints(nullptr, content, (POINT*)&rc, 2);
+            int len = GetWindowTextLengthW(c);
+            std::wstring text(len + 1, L'\0');
+            GetWindowTextW(c, text.data(), len + 1);
+            text.resize(len);
+            out += cls + L" id=" + std::to_wstring(GetDlgCtrlID(c)) + L" st=" + std::to_wstring(GetWindowLongW(c, GWL_STYLE))
+                + L" rc=" + std::to_wstring(rc.left) + L"," + std::to_wstring(rc.top) + L"," + std::to_wstring(rc.right) + L","
+                + (cls == L"ComboBox" ? std::wstring(L"?") : std::to_wstring(rc.bottom)) + L" vis="
+                + std::to_wstring((GetWindowLongW(c, GWL_STYLE) & WS_VISIBLE) ? 1 : 0) + L" text=[" + text.substr(0, 80) + L"]\n";
+        }
+        return out;
+    }
 
     struct Page {
         int mode, sel, level, card;
@@ -400,10 +484,17 @@ namespace
         std::wstring keep = EnvDir();
         std::wstring tag = std::wstring(dark ? L"dark" : L"light") + L"_" + std::to_wstring(dpi);
 
-        SettingsSnapshot snap = SettingsModel::LoadFromConfig();
-        Side c{ false }, r{ true };
+        SettingsSnapshot snap = FixedSnapshot();
+        Side c{ false }, r{ true }, g{ true };
+        g.tag = L"G";
         c.Create(dir, dark, dpi, snap);
         r.Create(dir, dark, dpi, snap);
+        // The golden window, with synthetic metrics recorded while it works.
+        Golden::Log golden;
+        std::unique_ptr<Golden::GdiRecording> rec(new Golden::GdiRecording());
+        g.Create(dir, dark, dpi, snap);
+        rec->Take();   // creating it: covered by the pages' calls
+        rec.reset();
 
         struct Size { const wchar_t* name; int w, h; };
         // Wide, and narrow (below sidebarCollapseBreak 800 x dpi / 96, above
@@ -418,9 +509,33 @@ namespace
         for (const Size& sz : sizes) {
             c.Resize(sz.w, sz.h);
             r.Resize(sz.w, sz.h);
+            rec.reset(new Golden::GdiRecording());
+            g.Resize(sz.w, sz.h);
+            rec->Take();
+            rec.reset();
             for (const Page& p : Pages()) {
                 c.Navigate(p.mode, p.sel, p.level, p.card);
                 r.Navigate(p.mode, p.sel, p.level, p.card);
+                {
+                    // The golden window: navigate, lay out, paint both bodies.
+                    rec.reset(new Golden::GdiRecording());
+                    g.Navigate(p.mode, p.sel, p.level, p.card);
+                    std::wstring layout = Layout(g.main);
+                    PaintBody(g.main, false);
+                    for (HWND ch = GetWindow(g.main, GW_CHILD); ch; ch = GetWindow(ch, GW_HWNDNEXT))
+                        if (ClassOf(ch) == L"DIMEShotContent") PaintBody(ch, true);
+                    std::vector<std::wstring> calls = rec->Take();
+                    rec.reset();
+                    Golden::Hash hash;
+                    std::wstring detail = layout;
+                    hash.Add(layout);
+                    for (const std::wstring& call : calls) {
+                        hash.Add(call);
+                        detail += call + L"\n";
+                    }
+                    golden.Add(std::wstring(sz.name) + L" " + Page(p).Name() + L": " + std::to_wstring(calls.size())
+                        + L" calls " + hash.Hex(), detail);
+                }
                 Shot a = c.Take(), b = r.Take();
                 std::wstring name = tag + L"_" + sz.name + L"_" + p.Name();
                 Assert::IsFalse(a.px.empty(), (name + L": PrintWindow failed (C++)").c_str());
@@ -454,6 +569,7 @@ namespace
         Logger::WriteMessage((tag + L": " + std::to_wstring(shots) + L" pages compared\n").c_str());
         DestroyWindow(c.main); c.main = nullptr;
         DestroyWindow(r.main); r.main = nullptr;
+        DestroyWindow(g.main); g.main = nullptr;
         Pump();
         for (int m = 0; m < 16; m++) {
             DeleteFileW((dir + L"\\custom" + std::to_wstring(m) + L".txt").c_str());
@@ -462,6 +578,7 @@ namespace
         RemoveDirectoryW(dir.c_str());
         if (!failures.empty())
             Assert::Fail((L"C++ and Rust screenshots differ (pictures in " + FailDir() + L"):\n" + failures).c_str());
+        Golden::Check(L"SettingsScreenshot", tag, golden);
     }
 }
 

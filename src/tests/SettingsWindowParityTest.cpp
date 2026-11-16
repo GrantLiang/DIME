@@ -11,28 +11,42 @@
 * id, styles, rectangle, visibility, text, check, combo items and
 * selection), the scroll bar, and the pixels of both frames must match.
 * At the end the placement each window saves must match too.
+*
+* Golden file (src/tests/golden/SettingsWindow): a third, Rust-only window
+* gets the same operations with synthetic text metrics recorded
+* (Golden::GdiRecording), so its layout does not depend on the machine's
+* fonts. Per step: a hash of its app calls, state, children (no pixels; a
+* combo box's height is the system's and left out) and every GDI call,
+* including the paints. The snapshot is fixed (CConfig's depends on the
+* tests that ran before).
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
 #include <Windows.h>
+#include <memory>
 #include <random>
 #include <string>
 #include <vector>
+#include <gdiplus.h>
 
 #include "../DIMESettings/SettingsWindow.h"
 #include "../DIMESettings/SettingsApp.h"
 #include "../DIMESettings/SettingsDriver.h"
 #include "dime_ffi.h"
 #include "SettingsFakeApp.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace SettingsTestApp;
 
+#pragma comment(lib, "gdiplus.lib")
+
 namespace
 {
+    ULONG_PTR g_gdiplusToken = 0;
     const wchar_t kTestKey[] = L"SOFTWARE\\DIME\\SettingsUIWindowParityTest";
 
-    int R(std::mt19937& rng, int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); }
+    int R(std::mt19937& rng, int lo, int hi) { return Golden::Pick(rng, lo, hi); }
 
     // Messages to child controls during one step (failure diagnostics).
     std::wstring g_trace;
@@ -197,20 +211,22 @@ namespace
     struct Side {
         bool rust;
         FakeApp app;
+        // Class suffix and placement value: C, R, or G (the golden window).
+        std::wstring tag = rust ? L"R" : L"C";
         HWND main = nullptr;
         size_t logPos = 0;
 
         void Create(int mode, const std::wstring& dir)
         {
             app.dir = dir;
-            std::wstring sfx = rust ? L"_R" : L"_C";
+            std::wstring sfx = L"_" + tag;
             std::wstring mainCls = L"DIMEWinParityMain" + sfx, contentCls = L"DIMEWinParityContent" + sfx;
             const wchar_t* caption = L"DIME 設定 v1.3.0";
             if (rust) {
                 main = (HWND)dime_settings_window_create(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
                     static_cast<SettingsApp::Host*>(&app), GetModuleHandleW(nullptr), mode, (const uint16_t*)caption,
                     (const uint16_t*)mainCls.c_str(), (const uint16_t*)contentCls.c_str(), (const uint16_t*)kTestKey,
-                    (const uint16_t*)L"R", 10);
+                    (const uint16_t*)tag.c_str(), 10);
             } else {
                 main = SettingsWindow::CreateForTest(&app, GetModuleHandleW(nullptr), (IME_MODE)mode, caption,
                     mainCls.c_str(), contentCls.c_str(), kTestKey, L"C");
@@ -269,6 +285,42 @@ namespace
             return out;
         }
     };
+
+    // A fixed snapshot: CConfig's depends on the tests that ran before.
+    SettingsSnapshot FixedSnapshot()
+    {
+        SettingsSnapshot s = {};
+        const wchar_t face[] = L"Microsoft JhengHei";   // zero after the NUL
+        memcpy(s.fontFaceName, face, sizeof(face));
+        s.fontSize = 16;
+        s.fontWeight = FW_NORMAL;
+        s.itemColor = RGB(0, 0, 0);
+        s.phraseColor = RGB(0, 128, 0);
+        s.numberColor = RGB(0, 0, 255);
+        s.itemBGColor = RGB(250, 250, 250);
+        s.selectedColor = RGB(255, 255, 255);
+        s.selectedBGColor = RGB(0, 120, 215);
+        s.maxCodes = 4;
+        s.arrayScope = 0;
+        return s;
+    }
+
+    // A description line for the golden file: no pixel hashes (the drawing
+    // is in the recorded calls), and a combo box's height (the system sizes
+    // the closed box from the font) left out.
+    bool ForGolden(std::wstring& line)
+    {
+        if (line.find(L" px ") != std::wstring::npos) return false;
+        if (line.rfind(L"ComboBox", 0) == 0) {
+            size_t rc = line.find(L" rc=");
+            if (rc != std::wstring::npos) {
+                size_t end = line.find(L' ', rc + 4);
+                size_t lastComma = line.rfind(L',', end);
+                line.replace(lastComma + 1, end - lastComma - 1, L"?");
+            }
+        }
+        return true;
+    }
 
     // One random operation, as message parameters both sides can replay.
     struct Op {
@@ -420,9 +472,19 @@ namespace DIMEUnitTests
     TEST_CLASS(SettingsWindowParityTest)
     {
     public:
+        // The painters use GDI+ (rounded cards): start it as the app does,
+        // or what is drawn depends on whether an earlier test class did.
+        TEST_CLASS_INITIALIZE(StartGdiplus)
+        {
+            Gdiplus::GdiplusStartupInput input;
+            Gdiplus::GdiplusStartup(&g_gdiplusToken, &input, nullptr);
+        }
+
         TEST_CLASS_CLEANUP(Cleanup)
         {
             RegDeleteTreeW(HKEY_CURRENT_USER, kTestKey);
+            if (g_gdiplusToken) Gdiplus::GdiplusShutdown(g_gdiplusToken);
+            g_gdiplusToken = 0;
         }
 
         TEST_METHOD(RandomOperations)
@@ -432,22 +494,45 @@ namespace DIMEUnitTests
             GetTempPathW(MAX_PATH, base);
             std::wstring dir = std::wstring(base) + L"DIMEWindowParity" + std::to_wstring(GetCurrentProcessId());
             CreateDirectoryW(dir.c_str(), nullptr);
-            SettingsSnapshot snap = SettingsModel::LoadFromConfig();
+            SettingsSnapshot snap = FixedSnapshot();
+            Golden::Log golden;
             int steps = 0, subPages = 0, narrow = 0, applies = 0, colorModes = 0, switches = 0, loadPage = 0;
             for (int run = 0; run < 12; run++) {
                 std::mt19937 rng(700 + run);
-                Side c{ false }, r{ true };
-                for (Side* s : { &c, &r }) {
+                Side c{ false }, r{ true }, g{ true };
+                g.tag = L"G";
+                for (Side* s : { &c, &r, &g }) {
                     s->app.snap = snap;
                     s->app.dark = (run & 1) != 0;
                     s->app.colorMode = run % 4;
                     s->app.snap.colorMode = run % 4;
                 }
                 int mode = run % 4;
+                std::wstring what = L"run " + std::to_wstring(run);
                 c.Create(mode, dir);
                 r.Create(mode, dir);
+                // The golden window, with synthetic metrics from its creation.
+                std::unique_ptr<Golden::GdiRecording> rec(new Golden::GdiRecording());
+                g.Create(mode, dir);
                 Pump();
-                std::wstring what = L"run " + std::to_wstring(run);
+                auto goldenStep = [&](const std::wstring& step) {
+                    std::wstring detail = Golden::Replace(g.NewLog(), dir, L"<dir>") + L"state " + g.State() + L"\n";
+                    for (std::wstring line : g.Describe())
+                        if (ForGolden(line)) detail += line + L"\n";
+                    std::wstring bad = g.Broken();
+                    if (!bad.empty()) Assert::Fail((what + L" " + step + L" golden window: " + bad).c_str());
+                    std::vector<std::wstring> calls = rec->Take();
+                    Golden::Hash hash;
+                    hash.Add(detail);
+                    for (const std::wstring& call : calls) {
+                        hash.Add(call);
+                        detail += call + L"\n";
+                    }
+                    golden.Add(what + L" " + step + L": " + std::to_wstring(calls.size()) + L" calls " + hash.Hex(), detail);
+                    // Off while the C++ and Rust windows run: synthetic
+                    // metrics would change the Rust one's layout.
+                    rec.reset();
+                };
                 std::vector<std::wstring> prev;
                 auto compare = [&](const std::wstring& step) {
                     std::wstring lc = c.NewLog(), lr = r.NewLog();
@@ -469,6 +554,7 @@ namespace DIMEUnitTests
                     }
                 };
                 compare(L"create");
+                goldenStep(L"create");
                 for (int i = 0; i < 60; i++) {
                     Op op = RandomOp(rng);
                     g_trace.clear();
@@ -477,6 +563,9 @@ namespace DIMEUnitTests
                     Apply(r, op);
                     UnhookWindowsHookEx(hook);
                     compare(L"step " + std::to_wstring(i) + L" " + op.Name());
+                    rec.reset(new Golden::GdiRecording());
+                    Apply(g, op);
+                    goldenStep(L"step " + std::to_wstring(i));
                     steps++;
                     SettingsDriver::State st = {};
                     SettingsWindow::StateForTest(c.main, &st, nullptr);
@@ -486,7 +575,9 @@ namespace DIMEUnitTests
                 }
                 DestroyWindow(c.main);
                 DestroyWindow(r.main);
+                DestroyWindow(g.main);
                 Pump();
+                rec.reset();
                 Assert::AreEqual(c.NewLog(), r.NewLog(), (what + L": destroy").c_str());
                 for (size_t at = 0; (at = c.app.log.find(L"apply ", at)) != std::wstring::npos; at++) applies++;
                 for (size_t at = 0; (at = c.app.log.find(L"setColorMode ", at)) != std::wstring::npos; at++) colorModes++;
@@ -495,6 +586,7 @@ namespace DIMEUnitTests
                 Assert::AreNotEqual(std::wstring(L"none"), ReadPlacement(L"R"));
             }
             RemoveDirectoryW(dir.c_str());
+            Golden::Check(L"SettingsWindow", L"RandomOperations", golden);
             std::wstring cover = L"subPages " + std::to_wstring(subPages) + L" narrow " + std::to_wstring(narrow)
                 + L" loadPage " + std::to_wstring(loadPage) + L" applies " + std::to_wstring(applies)
                 + L" colorModes " + std::to_wstring(colorModes) + L" switches " + std::to_wstring(switches);

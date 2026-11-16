@@ -1,0 +1,106 @@
+sel 0 nav 0 card 0 light: 45 lines 34938a1e1f09dbee
+sel 0 nav 0 card 0 dark: 45 lines 6909719c4f785c56
+sel 0 nav 1 card 0 light: 19 lines 6dc0291b28a9b98a
+sel 0 nav 1 card 0 dark: 19 lines ef20712cf04b15bc
+sel 0 nav 1 card 1 light: 7 lines f826fd9b1cd2b978
+sel 0 nav 1 card 1 dark: 7 lines f826fd9b1cd2b978
+sel 0 nav 1 card 2 light: 39 lines 673626ff4997717b
+sel 0 nav 1 card 2 dark: 39 lines 4b133bebe4be028b
+sel 0 nav 1 card 3 light missing: 9 lines c81c2f939b5bf6db
+sel 0 nav 1 card 3 light empty: 9 lines 8de8d02cf112a45b
+sel 0 nav 1 card 3 light utf8 bom: 9 lines edacce60f8dba8a6
+sel 0 nav 1 card 3 light utf8: 9 lines 07e8b28b5f567c0b
+sel 0 nav 1 card 3 light utf16 le: 9 lines 4d0eb2f2413cb393
+sel 0 nav 1 card 3 light utf16 be: 9 lines 5b81c1e4557528d4
+sel 0 nav 1 card 3 light bom only: 9 lines 8de8d02cf112a45b
+sel 0 nav 1 card 3 light directory: 9 lines 8de8d02cf112a45b
+sel 0 nav 1 card 3 dark missing: 9 lines 8e1f1c192407d028
+sel 0 nav 1 card 3 dark empty: 9 lines e555d21a2de6ddc8
+sel 0 nav 1 card 3 dark utf8 bom: 9 lines 9e4c959c8fc621bd
+sel 0 nav 1 card 3 dark utf8: 9 lines 28a97a5cbdc2e578
+sel 0 nav 1 card 3 dark utf16 le: 9 lines 0010f5b1b4bd53c0
+sel 0 nav 1 card 3 dark utf16 be: 9 lines 6149cea682f60ef7
+sel 0 nav 1 card 3 dark bom only: 9 lines e555d21a2de6ddc8
+sel 0 nav 1 card 3 dark directory: 9 lines e555d21a2de6ddc8
+sel 1 nav 0 card 0 light: 43 lines 00ff3f985fe710ad
+sel 1 nav 0 card 0 dark: 43 lines 68e1d3f123897afb
+sel 1 nav 1 card 0 light: 19 lines 6dc0291b28a9b98a
+sel 1 nav 1 card 0 dark: 19 lines ef20712cf04b15bc
+sel 1 nav 1 card 1 light: 5 lines 880aefe67a64189e
+sel 1 nav 1 card 1 dark: 5 lines 880aefe67a64189e
+sel 1 nav 1 card 2 light: 39 lines c4d1509952e8a3c8
+sel 1 nav 1 card 2 dark: 39 lines e11bdb1fd69bbd1e
+sel 1 nav 1 card 3 light missing: 9 lines c81c2f939b5bf6db
+sel 1 nav 1 card 3 light empty: 9 lines 8de8d02cf112a45b
+sel 1 nav 1 card 3 light utf8 bom: 9 lines edacce60f8dba8a6
+sel 1 nav 1 card 3 light utf8: 9 lines 07e8b28b5f567c0b
+sel 1 nav 1 card 3 light utf16 le: 9 lines 4d0eb2f2413cb393
+sel 1 nav 1 card 3 light utf16 be: 9 lines 5b81c1e4557528d4
+sel 1 nav 1 card 3 light bom only: 9 lines 8de8d02cf112a45b
+sel 1 nav 1 card 3 light directory: 9 lines 8de8d02cf112a45b
+sel 1 nav 1 card 3 dark missing: 9 lines 8e1f1c192407d028
+sel 1 nav 1 card 3 dark empty: 9 lines e555d21a2de6ddc8
+sel 1 nav 1 card 3 dark utf8 bom: 9 lines 9e4c959c8fc621bd
+sel 1 nav 1 card 3 dark utf8: 9 lines 28a97a5cbdc2e578
+sel 1 nav 1 card 3 dark utf16 le: 9 lines 0010f5b1b4bd53c0
+sel 1 nav 1 card 3 dark utf16 be: 9 lines 6149cea682f60ef7
+sel 1 nav 1 card 3 dark bom only: 9 lines e555d21a2de6ddc8
+sel 1 nav 1 card 3 dark directory: 9 lines e555d21a2de6ddc8
+sel 2 nav 0 card 0 light: 39 lines a7345310ed62ac89
+sel 2 nav 0 card 0 dark: 39 lines 30ef38a9d3bb2dbd
+sel 2 nav 1 card 0 light: 19 lines 6dc0291b28a9b98a
+sel 2 nav 1 card 0 dark: 19 lines ef20712cf04b15bc
+sel 2 nav 1 card 1 light: 5 lines 880aefe67a64189e
+sel 2 nav 1 card 1 dark: 5 lines 880aefe67a64189e
+sel 2 nav 1 card 2 light: 35 lines 058e6f1a8617dff5
+sel 2 nav 1 card 2 dark: 35 lines 759cbbb071303c79
+sel 2 nav 1 card 3 light missing: 9 lines c81c2f939b5bf6db
+sel 2 nav 1 card 3 light empty: 9 lines 8de8d02cf112a45b
+sel 2 nav 1 card 3 light utf8 bom: 9 lines edacce60f8dba8a6
+sel 2 nav 1 card 3 light utf8: 9 lines 07e8b28b5f567c0b
+sel 2 nav 1 card 3 light utf16 le: 9 lines 4d0eb2f2413cb393
+sel 2 nav 1 card 3 light utf16 be: 9 lines 5b81c1e4557528d4
+sel 2 nav 1 card 3 light bom only: 9 lines 8de8d02cf112a45b
+sel 2 nav 1 card 3 light directory: 9 lines 8de8d02cf112a45b
+sel 2 nav 1 card 3 dark missing: 9 lines 8e1f1c192407d028
+sel 2 nav 1 card 3 dark empty: 9 lines e555d21a2de6ddc8
+sel 2 nav 1 card 3 dark utf8 bom: 9 lines 9e4c959c8fc621bd
+sel 2 nav 1 card 3 dark utf8: 9 lines 28a97a5cbdc2e578
+sel 2 nav 1 card 3 dark utf16 le: 9 lines 0010f5b1b4bd53c0
+sel 2 nav 1 card 3 dark utf16 be: 9 lines 6149cea682f60ef7
+sel 2 nav 1 card 3 dark bom only: 9 lines e555d21a2de6ddc8
+sel 2 nav 1 card 3 dark directory: 9 lines e555d21a2de6ddc8
+sel 3 nav 0 card 0 light: 39 lines 7d2fd9f0ae3d3a27
+sel 3 nav 0 card 0 dark: 39 lines e5e9397ab0eff7a5
+sel 3 nav 1 card 0 light: 19 lines 6dc0291b28a9b98a
+sel 3 nav 1 card 0 dark: 19 lines ef20712cf04b15bc
+sel 3 nav 1 card 1 light: 5 lines 880aefe67a64189e
+sel 3 nav 1 card 1 dark: 5 lines 880aefe67a64189e
+sel 3 nav 1 card 2 light: 35 lines 0562a4ed14dae349
+sel 3 nav 1 card 2 dark: 35 lines 9b0c5b12414b2d5b
+sel 3 nav 1 card 3 light missing: 9 lines c81c2f939b5bf6db
+sel 3 nav 1 card 3 light empty: 9 lines 8de8d02cf112a45b
+sel 3 nav 1 card 3 light utf8 bom: 9 lines edacce60f8dba8a6
+sel 3 nav 1 card 3 light utf8: 9 lines 07e8b28b5f567c0b
+sel 3 nav 1 card 3 light utf16 le: 9 lines 4d0eb2f2413cb393
+sel 3 nav 1 card 3 light utf16 be: 9 lines 5b81c1e4557528d4
+sel 3 nav 1 card 3 light bom only: 9 lines 8de8d02cf112a45b
+sel 3 nav 1 card 3 light directory: 9 lines 8de8d02cf112a45b
+sel 3 nav 1 card 3 dark missing: 9 lines 8e1f1c192407d028
+sel 3 nav 1 card 3 dark empty: 9 lines e555d21a2de6ddc8
+sel 3 nav 1 card 3 dark utf8 bom: 9 lines 9e4c959c8fc621bd
+sel 3 nav 1 card 3 dark utf8: 9 lines 28a97a5cbdc2e578
+sel 3 nav 1 card 3 dark utf16 le: 9 lines 0010f5b1b4bd53c0
+sel 3 nav 1 card 3 dark utf16 be: 9 lines 6149cea682f60ef7
+sel 3 nav 1 card 3 dark bom only: 9 lines e555d21a2de6ddc8
+sel 3 nav 1 card 3 dark directory: 9 lines e555d21a2de6ddc8
+sel 5 nav 0 card 0 light: 25 lines e0ca9ca06f892eb8
+sel 5 nav 0 card 0 dark: 25 lines e0ca9ca06f892eb8
+sel 5 nav 1 card 0 light: 25 lines e0ca9ca06f892eb8
+sel 5 nav 1 card 0 dark: 25 lines e0ca9ca06f892eb8
+sel 5 nav 1 card 1 light: 25 lines e0ca9ca06f892eb8
+sel 5 nav 1 card 1 dark: 25 lines e0ca9ca06f892eb8
+sel 5 nav 1 card 2 light: 25 lines e0ca9ca06f892eb8
+sel 5 nav 1 card 2 dark: 25 lines e0ca9ca06f892eb8
+sel 5 nav 1 card 3 light: 25 lines e0ca9ca06f892eb8
+sel 5 nav 1 card 3 dark: 25 lines e0ca9ca06f892eb8

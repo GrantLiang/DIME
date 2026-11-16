@@ -11,6 +11,10 @@
 * match, and so must the theme SetWindowTheme recorded and the child pixels
 * (PrintWindow; the test process does not opt into dark mode, so the theme
 * itself does not show in the pixels).
+*
+* Golden files (src/tests/golden/SettingsChildren): per case, a hash of the
+* Rust side's Host calls and children, without the pixels (the system draws
+* the controls) and with the font handle as given / 0 / other.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -23,6 +27,7 @@
 #include "../DIMESettings/SettingsChildren.h"
 #include "../DIMESettings/SettingsPageLayout.h"
 #include "../DIMESettings/SettingsEditor.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SCH = SettingsChildren;
@@ -315,8 +320,24 @@ namespace
         return out;
     }
 
+    // A child's description for the golden file: no pixels, the font handle
+    // as given / 0 / other.
+    std::wstring ForGolden(std::wstring d, HFONT font)
+    {
+        size_t px = d.find(L" px=");
+        if (px != std::wstring::npos) d.erase(px);
+        size_t f = d.find(L" font=");
+        if (f != std::wstring::npos) {
+            size_t start = f + 6, end = d.find(L' ', start);
+            std::wstring v = d.substr(start, end - start);
+            std::wstring name = v == L"0" ? L"0" : v == std::to_wstring((LONG_PTR)font) ? L"given" : L"other";
+            d.replace(start, end - start, name);
+        }
+        return d;
+    }
+
     void Compare(const std::vector<SC::ControlSpec>& specs, const std::wstring& path, bool dark, HFONT font,
-        const std::wstring& what, int& checked)
+        const std::wstring& what, int& checked, Golden::Log& golden)
     {
         std::wstring logA, logB;
         std::vector<std::wstring> a = Run(false, specs, path, dark, font, logA);
@@ -329,6 +350,15 @@ namespace
                 Assert::Fail((what + L" child " + std::to_wstring(i) + L"\nC++:  " + a[i] + L"\nRust: " + b[i]).c_str());
         }
         checked += (int)a.size();
+        Golden::Hash hash;
+        std::wstring detail = logB;
+        hash.Add(logB);
+        for (const std::wstring& c : b) {
+            std::wstring g = ForGolden(c, font);
+            hash.Add(g);
+            detail += g + L"\n";
+        }
+        golden.Add(what + L": " + std::to_wstring(b.size()) + L" lines " + hash.Hex(), detail);
     }
 }
 
@@ -348,6 +378,7 @@ namespace DIMEUnitTests
             HFONT font = CreateFontW(-16, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0,
                 L"Microsoft JhengHei UI");
             int checked = 0, editorPages = 0;
+            Golden::Log golden;
             for (const Page& p : ShippedPageSpecs()) {
                 bool editor = HasEditor(p.specs);
                 if (editor) editorPages++;
@@ -356,9 +387,10 @@ namespace DIMEUnitTests
                     if (editor) {
                         for (const auto& f : files)
                             Compare(p.specs, f.second, dark != 0, font,
-                                p.name + (dark ? L" dark " : L" light ") + f.first, checked);
+                                p.name + (dark ? L" dark " : L" light ") + f.first, checked, golden);
                     } else {
-                        Compare(p.specs, files[0].second, dark != 0, font, p.name + (dark ? L" dark" : L" light"), checked);
+                        Compare(p.specs, files[0].second, dark != 0, font, p.name + (dark ? L" dark" : L" light"), checked,
+                            golden);
                     }
                 }
             }
@@ -368,6 +400,7 @@ namespace DIMEUnitTests
                 RemoveDirectoryW(f.second.c_str());
             }
             RemoveDirectoryW(dir.c_str());
+            Golden::Check(L"SettingsChildren", L"ShippedPages", golden);
             Assert::IsTrue(editorPages > 0, L"no page with the custom table editor");
             Assert::IsTrue(checked > 500, (L"children checked: " + std::to_wstring(checked)).c_str());
         }
@@ -380,6 +413,7 @@ namespace DIMEUnitTests
             std::mt19937 rng(9);
             HFONT font = CreateFontW(-12, 0, 0, 0, FW_BOLD, 0, 0, 0, DEFAULT_CHARSET, 0, 0, 0, 0, L"Segoe UI");
             int checked = 0;
+            Golden::Log golden;
             for (int iter = 0; iter < 60; iter++) {
                 std::vector<SC::ControlSpec> specs;
                 int n = 1 + (int)(rng() % 8);
@@ -402,9 +436,10 @@ namespace DIMEUnitTests
                     s.darkTheme = (int)(rng() % 3);
                     specs.push_back(s);
                 }
-                Compare(specs, L"", (rng() & 1) != 0, font, L"edge " + std::to_wstring(iter), checked);
+                Compare(specs, L"", (rng() & 1) != 0, font, L"edge " + std::to_wstring(iter), checked, golden);
             }
             DeleteObject(font);
+            Golden::Check(L"SettingsChildren", L"EdgeSpecs", golden);
             Assert::IsTrue(checked > 100);
         }
     };

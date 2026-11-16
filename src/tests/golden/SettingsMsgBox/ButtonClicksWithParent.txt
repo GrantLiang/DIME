@@ -1,0 +1,6 @@
+click type=3 button=0: result 6 client 400x128
+click type=3 button=1: result 7 client 400x128
+click type=3 button=2: result 2 client 400x128
+click type=4 button=0: result 6 client 280x128
+click type=4 button=1: result 7 client 280x128
+click type=0 button=0: result 1 client 185x128

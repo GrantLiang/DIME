@@ -12,6 +12,11 @@
 * - Run (caption, styles, size, placement or nCmdShow, the started callback,
 *   WM_QUIT's code, -1 when the window cannot be created).
 * The real placement key is never touched.
+*
+* Golden file (src/tests/golden/SettingsShell): PaintInto's Rust frames, a
+* separate paint per case recorded with synthetic text metrics
+* (Golden::GdiRecording), and the callbacks. The snapshot is fixed (not
+* CConfig's, which earlier tests change).
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -19,19 +24,44 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <gdiplus.h>
 
 #include "../DIMESettings/SettingsShell.h"
 #include "../DIMESettings/SettingsController.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace SS = SettingsShell;
 namespace SWP = SettingsWindowPaint;
 
+#pragma comment(lib, "gdiplus.lib")
+
 namespace
 {
+    ULONG_PTR g_gdiplusToken = 0;
     const wchar_t kTestKey[] = L"SOFTWARE\\DIME\\SettingsUIShellParityTest";
 
-    int R(std::mt19937& rng, int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); }
+    int R(std::mt19937& rng, int lo, int hi) { return Golden::Pick(rng, lo, hi); }
+
+    // A fixed snapshot: CConfig's depends on the tests that ran before.
+    SettingsSnapshot FixedSnapshot()
+    {
+        SettingsSnapshot s = {};
+        // Zero after the NUL (the debug wcscpy_s fills the rest with 0xFE).
+        const wchar_t face[] = L"Microsoft JhengHei";
+        memcpy(s.fontFaceName, face, sizeof(face));
+        s.fontSize = 16;
+        s.fontWeight = FW_NORMAL;
+        s.itemColor = RGB(0, 0, 0);
+        s.phraseColor = RGB(0, 128, 0);
+        s.numberColor = RGB(0, 0, 255);
+        s.itemBGColor = RGB(250, 250, 250);
+        s.selectedColor = RGB(255, 255, 255);
+        s.selectedBGColor = RGB(0, 120, 215);
+        s.colorMode = 3;
+        s.maxCodes = 4;
+        return s;
+    }
 
     // ---- Placement --------------------------------------------------------
 
@@ -264,9 +294,19 @@ namespace DIMEUnitTests
     TEST_CLASS(SettingsShellParityTest)
     {
     public:
+        // The painters use GDI+ (rounded cards): start it as the app does,
+        // or the frames depend on whether an earlier test class started it.
+        TEST_CLASS_INITIALIZE(StartGdiplus)
+        {
+            Gdiplus::GdiplusStartupInput input;
+            Gdiplus::GdiplusStartup(&g_gdiplusToken, &input, nullptr);
+        }
+
         TEST_CLASS_CLEANUP(Cleanup)
         {
             RegDeleteTreeW(HKEY_CURRENT_USER, kTestKey);
+            if (g_gdiplusToken) Gdiplus::GdiplusShutdown(g_gdiplusToken);
+            g_gdiplusToken = 0;
         }
 
         TEST_METHOD(Placement)
@@ -375,8 +415,9 @@ namespace DIMEUnitTests
         TEST_METHOD(PaintInto)
         {
             std::mt19937 rng(43);
-            SettingsSnapshot snap = SettingsModel::LoadFromConfig();
+            SettingsSnapshot snap = FixedSnapshot();
             int frames = 0;
+            Golden::Log golden;
             for (UINT dpi : { 96u, 144u }) {
                 SWP::Fonts f = {};
                 SWP::CreateFonts(dpi, &f);
@@ -411,6 +452,27 @@ namespace DIMEUnitTests
                             while (pa[k] == pb[k]) k++;
                             Assert::Fail((what + L": pixel " + std::to_wstring(k / 4 % w) + L"," + std::to_wstring(k / 4 / w)).c_str());
                         }
+                        // The golden file: a separate Rust paint, recorded.
+                        {
+                            Dib dr(w, h);
+                            Source sr = src;
+                            std::vector<std::wstring> calls;
+                            {
+                                Golden::GdiRecording rec;
+                                if (content) SS::Rust::PaintContentInto(dr.dc, w, h, sr.Get());
+                                else SS::Rust::PaintMainInto(dr.dc, w, h, sr.Get());
+                                calls = rec.Take();
+                            }
+                            Golden::Hash hash;
+                            std::wstring detail = sr.log + L"\n";
+                            hash.Add(sr.log);
+                            for (const std::wstring& c : calls) {
+                                hash.Add(c);
+                                detail += c + L"\n";
+                            }
+                            golden.Add(what + L" " + std::to_wstring(w) + L"x" + std::to_wstring(h) + L": "
+                                + std::to_wstring(calls.size()) + L" calls " + hash.Hex(), detail);
+                        }
                         frames++;
                     }
                     DeleteObject(sb);
@@ -419,6 +481,7 @@ namespace DIMEUnitTests
                 for (HFONT x : { f.title, f.cardHeader, f.body, f.desc, f.mdl2, f.mdl2Icon })
                     if (x) DeleteObject(x);
             }
+            Golden::Check(L"SettingsShell", L"PaintInto", golden);
             Assert::IsTrue(frames >= 96);
         }
 
@@ -439,7 +502,7 @@ namespace DIMEUnitTests
             ThemeColors t = ComputeThemeColors(false);
             HBRUSH sb = CreateSolidBrush(t.sidebarBg), cb = CreateSolidBrush(t.contentBg);
             Source base;
-            base.main = RandomContext(rng, f, sb, cb, SettingsModel::LoadFromConfig(), false, 96, 400, 300);
+            base.main = RandomContext(rng, f, sb, cb, FixedSnapshot(), false, 96, 400, 300);
             base.content = base.main;
             for (int side = 0; side < 2; side++) {
                 for (int content = 0; content < 2; content++) {
