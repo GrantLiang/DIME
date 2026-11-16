@@ -20,6 +20,7 @@
 
 #include "../UILayout.h"
 #include "dime_ffi.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -32,12 +33,12 @@ namespace
 
     RECT RandomRect(std::mt19937& rng, int lo, int hi, int maxSize)
     {
-        std::uniform_int_distribution<int> pos(lo, hi), size(0, maxSize);
+        // Golden::Pick: the inputs are behind golden files (phase 6b).
         RECT r;
-        r.left = pos(rng);
-        r.top = pos(rng);
-        r.right = r.left + size(rng);
-        r.bottom = r.top + size(rng);
+        r.left = Golden::Pick(rng, lo, hi);
+        r.top = Golden::Pick(rng, lo, hi);
+        r.right = r.left + Golden::Pick(rng, 0, maxSize);
+        r.bottom = r.top + Golden::Pick(rng, 0, maxSize);
         return r;
     }
 
@@ -59,6 +60,8 @@ namespace DIMEUnitTests
         {
             std::mt19937 rng(1);
             int compared = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"rects", 20000);
             for (int i = 0; i < 200000; i++)
             {
                 RECT limit = RandomRect(rng, -3000, 3000, 2500);
@@ -68,16 +71,21 @@ namespace DIMEUnitTests
                 uint32_t r = dime_ui_rect_in_rect((const DimeRect*)&limit, (const DimeRect*)&target);
                 if (c != r)
                     Assert::Fail((L"RectInRect " + R(limit) + L" " + R(target) + L": C++ " + std::to_wstring(c) + L" Rust " + std::to_wstring(r)).c_str());
+                ch.Add(R(limit) + R(target) + L"=" + std::to_wstring(r));
+                ch.Next();
                 compared++;
             }
+            ch.Finish();
+            Golden::Check(L"UILayout", L"RectInRect", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" rectangles").c_str());
         }
 
         TEST_METHOD(WindowPlacement)
         {
             std::mt19937 rng(2);
-            std::uniform_int_distribution<int> coin(0, 9);
             int compared = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"placements", 20000);
             for (int i = 0; i < 200000; i++)
             {
                 // A work area (possibly a monitor left of / above the primary one).
@@ -88,7 +96,7 @@ namespace DIMEUnitTests
                 RECT window = { 0, 0, 50 + (int)(rng() % 700), 30 + (int)(rng() % 550) };
                 // The text extent: a caret / composition near the work area, or a large area.
                 RECT text;
-                if (coin(rng) < 8)
+                if (Golden::Pick(rng, 0, 9) < 8)
                 {
                     text = RandomRect(rng, 0, 0, 0);
                     text.left = work.left - 200 + (int)(rng() % (work.right - work.left + 400));
@@ -112,7 +120,8 @@ namespace DIMEUnitTests
                 LONG baseX = (text.right - text.left) > (window.right - window.left) ? text.left : text.right;
                 OffsetRect(&below, baseX, text.bottom + 7);
                 OffsetRect(&above, baseX, text.top - (window.bottom - window.top) - 7);
-                if (Straddles(work, below) || Straddles(work, above)) continue;
+                ch.Add(R(text) + R(window) + L" probe " + std::to_wstring(pr.x) + L"," + std::to_wstring(pr.y));
+                if (Straddles(work, below) || Straddles(work, above)) { ch.Next(); continue; }
 
                 POINT c = { -12345, -12345 };
                 UILayout::Cpp::CalcFitPointAroundTextExtent(&text, &work, &window, &c);
@@ -121,14 +130,20 @@ namespace DIMEUnitTests
                 if (c.x != r.x || c.y != r.y)
                     Assert::Fail((L"CalcFitPoint text " + R(text) + L" work " + R(work) + L" window " + R(window) +
                         L": C++ " + std::to_wstring(c.x) + L"," + std::to_wstring(c.y) + L" Rust " + std::to_wstring(r.x) + L"," + std::to_wstring(r.y)).c_str());
+                ch.Add(R(work) + L" fit " + std::to_wstring(r.x) + L"," + std::to_wstring(r.y));
+                ch.Next();
                 compared++;
             }
+            ch.Finish();
+            Golden::Check(L"UILayout", L"WindowPlacement", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" placements").c_str());
         }
 
         TEST_METHOD(NotifyStack)
         {
             std::mt19937 rng(3);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"stacks", 10000);
             for (int i = 0; i < 100000; i++)
             {
                 size_t count = 1 + rng() % 6;
@@ -151,11 +166,16 @@ namespace DIMEUnitTests
                 BOOL gc = UILayout::Cpp::DecideStackGrowUp(candVisible, cand.top, notify.y, slots.data(), count, screenBottom);
                 int gr = dime_ui_stack_grow_up(candVisible, cand.top, notify.y, (const DimeNotifySlot*)slots.data(), count, screenBottom);
                 Assert::AreEqual((int)gc, gr, L"DecideStackGrowUp");
+                ch.Add(slots.data(), count * sizeof(slots[0]));
+                ch.Add(L"in " + std::to_wstring(candVisible) + R(cand) + std::to_wstring(candLoc.x) + L"," + std::to_wstring(candLoc.y) + L" " +
+                    std::to_wstring(notify.x) + L"," + std::to_wstring(notify.y) + L" " + std::to_wstring(screenBottom) + L" " +
+                    std::to_wstring(growUp) + L" " + std::to_wstring(newSlot) + L" grow " + std::to_wstring(gr));
 
                 POINT pc = UILayout::Cpp::ComputeStackPosForNewSlot(notify, slots.data(), count, newSlot, growUp);
                 DimePoint pr = { 0, 0 };
                 dime_ui_stack_pos_for_new_slot({ notify.x, notify.y }, (const DimeNotifySlot*)slots.data(), count, newSlot, growUp, &pr);
                 Assert::IsTrue(pc.x == pr.x && pc.y == pr.y, L"ComputeStackPosForNewSlot");
+                ch.Add(L"new " + std::to_wstring(pr.x) + L"," + std::to_wstring(pr.y));
 
                 std::vector<POINT> posC(count), posR(count);
                 std::vector<BOOL> placedC(count), placedR(count);
@@ -167,8 +187,12 @@ namespace DIMEUnitTests
                     Assert::AreEqual((int)placedC[k], (int)placedR[k], L"RestackVisibleSlots placed");
                     if (placedC[k])
                         Assert::IsTrue(posC[k].x == posR[k].x && posC[k].y == posR[k].y, L"RestackVisibleSlots position");
+                    ch.Add(L"slot " + std::to_wstring(placedR[k]) + (placedR[k] ? L" " + std::to_wstring(posR[k].x) + L"," + std::to_wstring(posR[k].y) : L""));
                 }
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"UILayout", L"NotifyStack", golden);
         }
 
         // ---- Candidate window and scroll bar (phase 3b) ----
@@ -203,6 +227,9 @@ namespace DIMEUnitTests
             std::mt19937 rng(11);
             const UINT dpis[] = { 96, 120, 144, 168, 192, 240, 288, 384 };
             int compared = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"layouts", 5000);
+            auto n = [](int v) { return std::to_wstring(v) + L","; };
             for (int i = 0; i < 100000; i++)
             {
                 UINT wndWidth = 1 + rng() % 20;
@@ -217,12 +244,14 @@ namespace DIMEUnitTests
                 UILayout::Cpp::CandInitialMetrics(measured, wndWidth, &t1, &r1, &p1);
                 dime_ui_cand_initial_metrics(measured.cx, measured.cy, wndWidth, &t2, &r2, &p2);
                 Assert::IsTrue(t1 == t2 && r1 == r2 && p1 == p2, L"CandInitialMetrics");
+                ch.Add(L"in " + n(wndWidth) + n(measured.cx) + n(measured.cy) + n(ave) + n(dpi) + L" init " + n(t2) + n(r2) + n(p2));
 
                 // _DrawList metrics
                 UILayout::CandMetrics mc = UILayout::Cpp::CandMeasureMetrics(measured, ave, wndWidth);
                 DimeCandMetrics mr = {};
                 dime_ui_cand_metrics(measured.cx, measured.cy, ave, wndWidth, &mr);
                 Assert::IsTrue(memcmp(&mc, &mr, sizeof(mc)) == 0, L"CandMeasureMetrics");
+                ch.Add(&mr, sizeof(mr));
 
                 Assert::AreEqual(UILayout::Cpp::ScaleForDpi(16, dpi), dime_ui_mul_div(16, (int)dpi, 96), L"ScaleForDpi");
 
@@ -231,6 +260,7 @@ namespace DIMEUnitTests
                 int32_t sw = 0, sh = 0;
                 dime_ui_cand_window_size(mc.cxTitle, mc.cyLine, mc.padding, rows, sb, &sw, &sh);
                 Assert::IsTrue(sc.cx == sw && sc.cy == sh, L"CandWindowSize");
+                ch.Add(L"rows " + n(rows) + L"size " + n(sw) + n(sh));
 
                 RECT client = { 0, 0, sc.cx - 2, sc.cy - 2 };
                 if (rng() % 4 == 0) client = RandomRect(rng, -50, 50, 600);
@@ -238,6 +268,7 @@ namespace DIMEUnitTests
                 RECT br = {};
                 dime_ui_cand_scrollbar_rect((const DimeRect*)&client, sb, dpi, 10, (DimeRect*)&br);
                 Assert::IsTrue(EqualRect(&bc, &br) && bc.left == br.left, (L"CandScrollBarRect " + R(bc) + L" " + R(br)).c_str());
+                ch.Add(L"client " + R(client) + L" sb " + R(br));
 
                 for (int row = 0; row < rows; row++)
                 {
@@ -245,6 +276,7 @@ namespace DIMEUnitTests
                     DimeCandRow rr = {};
                     dime_ui_cand_row((const DimeRect*)&client, row, &mr, sb, dpi, &rr);
                     Assert::IsTrue(memcmp(&rc, &rr, sizeof(rc)) == 0, L"CandRowLayout");
+                    ch.Add(&rr, sizeof(rr));
                 }
 
                 int length = (int)(rng() % 40);
@@ -261,6 +293,8 @@ namespace DIMEUnitTests
                 BOOL wc = UILayout::Cpp::CandWidenForItem(lc, measuredCx, mc.leftPadding + mc.cxLine, &titleC, &widthC);
                 int wr = dime_ui_cand_widen(lc, measuredCx, mc.leftPadding + mc.cxLine, &titleR, &widthR);
                 Assert::IsTrue((int)wc == wr && titleC == titleR && widthC == widthR, L"CandWidenForItem");
+                ch.Add(L"item " + n(length) + n(lr) + n(tr) + n(dime_ui_cand_item_needs_measure(lr, wndWidth)) + n(measuredCx) +
+                    L"widen " + n(wr) + n(titleR) + n((int)widthR) + L"resize " + n(dime_ui_cand_needs_resize(titleR, (const DimeRect*)&client, sb)));
 
                 Assert::AreEqual((int)UILayout::Cpp::CandNeedsResize(titleC, client, sb), dime_ui_cand_needs_resize(titleC, (const DimeRect*)&client, sb), L"CandNeedsResize");
 
@@ -273,22 +307,29 @@ namespace DIMEUnitTests
                     int hc = UILayout::Cpp::CandHitRow(client, mc.padding, sb, mc.cyLine, (UINT)rows, pageStart, count, pt);
                     int hr = dime_ui_cand_hit_row((const DimeRect*)&client, mc.padding, sb, mc.cyLine, (UINT)rows, pageStart, count, { pt.x, pt.y });
                     Assert::AreEqual(hc, hr, L"CandHitRow");
+                    ch.Add(L"hit " + n(pageStart) + n(count) + n(pt.x) + n(pt.y) + n(hr));
                 }
 
                 RECT ac = UILayout::Cpp::CandScrollColumnRect(client, sb), ar = {};
                 dime_ui_cand_mouse_area((const DimeRect*)&client, sb, 0, (DimeRect*)&ar);
                 Assert::IsTrue(memcmp(&ac, &ar, sizeof(ac)) == 0, L"CandScrollColumnRect");
+                ch.Add(L"column " + R(ar));
                 ac = UILayout::Cpp::CandListAreaRect(client, sb);
                 dime_ui_cand_mouse_area((const DimeRect*)&client, sb, 1, (DimeRect*)&ar);
                 Assert::IsTrue(memcmp(&ac, &ar, sizeof(ac)) == 0, L"CandListAreaRect");
+                ch.Add(L"list " + R(ar));
                 ac = UILayout::Cpp::CandPageIndicatorRect(client, mc.cyLine, rows, sb, dpi);
                 dime_ui_cand_page_indicator((const DimeRect*)&client, mc.cyLine, rows, sb, dpi, (DimeRect*)&ar);
                 Assert::IsTrue(memcmp(&ac, &ar, sizeof(ac)) == 0, L"CandPageIndicatorRect");
+                ch.Add(L"page " + R(ar));
 
                 int lf = -(int)(rng() % 80);
                 Assert::AreEqual(UILayout::Cpp::CandPageIndicatorFontHeight(lf), dime_ui_mul_div(lf, 70, 100), L"CandPageIndicatorFontHeight");
+                ch.Next();
                 compared++;
             }
+            ch.Finish();
+            Golden::Check(L"UILayout", L"CandidateWindowLayout", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" candidate layouts").c_str());
         }
 
@@ -297,6 +338,9 @@ namespace DIMEUnitTests
             std::mt19937 rng(12);
             const UINT dpis[] = { 96, 120, 144, 168, 192, 240, 288, 384 };
             int compared = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"scroll bars", 10000);
+            auto n = [](int v) { return std::to_wstring(v) + L","; };
             for (int i = 0; i < 200000; i++)
             {
                 UINT dpi = (rng() % 4 == 0) ? 48 + rng() % 500 : dpis[rng() % 8];
@@ -308,12 +352,15 @@ namespace DIMEUnitTests
                 DimeScrollParts pr = {};
                 dime_ui_sb_parts((const DimeRect*)&client, dpi, (const DimeScrollInfo*)&si, &pr);
                 Assert::IsTrue(memcmp(&pc, &pr, sizeof(pc)) == 0, (L"ScrollBarParts thumb " + R(pc.thumb)).c_str());
+                ch.Add(L"in " + n(dpi) + R(client) + n(si.nMax) + n(si.nPage) + n(si.nPos));
+                ch.Add(&pr, sizeof(pr));
 
                 for (int k = 0; k < 6; k++)
                 {
                     POINT pt = { (LONG)(rng() % 60) - 5 + client.left, (LONG)(rng() % 920) - 10 + client.top };
                     Assert::AreEqual(UILayout::Cpp::ScrollBarHitTest(client, dpi, si, pt),
                         dime_ui_sb_hit_test((const DimeRect*)&client, dpi, (const DimeScrollInfo*)&si, { pt.x, pt.y }), L"ScrollBarHitTest");
+                    ch.Add(L"hit " + n(pt.x) + n(pt.y) + n(dime_ui_sb_hit_test((const DimeRect*)&client, dpi, (const DimeScrollInfo*)&si, { pt.x, pt.y })));
                 }
 
                 // The paint path only draws the idle thumb for nMax > nPage.
@@ -324,12 +371,14 @@ namespace DIMEUnitTests
                     int hr = dime_ui_sb_idle_thumb((const DimeRect*)&client, dpi, (const DimeScrollInfo*)&si, (DimeRect*)&ir);
                     Assert::AreEqual((int)hc, hr, L"ScrollBarIdleThumb");
                     if (hc) Assert::IsTrue(memcmp(&ic, &ir, sizeof(ic)) == 0, L"ScrollBarIdleThumb rect");
+                    ch.Add(L"idle " + n(hr) + (hr ? R(ir) : L""));
                 }
 
                 UILayout::ScrollArrows wc = UILayout::Cpp::ScrollBarArrows(client, dpi);
                 DimeScrollArrows wr = {};
                 dime_ui_sb_arrows((const DimeRect*)&client, dpi, &wr);
                 Assert::IsTrue(memcmp(&wc, &wr, sizeof(wc)) == 0, L"ScrollBarArrows");
+                ch.Add(&wr, sizeof(wr));
 
                 int start = (int)(rng() % 300), delta = (int)(rng() % 2000) - 1000;
                 int dc = -7, dr = -7;
@@ -337,6 +386,7 @@ namespace DIMEUnitTests
                 int gr = dime_ui_sb_drag_pos((const DimeRect*)&client, dpi, (const DimeScrollInfo*)&si, start, delta, &dr);
                 Assert::AreEqual((int)gc, gr, L"ScrollBarDragPos");
                 if (gc) Assert::AreEqual(dc, dr, L"ScrollBarDragPos position");
+                ch.Add(L"drag " + n(start) + n(delta) + n(gr) + (gr ? n(dr) : L"") + L"clamp " + n(dime_ui_sb_clamp_pos(si.nPos, si.nMax)));
 
                 Assert::AreEqual(UILayout::Cpp::ScrollBarClampPos(si.nPos, si.nMax), dime_ui_sb_clamp_pos(si.nPos, si.nMax), L"ScrollBarClampPos");
 
@@ -344,8 +394,12 @@ namespace DIMEUnitTests
                 RECT tc = UILayout::Cpp::ScrollBarAttachedRect(pw, ph, ::MulDiv(16, dpi, 96)), tr = {};
                 dime_ui_sb_attached_rect(pw, ph, ::MulDiv(16, dpi, 96), (DimeRect*)&tr);
                 Assert::IsTrue(memcmp(&tc, &tr, sizeof(tc)) == 0, L"ScrollBarAttachedRect");
+                ch.Add(L"attached " + n(pw) + n(ph) + R(tr));
+                ch.Next();
                 compared++;
             }
+            ch.Finish();
+            Golden::Check(L"UILayout", L"ScrollBarLayout", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" scroll bar layouts").c_str());
         }
     };

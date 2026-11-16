@@ -34,6 +34,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 #ifdef DIME_RUST_AVAILABLE
 #include "dime_ffi.h"
+#include "Golden.h"
 
 namespace
 {
@@ -82,6 +83,8 @@ namespace DIMEUnitTests
         TEST_METHOD(ColorMatchesCpp)
         {
             std::mt19937 rng(61);
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"colors", 2000);
             for (int i = 0; i < 20000; i++)
             {
                 bool dark = rng() % 2;
@@ -91,7 +94,11 @@ namespace DIMEUnitTests
                 dime_ui_shadow_color(dark ? 1 : 0, sys, &gr, &ar);
                 if (gc != gr || ac != ar)
                     Assert::Fail((L"color dark=" + std::to_wstring(dark) + L" sys=" + std::to_wstring(sys)).c_str());
+                ch.Add(std::to_wstring(dark) + L"," + std::to_wstring(sys) + L"=" + std::to_wstring(gr) + L"," + std::to_wstring(ar));
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"Shadow", L"Color", golden);
         }
 
         TEST_METHOD(PixelsMatchCpp)
@@ -100,6 +107,8 @@ namespace DIMEUnitTests
             const BYTE grays[] = { 0, 200 };
             const BYTE alphas[] = { 35, 45 };
             long long pixels = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"images", 50);
             for (int i = 0; i < 600; i++)
             {
                 // Owners at least 1 px: cx, cy >= 2 * SHADOW_SPREAD + 1.
@@ -117,8 +126,14 @@ namespace DIMEUnitTests
                         Assert::Fail((L"pixel " + std::to_wstring(k % cx) + L"," + std::to_wstring(k / cx) + L" of " + std::to_wstring(cx) + L"x" +
                             std::to_wstring(cy) + L" r=" + std::to_wstring(radius) + L": C++ " + std::to_wstring(c[k]) + L" Rust " + std::to_wstring(r[k])).c_str());
                 }
+                ch.Add(std::to_wstring(cx) + L"x" + std::to_wstring(cy) + L" r=" + std::to_wstring(radius) + L" " +
+                    std::to_wstring(gray) + L"," + std::to_wstring(maxAlpha));
+                ch.Add(r.data(), r.size() * sizeof(DWORD));
+                ch.Next();
                 pixels += (long long)c.size();
             }
+            ch.Finish();
+            Golden::Check(L"Shadow", L"Pixels", golden);
             Logger::WriteMessage((std::to_wstring(pixels) + L" shadow pixels compared").c_str());
         }
 
