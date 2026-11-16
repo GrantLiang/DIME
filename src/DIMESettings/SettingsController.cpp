@@ -16,7 +16,6 @@
 #include "..\CompositionProcessorEngine.h"
 #include "SettingsController.h"
 #include "SettingsPageLayout.h"
-#ifdef DIME_USE_RUST_CONFIG
 #include "dime_ffi.h"
 #include <cstddef>
 
@@ -86,7 +85,6 @@ extern "C" int32_t DimeSettingsCharOk(uint16_t ch, void* ctx)
     return engine->ValidateCompositionKeyCharFull(static_cast<WCHAR>(ch)) ? 1 : 0;
 }
 }
-#endif
 
 // ============================================================================
 // IME mode bitmask
@@ -94,17 +92,7 @@ extern "C" int32_t DimeSettingsCharOk(uint16_t ch, void* ctx)
 
 int SettingsModel::GetModeBitmask(IME_MODE mode)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return dime_settings_mode_bitmask(static_cast<int32_t>(mode));
-#else
-    switch (mode) {
-    case IME_MODE::IME_MODE_DAYI:     return SM_MODE_DAYI;
-    case IME_MODE::IME_MODE_ARRAY:    return SM_MODE_ARRAY;
-    case IME_MODE::IME_MODE_PHONETIC: return SM_MODE_PHONETIC;
-    case IME_MODE::IME_MODE_GENERIC:  return SM_MODE_GENERIC;
-    default: return 0;
-    }
-#endif
 }
 
 // ============================================================================
@@ -113,14 +101,7 @@ int SettingsModel::GetModeBitmask(IME_MODE mode)
 
 int SettingsModel::SidebarHitTest(int y, int itemHeight, int itemCount)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return dime_settings_sidebar_hit_test(y, itemHeight, itemCount);
-#else
-    if (y < 0 || itemHeight <= 0 || itemCount <= 0) return -1;
-    int index = y / itemHeight;
-    if (index >= itemCount) return -1;
-    return index;
-#endif
 }
 
 // ============================================================================
@@ -129,24 +110,12 @@ int SettingsModel::SidebarHitTest(int y, int itemHeight, int itemCount)
 
 int SettingsModel::ComputeScrollRange(int contentHeight, int viewportHeight)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return dime_settings_scroll_range(contentHeight, viewportHeight);
-#else
-    if (contentHeight <= viewportHeight) return 0;
-    return contentHeight - viewportHeight;
-#endif
 }
 
 int SettingsModel::ClampScrollPos(int pos, int maxScroll)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return dime_settings_clamp_scroll(pos, maxScroll);
-#else
-    if (pos < 0) return 0;
-    if (maxScroll < 0) maxScroll = 0;
-    if (pos > maxScroll) return maxScroll;
-    return pos;
-#endif
 }
 
 // ============================================================================
@@ -155,31 +124,12 @@ int SettingsModel::ClampScrollPos(int pos, int maxScroll)
 
 const wchar_t* SettingsModel::ImeModeToString(IME_MODE mode)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return reinterpret_cast<const wchar_t*>(dime_settings_ime_mode_to_string(static_cast<int32_t>(mode)));
-#else
-    switch (mode) {
-    case IME_MODE::IME_MODE_DAYI:     return ImeModeStrings::Dayi;
-    case IME_MODE::IME_MODE_ARRAY:    return ImeModeStrings::Array;
-    case IME_MODE::IME_MODE_PHONETIC: return ImeModeStrings::Phonetic;
-    case IME_MODE::IME_MODE_GENERIC:  return ImeModeStrings::Generic;
-    default: return nullptr;
-    }
-#endif
 }
 
 IME_MODE SettingsModel::StringToImeMode(const wchar_t* str)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return static_cast<IME_MODE>(dime_settings_string_to_ime_mode(reinterpret_cast<const uint16_t*>(str)));
-#else
-    if (!str) return IME_MODE::IME_MODE_NONE;
-    if (_wcsicmp(str, ImeModeStrings::Dayi) == 0)     return IME_MODE::IME_MODE_DAYI;
-    if (_wcsicmp(str, ImeModeStrings::Array) == 0)    return IME_MODE::IME_MODE_ARRAY;
-    if (_wcsicmp(str, ImeModeStrings::Phonetic) == 0) return IME_MODE::IME_MODE_PHONETIC;
-    if (_wcsicmp(str, ImeModeStrings::Generic) == 0)  return IME_MODE::IME_MODE_GENERIC;
-    return IME_MODE::IME_MODE_NONE;
-#endif
 }
 
 // ============================================================================
@@ -304,37 +254,12 @@ void SettingsModel::ApplyToConfig(const SettingsSnapshot& snap)
 
 void SettingsModel::SyncToggleToSnapshot(SettingsSnapshot& s, SettingsControlId id, bool isOn)
 {
-#ifdef DIME_USE_RUST_CONFIG
     dime_settings_sync_toggle(&s, static_cast<int32_t>(id), isOn ? 1 : 0);
-#else
-    switch (id) {
-    case CTRL_DO_BEEP:             s.doBeep = isOn; break;
-    case CTRL_DO_BEEP_NOTIFY:      s.doBeepNotify = isOn; break;
-    case CTRL_DO_BEEP_CANDI:       s.doBeepOnCandi = isOn; break;
-    case CTRL_SHOW_NOTIFY:         s.showNotifyDesktop = isOn; break;
-    case CTRL_AUTO_COMPOSE:        s.autoCompose = isOn; break;
-    case CTRL_CLEAR_ON_BEEP:       s.clearOnBeep = isOn; break;
-    case CTRL_MAKE_PHRASE:         s.makePhrase = isOn; break;
-    case CTRL_CUSTOM_TABLE_PRIORITY: s.customTablePriority = isOn; break;
-    case CTRL_ARROW_KEY_SW_PAGES:  s.arrowKeySWPages = isOn; break;
-    case CTRL_SPACE_AS_PAGEDOWN:   s.spaceAsPageDown = isOn; break;
-    case CTRL_SPACE_AS_FIRST_CAND: s.spaceAsFirstCandSelkey = isOn; break;
-    case CTRL_KEYBOARD_OPEN_CLOSE: s.activatedKeyboardMode = isOn; break;
-    case CTRL_OUTPUT_CHT_CHS:      s.doHanConvert = isOn; break;
-    case CTRL_DAYI_ARTICLE:        s.dayiArticleMode = isOn; break;
-    case CTRL_SENTENCE_MODE:       s.sentenceMode = isOn; break;
-    case CTRL_ARRAY_FORCE_SP:      s.arrayForceSP = isOn; break;
-    case CTRL_ARRAY_NOTIFY_SP:     s.arrayNotifySP = isOn; break;
-    case CTRL_ARRAY_SINGLE_QUOTE:  s.arraySingleQuoteCustomPhrase = isOn; break;
-    default: break;
-    }
-#endif
 }
 
 SettingsModel::LineValidation SettingsModel::ValidateLine(const wchar_t* line, int len, IME_MODE mode, UINT maxCodes,
     CCompositionProcessorEngine* pEngine)
 {
-#ifdef DIME_USE_RUST_CONFIG
     DimeLineError errs[1024];
     size_t count = 0;
     const int32_t ok = dime_settings_validate_line(
@@ -360,133 +285,6 @@ SettingsModel::LineValidation SettingsModel::ValidateLine(const wchar_t* line, i
         v.errors.push_back({ kind, errs[i].start, errs[i].len });
     }
     return v;
-#else
-    // Matches CConfig::ValidateCustomTableLines per-line logic exactly.
-    // 3 levels: Format → KeyTooLong → InvalidChar (may report multiple chars)
-    LineValidation v = { true, {} };
-    if (!line || len <= 0) return v;
-
-    // Trim
-    int s = 0;
-    while (s < len && iswspace(line[s])) ++s;
-    int e = len;
-    while (e > s && iswspace(line[e - 1])) --e;
-    if (s >= e) return v; // empty line → valid (skip)
-
-    // Level 0: hard length cap. Bounds worst-case validator runtime regardless
-    // of caller. Defends against the catastrophic-backtracking footgun that the
-    // old std::wregex below used to hit when the read path fed the validator a
-    // single mega-line (issue #130).
-    if ((e - s) > MAX_TABLE_LINE_LENGTH) {
-        v.valid = false;
-        v.errors.push_back({ LineError::Format, s, e - s });
-        return v;
-    }
-
-    // Level 1: manual format scan. Per-line format is documented as
-    // "輸入碼 空白 詞彙" (key whitespace value) — exactly two non-whitespace
-    // tokens. Anything else (no separator, no value, or extra tokens after
-    // the value like "key value extra") is a format error.
-    const wchar_t* p      = line + s;
-    const wchar_t* end    = line + e;
-
-    // Key: first non-whitespace run.
-    const wchar_t* keyEnd = p;
-    while (keyEnd < end && !iswspace(*keyEnd)) ++keyEnd;
-    if (keyEnd == p || keyEnd == end) {
-        v.valid = false;
-        v.errors.push_back({ LineError::Format, s, e - s });
-        return v;
-    }
-    // Separator: whitespace run.
-    const wchar_t* valStart = keyEnd;
-    while (valStart < end && iswspace(*valStart)) ++valStart;
-    if (valStart == end) {
-        v.valid = false;
-        v.errors.push_back({ LineError::Format, s, e - s });
-        return v;
-    }
-    // Value: second non-whitespace run.
-    const wchar_t* valEnd = valStart;
-    while (valEnd < end && !iswspace(*valEnd)) ++valEnd;
-    // Anything after the value must be whitespace only — no third token.
-    const wchar_t* tail = valEnd;
-    while (tail < end && iswspace(*tail)) ++tail;
-    if (tail != end) {
-        v.valid = false;
-        v.errors.push_back({ LineError::Format, s, e - s });
-        return v;
-    }
-    std::wstring key(p, keyEnd - p);
-
-    // Level 2: Check key length
-    UINT maxKeyLength = (mode == IME_MODE::IME_MODE_PHONETIC) ? MAX_KEY_LENGTH : maxCodes;
-    if (key.length() > maxKeyLength)
-    {
-        // Key too long — mark entire key
-        v.valid = false;
-        v.errors.push_back({ LineError::KeyTooLong, s, (int)key.length() });
-        return v; // Skip character validation if key already too long (same as original)
-    }
-
-    // Level 3: Validate each character in key
-    int keyStart = s;
-
-    if (mode == IME_MODE::IME_MODE_PHONETIC)
-    {
-        for (size_t i = 0; i < key.length(); ++i)
-        {
-            WCHAR c = key[i];
-            // Validate: printable ASCII excluding space, AND cannot be '*' or '?'
-            if (!(c >= L'!' && c <= L'~') || (c == L'*' || c == L'?'))
-            {
-                v.valid = false;
-                v.errors.push_back({ LineError::InvalidChar, keyStart + (int)i, 1 });
-            }
-        }
-    }
-    else
-    {
-        // Quick accept: if the key contains only ASCII letters, skip char-by-char validation
-        bool allAsciiLetters = true;
-        for (WCHAR c : key) {
-            WCHAR cu = towupper(c);
-            if (!(cu >= L'A' && cu <= L'Z')) {
-                allAsciiLetters = false;
-                break;
-            }
-        }
-
-        if (!allAsciiLetters)
-        {
-            // Validate each character with composition engine if available
-            for (size_t i = 0; i < key.length(); ++i)
-            {
-                WCHAR c = key[i];
-                BOOL ok = FALSE;
-
-                if (pEngine)
-                {
-                    // Use engine's full validation logic (authoritative)
-                    ok = pEngine->ValidateCompositionKeyCharFull(c) ? TRUE : FALSE;
-                }
-                else
-                {
-                    // Fallback: basic range check same as inline ValidateCompositionKeyChar
-                    WCHAR cu = towupper(c);
-                    ok = (cu >= 32 && cu <= 32 + MAX_RADICAL) ? TRUE : FALSE;
-                }
-
-                if (!ok)
-                {
-                    v.valid = false;
-                    v.errors.push_back({ LineError::InvalidChar, keyStart + (int)i, 1 });
-                }
-            }
-        }
-    }
-    return v;
-#endif
 }
 
 // ============================================================================
@@ -554,7 +352,6 @@ void SettingsModel::GetCustomTableCINPath(IME_MODE mode, WCHAR* out, DWORD cch)
 // detects encoding and returns a real UTF-16LE wide string.
 LPWSTR SettingsModel::LoadTextFileAsUtf16(LPCWSTR path, size_t* outLen)
 {
-#ifdef DIME_USE_RUST_CONFIG
     // File open and the empty-file buffer stay here. The byte ladder,
     // including the UTF-16 BE double swap, is dime_settings_decode_text*.
     if (outLen) *outLen = 0;
@@ -599,101 +396,6 @@ LPWSTR SettingsModel::LoadTextFileAsUtf16(LPCWSTR path, size_t* outLen)
     delete[] raw;
     if (outLen) *outLen = wlen;
     return out;
-#else
-    if (outLen) *outLen = 0;
-    if (!path) return nullptr;
-
-    HANDLE hFile = CreateFileW(path, GENERIC_READ,
-        FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-        OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
-    if (hFile == INVALID_HANDLE_VALUE) return nullptr;
-
-    DWORD dwSize = GetFileSize(hFile, nullptr);
-    if (dwSize == INVALID_FILE_SIZE || dwSize == 0) {
-        CloseHandle(hFile);
-        // Empty file → return a valid 1-wchar NUL buffer so callers can
-        // SetWindowTextW(L"") rather than blank-on-failure.
-        LPWSTR empty = new (std::nothrow) WCHAR[1];
-        if (empty) empty[0] = 0;
-        return empty;
-    }
-
-    BYTE* raw = new (std::nothrow) BYTE[dwSize];
-    if (!raw) { CloseHandle(hFile); return nullptr; }
-    DWORD dwRead = 0;
-    if (!ReadFile(hFile, raw, dwSize, &dwRead, nullptr) || dwRead == 0) {
-        delete[] raw;
-        CloseHandle(hFile);
-        return nullptr;
-    }
-    CloseHandle(hFile);
-
-    // ---- Detect BOM ----
-    // UTF-16LE BOM: FF FE
-    if (dwRead >= 2 && raw[0] == 0xFF && raw[1] == 0xFE) {
-        size_t bytes = dwRead - 2;
-        size_t wlen = bytes / sizeof(WCHAR);
-        LPWSTR out = new (std::nothrow) WCHAR[wlen + 1];
-        if (!out) { delete[] raw; return nullptr; }
-        memcpy(out, raw + 2, wlen * sizeof(WCHAR));
-        out[wlen] = 0;
-        delete[] raw;
-        if (outLen) *outLen = wlen;
-        return out;
-    }
-    // UTF-16BE BOM: FE FF — byte-swap into LE
-    if (dwRead >= 2 && raw[0] == 0xFE && raw[1] == 0xFF) {
-        size_t bytes = dwRead - 2;
-        size_t wlen = bytes / sizeof(WCHAR);
-        LPWSTR out = new (std::nothrow) WCHAR[wlen + 1];
-        if (!out) { delete[] raw; return nullptr; }
-        for (size_t i = 0; i < wlen; ++i) {
-            BYTE hi = raw[2 + i * 2];
-            BYTE lo = raw[2 + i * 2 + 1];
-            out[i] = (WCHAR)((hi << 8) | lo);
-            // swap to LE
-            out[i] = (WCHAR)(((out[i] & 0xFF) << 8) | ((out[i] >> 8) & 0xFF));
-        }
-        out[wlen] = 0;
-        delete[] raw;
-        if (outLen) *outLen = wlen;
-        return out;
-    }
-
-    // UTF-8 BOM: EF BB BF — strip and decode as UTF-8
-    BYTE* utf8Start = raw;
-    DWORD utf8Bytes = dwRead;
-    if (dwRead >= 3 && raw[0] == 0xEF && raw[1] == 0xBB && raw[2] == 0xBF) {
-        utf8Start = raw + 3;
-        utf8Bytes = dwRead - 3;
-    }
-
-    // Try strict UTF-8 first (catches any UTF-8 file, with or without BOM).
-    int wcharsNeeded = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
-        (LPCCH)utf8Start, (int)utf8Bytes, nullptr, 0);
-    UINT useCp = CP_UTF8;
-    DWORD useFlags = MB_ERR_INVALID_CHARS;
-    if (wcharsNeeded == 0) {
-        // Not valid UTF-8 → fall back to system ANSI codepage (CP950 on zh-TW).
-        useCp = CP_ACP;
-        useFlags = 0;
-        wcharsNeeded = MultiByteToWideChar(CP_ACP, 0,
-            (LPCCH)utf8Start, (int)utf8Bytes, nullptr, 0);
-    }
-    if (wcharsNeeded <= 0) {
-        delete[] raw;
-        return nullptr;
-    }
-
-    LPWSTR out = new (std::nothrow) WCHAR[wcharsNeeded + 1];
-    if (!out) { delete[] raw; return nullptr; }
-    int wlen = MultiByteToWideChar(useCp, useFlags,
-        (LPCCH)utf8Start, (int)utf8Bytes, out, wcharsNeeded);
-    out[wlen] = 0;
-    delete[] raw;
-    if (outLen) *outLen = (size_t)wlen;
-    return out;
-#endif
 }
 
 // ============================================================================
@@ -702,32 +404,12 @@ LPWSTR SettingsModel::LoadTextFileAsUtf16(LPCWSTR path, size_t* outLen)
 
 IME_MODE SettingsModel::IndexToMode(int index)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return static_cast<IME_MODE>(dime_settings_index_to_mode(index));
-#else
-    switch (index) {
-    case 0: return IME_MODE::IME_MODE_DAYI;
-    case 1: return IME_MODE::IME_MODE_ARRAY;
-    case 2: return IME_MODE::IME_MODE_PHONETIC;
-    case 3: return IME_MODE::IME_MODE_GENERIC;
-    default: return IME_MODE::IME_MODE_DAYI;
-    }
-#endif
 }
 
 int SettingsModel::ModeToIndex(IME_MODE mode)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return dime_settings_mode_to_index(static_cast<int32_t>(mode));
-#else
-    switch (mode) {
-    case IME_MODE::IME_MODE_DAYI:     return 0;
-    case IME_MODE::IME_MODE_ARRAY:    return 1;
-    case IME_MODE::IME_MODE_PHONETIC: return 2;
-    case IME_MODE::IME_MODE_GENERIC:  return 3;
-    default: return 0;
-    }
-#endif
 }
 
 // ============================================================================
@@ -736,22 +418,7 @@ int SettingsModel::ModeToIndex(IME_MODE mode)
 
 void SettingsModel::SyncComboToSnapshot(SettingsSnapshot& s, SettingsControlId id, int sel)
 {
-#ifdef DIME_USE_RUST_CONFIG
     dime_settings_sync_combo(&s, static_cast<int32_t>(id), sel);
-#else
-    switch (id) {
-    case CTRL_CHARSET_SCOPE:       s.big5Filter = (sel == 1); break;
-    case CTRL_NUMERIC_PAD:         s.numericPad = sel; break;
-    case CTRL_PHONETIC_KB:         s.phoneticKeyboardLayout = sel; break;
-    case CTRL_DAYI_SELKEY_MODE:    s.dayiSelkeyMode = sel; break;
-    case CTRL_IME_SHIFT_MODE:      s.imeShiftMode = sel; break;
-    case CTRL_DOUBLE_SINGLE_BYTE:        s.doubleSingleByteMode = sel; break;
-    case CTRL_SHIFT_ENGLISH_DIGIT_MODE:  s.shiftEnglishDigitMode = sel; break;
-    case CTRL_KEYBOARD_OPEN_CLOSE: s.activatedKeyboardMode = (sel == 0); break;
-    case CTRL_OUTPUT_CHT_CHS:      s.doHanConvert = (sel == 1); break;
-    default: break;
-    }
-#endif
 }
 
 // ============================================================================
@@ -760,7 +427,6 @@ void SettingsModel::SyncComboToSnapshot(SettingsSnapshot& s, SettingsControlId i
 
 bool SettingsModel::ParseMaxCodes(const wchar_t* text, UINT& outVal)
 {
-#ifdef DIME_USE_RUST_CONFIG
     uint32_t val = 0;
     if (!dime_settings_parse_max_codes(reinterpret_cast<const uint16_t*>(text), &val))
     {
@@ -768,15 +434,6 @@ bool SettingsModel::ParseMaxCodes(const wchar_t* text, UINT& outVal)
     }
     outVal = val;
     return true;
-#else
-    if (!text) return false;
-    UINT val = (UINT)_wtoi(text);
-    if (val >= 1 && val <= 20) {
-        outVal = val;
-        return true;
-    }
-    return false;
-#endif
 }
 
 // ============================================================================
@@ -785,23 +442,5 @@ bool SettingsModel::ParseMaxCodes(const wchar_t* text, UINT& outVal)
 
 const wchar_t* SettingsModel::GetLoadTableSuffix(SettingsControlId id)
 {
-#ifdef DIME_USE_RUST_CONFIG
     return reinterpret_cast<const wchar_t*>(dime_settings_load_table_suffix(static_cast<int32_t>(id)));
-#else
-    switch (id) {
-    case CTRL_LOAD_DAYI_MAIN:     return L"\\DIME\\Dayi.cin";
-    case CTRL_LOAD_ARRAY_MAIN:    return L"\\DIME\\Array.cin";
-    case CTRL_LOAD_PHONETIC_MAIN: return L"\\DIME\\Phone.cin";
-    case CTRL_LOAD_GENERIC_MAIN:  return L"\\DIME\\Generic.cin";
-    case CTRL_LOAD_ASSOC_PHRASE:   return L"\\DIME\\Phrase.cin";
-    case CTRL_LOAD_ARRAY_SP:      return L"\\DIME\\Array-special.cin";
-    case CTRL_LOAD_ARRAY_SC:      return L"\\DIME\\Array-shortcode.cin";
-    case CTRL_LOAD_ARRAY_EXT_B:   return L"\\DIME\\Array-Ext-B.cin";
-    case CTRL_LOAD_ARRAY_EXT_CD:  return L"\\DIME\\Array-Ext-CD.cin";
-    case CTRL_LOAD_ARRAY_EXT_E_TO_J: return L"\\DIME\\Array-Ext-EF.cin";
-    case CTRL_LOAD_ARRAY40:       return L"\\DIME\\Array40.cin";
-    case CTRL_LOAD_ARRAY_PHRASE:   return L"\\DIME\\Array-Phrase.cin";
-    default: return nullptr;
-    }
-#endif
 }

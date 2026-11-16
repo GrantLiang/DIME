@@ -162,13 +162,7 @@ COLORREF BlendColor(COLORREF c1, COLORREF c2, int alpha);
 // DPI scaling helper. dpi <= 0 returns value. This (int, int) overload is
 // distinct from BaseStructure.h ScaleForDpi(int, UINT), which always calls
 // MulDiv. Call sites that pass a UINT keep the BaseStructure overload.
-#ifdef DIME_USE_RUST_CONFIG
 extern "C" int dime_settings_scale_for_dpi(int value, int dpi);
-#endif
 inline int ScaleForDpi(int value, int dpi) {
-#ifdef DIME_USE_RUST_CONFIG
     return dime_settings_scale_for_dpi(value, dpi);
-#else
-    return (dpi > 0) ? MulDiv(value, dpi, 96) : value;
-#endif
 }
