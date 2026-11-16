@@ -71,12 +71,18 @@ void CompareFile(const std::wstring& group, const std::wstring& name, const std:
         std::wstring a = i < lines.size() ? Escape(lines[i]) : L"<end of output>";
         if (e != a) {
             std::wstring before = i > 0 && i - 1 < expected.size() ? expected[i - 1] : L"";
-            std::wstring detail;
-            if (details && i < details->size() && !(*details)[i].empty())
-                detail = L"\n  actual output behind this line:\n" + (*details)[i].substr(0, 6000);
+            // The test framework cuts long messages short: the output behind
+            // the line goes to the test's standard output, in pieces.
+            if (details && i < details->size() && !(*details)[i].empty()) {
+                const std::wstring& d = (*details)[i];
+                Logger::WriteMessage((L"actual output behind " + group + L"/" + name + L" line " + std::to_wstring(i + 1)
+                    + L":\n").c_str());
+                for (size_t p = 0; p < d.size(); p += 1000)
+                    Logger::WriteMessage(d.substr(p, 1000).c_str());
+            }
             Assert::Fail((group + L"/" + name + (who.empty() ? L"" : L" (" + who + L")") + L" line "
                 + std::to_wstring(i + 1) + L"\n  expected: " + e + L"\n    actual: " + a + L"\n    before: " + before
-                + detail).c_str());
+                + L"\n  (the output behind this line is in the test's standard output)").c_str());
         }
     }
 }
@@ -162,13 +168,13 @@ std::wstring Hash::Hex() const
 void Chunks::Add(const std::wstring& line)
 {
     hash.Add(line);
-    if (detail.size() < 20000) detail += line + L"\n";
+    if (detail.size() < 200000) detail += line + L"\n";
 }
 
 void Chunks::Add(const void* bytes, size_t n)
 {
     hash.Add(bytes, n);
-    if (detail.size() < 20000) {
+    if (detail.size() < 200000) {
         static const wchar_t* d = L"0123456789abcdef";
         detail += L"[" + std::to_wstring(n) + L" bytes] ";
         const unsigned char* p = (const unsigned char*)bytes;

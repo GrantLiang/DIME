@@ -1165,6 +1165,9 @@ int32_t dime_cli_run_native(const uint16_t* const* argv, const size_t* lens, siz
  * returns the full length. */
 void dime_settings_console_write_for_test(void* handle, const uint16_t* text, size_t len, int32_t buffered);
 size_t dime_settings_skip_program_name_for_test(const uint16_t* cmd, uint16_t* out, size_t cap);
+/* Test hook: -1 makes the system-dark check read the system again; 0 / 1
+ * make it return that (like CConfig::testSystemDarkOverride). */
+void dime_settings_set_system_dark_for_test(int32_t value);
 
 /* ---- Settings model (phase 5b-1, dime-config::settings_model) ----------
  * Window-free SettingsModel functions. snapshot is a C++ SettingsSnapshot

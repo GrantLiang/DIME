@@ -554,6 +554,10 @@ namespace DIMEUnitTests
             // mode) recorded in the golden files depend on it.
             _saved1809 = Global::isWindows1809OrLater;
             Global::isWindows1809OrLater = TRUE;
+            // The live colours of the system colour mode follow the machine's
+            // light / dark theme: light on both sides.
+            CConfig::testSystemDarkOverride = 0;
+            dime_settings_set_system_dark_for_test(0);
         }
 
         TEST_METHOD_CLEANUP(Teardown)
@@ -565,6 +569,8 @@ namespace DIMEUnitTests
             CConfig::SetReverseConvervsionInfoList(&empty);
             wcscpy_s(Global::testAppDataOverride, _savedAppData);
             Global::isWindows1809OrLater = _saved1809;
+            CConfig::testSystemDarkOverride = -1;
+            dime_settings_set_system_dark_for_test(-1);
         }
 
         // Random operations: every step matches.

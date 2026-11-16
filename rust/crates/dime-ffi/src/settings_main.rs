@@ -469,6 +469,15 @@ pub unsafe extern "C" fn dime_settings_skip_program_name_for_test(cmd: *const u1
     })
 }
 
+/// Test hook: -1 makes the system-dark check read the system again; 0 / 1
+/// make it return that (`appenv::SYSTEM_DARK_OVERRIDE`).
+#[no_mangle]
+pub extern "C" fn dime_settings_set_system_dark_for_test(value: i32) {
+    crate::guard((), || {
+        dime_settings::appenv::SYSTEM_DARK_OVERRIDE.store(value, std::sync::atomic::Ordering::Relaxed);
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

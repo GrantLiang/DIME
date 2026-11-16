@@ -136,10 +136,20 @@ pub fn windows_build() -> u32 {
     }
 }
 
+/// -1: [`system_dark`] reads the system; 0 / 1: it returns this. Set by
+/// tests (`dime_settings_set_system_dark_for_test`) whose recorded results
+/// must not depend on the machine's theme, like
+/// `CConfig::testSystemDarkOverride`.
+pub static SYSTEM_DARK_OVERRIDE: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(-1);
+
 /// `CConfig::IsSystemDarkTheme`: `ShouldAppsUseDarkMode` (uxtheme ordinal
 /// 132) on Windows 10 1809+, otherwise `AppsUseLightTheme == 0`.
 pub fn system_dark() -> bool {
     use std::sync::OnceLock;
+    let forced = SYSTEM_DARK_OVERRIDE.load(std::sync::atomic::Ordering::Relaxed);
+    if forced >= 0 {
+        return forced != 0;
+    }
     static BUILD: OnceLock<u32> = OnceLock::new();
     let build = *BUILD.get_or_init(windows_build);
     if build >= 17763 {

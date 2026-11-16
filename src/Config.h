@@ -293,6 +293,11 @@ public:
 	
 	static void SetDefaultTextFont(HWND hWnd = nullptr);
 	static bool IsSystemDarkTheme();
+#ifdef DIME_UNIT_TESTING
+	// -1: read the system; 0 / 1: IsSystemDarkTheme returns this (tests whose
+	// recorded results must not depend on the machine's theme).
+	static int testSystemDarkOverride;
+#endif
 
 	
 	//DPI function pointers (loaded dynamically for backward compatibility)

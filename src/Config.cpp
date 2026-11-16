@@ -287,9 +287,16 @@ void CConfig::SaveColorsForMode(IME_COLOR_MODE mode)
 	}
 }
 
+#ifdef DIME_UNIT_TESTING
+int CConfig::testSystemDarkOverride = -1;
+#endif
+
 // Detect Windows dark theme (safe on Win7/8/10/11)
 bool CConfig::IsSystemDarkTheme()
 {
+#ifdef DIME_UNIT_TESTING
+	if (testSystemDarkOverride >= 0) return testSystemDarkOverride != 0;
+#endif
 	// Get OS build number once using RtlGetVersion
 	static const DWORD build = []() -> DWORD {
 		typedef NTSTATUS (WINAPI* RtlGetVersionFn)(PRTL_OSVERSIONINFOW);
