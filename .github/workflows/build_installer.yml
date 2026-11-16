@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       rust_engine:
-        description: 'Build with the Rust core (DimeUseRustEngine); off builds the all-C++ DIME.dll and DIMESettings.exe'
+        description: 'Build DIME.dll with the Rust core (DimeUseRustEngine); off builds the all-C++ DIME.dll (DIMESettings.exe is always Rust)'
         type: boolean
         default: true
   push:
@@ -112,7 +112,7 @@ jobs:
           }
 
       - name: Setup Rust
-        if: github.event_name != 'workflow_dispatch' || inputs.rust_engine
+        # Always: DIMESettings.exe is built by cargo whatever rust_engine is.
         shell: pwsh
         run: |
           rustup toolchain install stable --profile minimal

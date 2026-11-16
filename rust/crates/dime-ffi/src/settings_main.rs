@@ -1,6 +1,7 @@
 //! `wWinMain` of `DIMESettings.exe` in Rust (phase 5b-15f, Windows only).
 //!
-//! Port of `src/DIMESettings/DIMESettings.cpp`, run by the cargo-built
+//! Port of the C++ `wWinMain` (`src/DIMESettings/DIMESettings.cpp`, removed in
+//! phase 6a-4), run by the cargo-built
 //! executable (`crates/dime-settings-exe`):
 //!
 //! - `SettingsLifecycle::ParseLaunch` decides (`lifecycle::parse_launch`);

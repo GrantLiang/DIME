@@ -1,6 +1,7 @@
 //! `DIMESettings.exe` (phase 5b-15f): the settings window and the headless
 //! CLI, all in Rust. `dime_ffi::settings_main` is the port of `wWinMain`
-//! (`src/DIMESettings/DIMESettings.cpp`); `build.rs` embeds the icons, the
+//! (the C++ `src/DIMESettings/DIMESettings.cpp`, removed in phase 6a-4);
+//! `build.rs` embeds the icons, the
 //! version resource and the manifest the C++ executable had.
 
 #![cfg_attr(windows, windows_subsystem = "windows")]

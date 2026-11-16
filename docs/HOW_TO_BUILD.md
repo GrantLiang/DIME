@@ -16,7 +16,7 @@ This document describes how to build DIME IME from source code.
 - **Rust 工具鏈** (輸入法核心以 Rust 撰寫，建置時由 MSBuild 自動呼叫 cargo / The IME core is written in Rust; MSBuild runs cargo automatically)
   - 安裝 / Install: [rustup](https://rustup.rs/)
   - 需加入目標平台 / Add the targets: `rustup target add i686-pc-windows-msvc x86_64-pc-windows-msvc aarch64-pc-windows-msvc arm64ec-pc-windows-msvc`
-  - 不需要 Rust 時可建置全 C++ 版本 / To build the all-C++ version without Rust: `/p:DimeUseRustEngine=false`（測試專案 / tests: `/p:DimeTestRustEngine=false`）
+  - 全 C++ 的 `DIME.dll` / The all-C++ `DIME.dll`: `/p:DimeUseRustEngine=false`（測試專案 / tests: `/p:DimeTestRustEngine=false`）；`DIMESettings.exe` 一律由 cargo 建置，仍需要 Rust / `DIMESettings.exe` is always built by cargo and still needs Rust
 - **Git** (用於版本控制與自動版號生成 / For version control and auto versioning)
 - **PowerShell 5.0 或更新版本** (用於自動產生安裝包 / For automated installer packaging)
 - **WiX 4 CLI** (v1.3+ MSI 安裝程式所需 / Required for v1.3+ MSI installer)
@@ -134,9 +134,9 @@ msbuild DIME.sln /p:Configuration=Release /p:Platform=ARM64EC /t:DIME
 msbuild DIME.sln /p:Configuration=Release /p:Platform=Win32 /t:DIMESettings
 ```
 
-**DIMESettings.exe 由 cargo 建置：** 預設（`DimeUseRustEngine=true`）DIMESettings 專案不編譯 C++，而是先更新 `src\BuildInfo.h`，再執行 `cargo build --release -p dime-settings-exe --target i686-pc-windows-msvc`，把 Rust 版 `DIMESettings.exe` 複製到 `src\Release\`（Debug 是 `src\Debug\`）。也可以直接用 cargo 建置（版本號取自現有的 `src\BuildInfo.h`）：
+**DIMESettings.exe 由 cargo 建置：** DIMESettings 專案不編譯 C++（不論 `DimeUseRustEngine`），而是先更新 `src\BuildInfo.h`，再執行 `cargo build --release -p dime-settings-exe --target i686-pc-windows-msvc`，把 Rust 版 `DIMESettings.exe` 複製到 `src\Release\`（Debug 是 `src\Debug\`）。也可以直接用 cargo 建置（版本號取自現有的 `src\BuildInfo.h`）：
 
-**DIMESettings.exe is built by cargo:** by default (`DimeUseRustEngine=true`) the DIMESettings project compiles no C++; it refreshes `src\BuildInfo.h`, runs `cargo build --release -p dime-settings-exe --target i686-pc-windows-msvc` and copies the Rust `DIMESettings.exe` to `src\Release\` (`src\Debug\` for Debug). It can also be built with cargo alone (the version comes from the current `src\BuildInfo.h`):
+**DIMESettings.exe is built by cargo:** the DIMESettings project compiles no C++ (whatever `DimeUseRustEngine` is); it refreshes `src\BuildInfo.h`, runs `cargo build --release -p dime-settings-exe --target i686-pc-windows-msvc` and copies the Rust `DIMESettings.exe` to `src\Release\` (`src\Debug\` for Debug). It can also be built with cargo alone (the version comes from the current `src\BuildInfo.h`):
 
 ```bash
 cd rust
@@ -146,7 +146,7 @@ cargo build --release --locked -p dime-settings-exe --target i686-pc-windows-msv
 # MSBuild Release also sets RUSTFLAGS=-C target-feature=+crt-static (static CRT, no VC runtime needed)
 ```
 
-`/p:DimeUseRustEngine=false` 仍會建出全 C++ 的 `DIMESettings.exe`。/ `/p:DimeUseRustEngine=false` still builds the all-C++ `DIMESettings.exe`.
+全 C++ 的 `DIMESettings.exe` 已在第 6a-4 階段移除，建置一律需要 Rust 工具鏈與 `i686-pc-windows-msvc` target。/ The all-C++ `DIMESettings.exe` was removed in phase 6a-4; building it always needs a Rust toolchain with the `i686-pc-windows-msvc` target.
 
 ### 5. 建置輸出 / Build Output
 
