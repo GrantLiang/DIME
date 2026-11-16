@@ -39,7 +39,9 @@
 #include <string>
 #include <vector>
 
-#include "../DIMESettings/SettingsWindow.h"
+#include "../DIMESettings/SettingsController.h"
+#include "../DIMESettings/SettingsDriver.h"
+#include "../DIMESettings/SettingsApp.h"
 #include "../DIMESettings/SettingsController.h"
 #include "../DIMESettings/SettingsPageLayout.h"
 #include "dime_ffi.h"
@@ -151,7 +153,7 @@ namespace
 
     // Renders h (its whole window rectangle) without going through DWM:
     // the settings window's own two windows through their WM_PAINT bodies
-    // (SettingsWindow::PaintForTest / dime_settings_window_paint), the
+    // (dime_settings_window_paint), the
     // non-client area (the content area's scroll bar) and every standard
     // control through WM_PRINT. Visible children are drawn on top, bottom of
     // the z-order first, clipped to the parent's client area.
@@ -169,8 +171,7 @@ namespace
             Dib body(cw, ch);
             bool content = ClassOf(h) == L"DIMEShotContent";
             if (cw > 0 && ch > 0) {
-                if (rust) dime_settings_window_paint(h, body.dc, cw, ch, content ? 1 : 0);
-                else SettingsWindow::PaintForTest(h, body.dc, cw, ch, content);
+                dime_settings_window_paint(h, body.dc, cw, ch, content ? 1 : 0);
                 GdiFlush();
                 BitBlt(out.dc, client.left, client.top, cw, ch, body.dc, 0, 0, SRCCOPY);
             }
@@ -329,15 +330,10 @@ namespace
             app.snap = snap;
             std::wstring sfx = L"_" + tag;
             std::wstring mainCls = L"DIMEShotMain" + sfx, contentCls = L"DIMEShotContent" + sfx;
-            if (rust) {
-                main = (HWND)dime_settings_window_create(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
-                    static_cast<SettingsApp::Host*>(&app), GetModuleHandleW(nullptr), 0, (const uint16_t*)kCaption,
-                    (const uint16_t*)mainCls.c_str(), (const uint16_t*)contentCls.c_str(), (const uint16_t*)kTestKey,
-                    (const uint16_t*)tag.c_str(), 10);
-            } else {
-                main = SettingsWindow::CreateForTest(&app, GetModuleHandleW(nullptr), IME_MODE::IME_MODE_DAYI, kCaption,
-                    mainCls.c_str(), contentCls.c_str(), kTestKey, L"C");
-            }
+            main = (HWND)dime_settings_window_create(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
+                static_cast<SettingsApp::Host*>(&app), GetModuleHandleW(nullptr), 0, (const uint16_t*)kCaption,
+                (const uint16_t*)mainCls.c_str(), (const uint16_t*)contentCls.c_str(), (const uint16_t*)kTestKey,
+                (const uint16_t*)tag.c_str(), 10);
             Assert::IsNotNull(main);
             // Fully transparent, click-through and not activated: nothing on
             // screen, no hover from the real mouse, no focus or caret.
@@ -360,8 +356,7 @@ namespace
 
         void Navigate(int mode, int sel, int level, int card)
         {
-            if (rust) dime_settings_window_navigate(main, mode, sel, level, card);
-            else SettingsWindow::NavigateForTest(main, (IME_MODE)mode, sel, level, card);
+            dime_settings_window_navigate(main, mode, sel, level, card);
             Pump();
         }
 

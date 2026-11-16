@@ -21,7 +21,9 @@
 #include <string>
 #include <vector>
 
-#include "../DIMESettings/SettingsWindow.h"
+#include "../DIMESettings/SettingsController.h"
+#include "../DIMESettings/SettingsDriver.h"
+#include "../DIMESettings/SettingsApp.h"
 #include "../DIMESettings/SettingsController.h"
 #include "../DIMESettings/SettingsEditor.h"
 #include "dime_ffi.h"
@@ -204,15 +206,10 @@ namespace
             std::wstring sfx = rust ? L"_R" : L"_C";
             std::wstring mainCls = L"DIMEReMain" + sfx, contentCls = L"DIMEReContent" + sfx;
             const wchar_t* caption = L"DIME 設定 v1.3.0";
-            if (rust) {
-                main = (HWND)dime_settings_window_create(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
-                    static_cast<SettingsApp::Host*>(&app), GetModuleHandleW(nullptr), 0, (const uint16_t*)caption,
-                    (const uint16_t*)mainCls.c_str(), (const uint16_t*)contentCls.c_str(), (const uint16_t*)kTestKey,
-                    (const uint16_t*)L"R", 10);
-            } else {
-                main = SettingsWindow::CreateForTest(&app, GetModuleHandleW(nullptr), IME_MODE::IME_MODE_DAYI, caption,
-                    mainCls.c_str(), contentCls.c_str(), kTestKey, L"C");
-            }
+            main = (HWND)dime_settings_window_create(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
+                static_cast<SettingsApp::Host*>(&app), GetModuleHandleW(nullptr), 0, (const uint16_t*)caption,
+                (const uint16_t*)mainCls.c_str(), (const uint16_t*)contentCls.c_str(), (const uint16_t*)kTestKey,
+                (const uint16_t*)(rust ? L"R" : L"C"), 10);
             Assert::IsNotNull(main);
             // Shown fully transparent and without activation, as in SettingsUiaTest.
             SetWindowLongW(main, GWL_EXSTYLE, GetWindowLongW(main, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_TOOLWINDOW);
@@ -223,8 +220,7 @@ namespace
 
         void Navigate(int mode, int sel, int level, int card)
         {
-            if (rust) dime_settings_window_navigate(main, mode, sel, level, card);
-            else SettingsWindow::NavigateForTest(main, (IME_MODE)mode, sel, level, card);
+            dime_settings_window_navigate(main, mode, sel, level, card);
             Pump();
         }
 

@@ -30,7 +30,9 @@
 #include <vector>
 #include <gdiplus.h>
 
-#include "../DIMESettings/SettingsWindow.h"
+#include "../DIMESettings/SettingsController.h"
+#include "../DIMESettings/SettingsDriver.h"
+#include "../DIMESettings/SettingsApp.h"
 #include "../DIMESettings/SettingsApp.h"
 #include "../DIMESettings/SettingsDriver.h"
 #include "dime_ffi.h"
@@ -197,8 +199,7 @@ namespace
         void* bits = nullptr;
         HBITMAP bmp = CreateDIBSection(dc, &bi, DIB_RGB_COLORS, &bits, nullptr, 0);
         HGDIOBJ old = SelectObject(dc, bmp);
-        if (rust) dime_settings_window_paint(h, dc, w, ht, content ? 1 : 0);
-        else SettingsWindow::PaintForTest(h, dc, w, ht, content);
+        dime_settings_window_paint(h, dc, w, ht, content ? 1 : 0);
         GdiFlush();
         unsigned long long hash = 1469598103934665603ull;
         const unsigned char* p = (const unsigned char*)bits;
@@ -223,15 +224,10 @@ namespace
             std::wstring sfx = L"_" + tag;
             std::wstring mainCls = L"DIMEWinParityMain" + sfx, contentCls = L"DIMEWinParityContent" + sfx;
             const wchar_t* caption = L"DIME 設定 v1.3.0";
-            if (rust) {
-                main = (HWND)dime_settings_window_create(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
-                    static_cast<SettingsApp::Host*>(&app), GetModuleHandleW(nullptr), mode, (const uint16_t*)caption,
-                    (const uint16_t*)mainCls.c_str(), (const uint16_t*)contentCls.c_str(), (const uint16_t*)kTestKey,
-                    (const uint16_t*)tag.c_str(), 10);
-            } else {
-                main = SettingsWindow::CreateForTest(&app, GetModuleHandleW(nullptr), (IME_MODE)mode, caption,
-                    mainCls.c_str(), contentCls.c_str(), kTestKey, L"C");
-            }
+            main = (HWND)dime_settings_window_create(static_cast<const DimeSettingsAppVtbl*>(SettingsApp::Vtbl()),
+                static_cast<SettingsApp::Host*>(&app), GetModuleHandleW(nullptr), mode, (const uint16_t*)caption,
+                (const uint16_t*)mainCls.c_str(), (const uint16_t*)contentCls.c_str(), (const uint16_t*)kTestKey,
+                (const uint16_t*)tag.c_str(), 10);
             Assert::IsNotNull(main);
             // The golden window fits a 1024 x 768 screen (CI's): a bigger
             // window is cut to the screen, so its size would depend on the
@@ -250,7 +246,7 @@ namespace
         {
             SettingsDriver::State st = {};
             SettingsSnapshot sn = {};
-            bool ok = rust ? dime_settings_window_state(main, &st, &sn) != 0 : SettingsWindow::StateForTest(main, &st, &sn);
+            bool ok = dime_settings_window_state(main, &st, &sn) != 0;
             if (!ok) return L"no data";
             std::wstring s;
             const unsigned char* p = (const unsigned char*)&st;
@@ -582,7 +578,7 @@ namespace DIMEUnitTests
                     goldenStep(L"step " + std::to_wstring(i));
                     steps++;
                     SettingsDriver::State st = {};
-                    SettingsWindow::StateForTest(c.main, &st, nullptr);
+                    dime_settings_window_state(c.main, &st, nullptr);
                     if (st.nav.navLevel == 1) subPages++;
                     if (st.nav.sidebarNarrowMode) narrow++;
                     if (st.nav.selectedModeIndex == 5) loadPage++;
