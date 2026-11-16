@@ -25,6 +25,8 @@
 #include "../CompositionProcessorEngine.h"
 #include "../TableDictionaryEngine.h"
 
+#include "Golden.h"
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 // Friend of CCompositionProcessorEngine.
@@ -88,11 +90,15 @@ public:
 
     std::wstring Compare() { return State(cpp) == State(rust) ? L"" : L"C++ " + State(cpp) + L" | Rust " + State(rust); }
 
+    // The Rust side's result of the last operation (the golden record, phase 6c).
+    std::wstring last;
+
     std::wstring Add(WCHAR wch)
     {
         int bc = -2, br = -2;
         BOOL rc = cpp._AddVirtualKeyCpp(wch, &bc);
         BOOL rr = rust._AddVirtualKeyRust(wch, &br);
+        last = L"add " + std::to_wstring((UINT)wch) + L" " + std::to_wstring(rr) + L" " + std::to_wstring(br) + L" " + State(rust);
         if (rc != rr || bc != br)
         {
             wchar_t m[128];
@@ -108,6 +114,7 @@ public:
     {
         cpp._RemoveVirtualKeyCpp(index);
         rust._RemoveVirtualKeyRust(index);
+        last = L"remove " + std::to_wstring(index) + L" " + State(rust);
         return Compare();
     }
 
@@ -115,12 +122,14 @@ public:
     {
         cpp.PurgeVirtualKey();
         rust.PurgeVirtualKey();
+        last = L"purge " + State(rust);
         return Compare();
     }
 
     std::wstring EscapeInput()
     {
         BOOL c = cpp._IsEscapeInputCpp(), r = rust._IsEscapeInputRust();
+        last = L"escape " + std::to_wstring(r);
         return c == r ? L"" : L"IsEscapeInput differs";
     }
 
@@ -134,6 +143,8 @@ public:
         rust._GetReadingStringRust(&rr, withWildcardOut ? &wr : nullptr, keyCode ? &kc : nullptr);
         std::wstring sc = rc.Get() ? std::wstring(rc.Get(), rc.GetLength()) : L"<null>";
         std::wstring sr = rr.Get() ? std::wstring(rr.Get(), rr.GetLength()) : L"<null>";
+        last = L"reading " + (keyCode ? L"\"" + *keyCode + L"\"" : std::wstring(L"-")) + L" " + std::to_wstring(withWildcardOut) +
+            L" \"" + sr + L"\" " + std::to_wstring(wr) + L" " + State(rust);
         if (sc != sr || wc != wr)
             return L"GetReadingString: C++ \"" + sc + L"\" (" + std::to_wstring(wc) + L") Rust \"" + sr + L"\" (" + std::to_wstring(wr) + L")";
         return Compare();
@@ -144,6 +155,7 @@ public:
         CStringRange c = cpp._BuildKeyStrokesFromPhoneticSyllableCpp(syllable);
         CStringRange r = rust._BuildKeyStrokesFromPhoneticSyllableRust(syllable);
         std::wstring sc(c.Get(), c.GetLength()), sr(r.Get(), r.GetLength());
+        last = L"keystrokes " + std::to_wstring(syllable) + L" \"" + sr + L"\"";
         delete[] c.Get();
         delete[] r.Get();
         if (sc != sr)
@@ -166,7 +178,8 @@ namespace DIMEUnitTests
         PHONETIC_KEYBOARD_LAYOUT _savedLayout = PHONETIC_KEYBOARD_LAYOUT::PHONETIC_STANDARD_KEYBOARD_LAYOUT;
         UINT _savedMaxCodes = 0;
 
-        static int Rand(std::mt19937& rng, int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); }
+        // Golden::Pick: the inputs are behind a golden file (phase 6c).
+        static int Rand(std::mt19937& rng, int lo, int hi) { return Golden::Pick(rng, lo, hi); }
         static bool Chance(std::mt19937& rng, int percent) { return Rand(rng, 0, 99) < percent; }
 
         static WCHAR RandomKey(std::mt19937& rng)
@@ -223,6 +236,8 @@ namespace DIMEUnitTests
             const int kSeeds = 400;
             const int kOps = 300;
             int ops = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"seeds", 1);
 
             for (int seed = 1; seed <= kSeeds; seed++)
             {
@@ -242,6 +257,7 @@ namespace DIMEUnitTests
                 for (int k = 0; k < kOps; k++, ops++)
                 {
                     std::wstring err;
+                    a.last = L"-";
                     int op = Rand(rng, 0, 99);
                     if (op < 50)
                     {
@@ -283,8 +299,12 @@ namespace DIMEUnitTests
                         swprintf_s(head, L"seed %d op %d (kind %d, mode %d): ", seed, k, op, (int)mode);
                         Assert::Fail((head + err).c_str());
                     }
+                    ch.Add(a.last);
                 }
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"CompositionBuffer", L"RandomOperations", golden);
             Logger::WriteMessage((std::to_wstring(ops) + L" operations").c_str());
         }
     };

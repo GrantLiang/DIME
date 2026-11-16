@@ -14,6 +14,7 @@
 #include "../Compartment.h"
 #include "../Globals.h"
 #include "../Define.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -366,8 +367,36 @@ TEST_CLASS(LangBarParityTest)
         g_notes.clear();
     }
 
+    // The golden record of the running method (phase 6c): every Rust shot (b) of
+    // AssertSame, checked against src/tests/golden/LangBar/<method>.txt in the
+    // cleanup.
+    static std::wstring goldenMethod;
+    static std::vector<std::wstring> goldenLines;
+    static void GoldenMethod(const wchar_t* name)
+    {
+        goldenMethod = name;
+        goldenLines.clear();
+    }
+    static std::wstring Describe(const Shot& b)
+    {
+        std::wstring s = L"conv " + std::to_wstring(b.hasConv) + L"/" + std::to_wstring(b.conv) +
+            L" dub " + std::to_wstring(b.hasDub) + L"/" + std::to_wstring(b.dub) +
+            L" key " + std::to_wstring(b.hasKey) + L"/" + std::to_wstring(b.key) +
+            L" ime " + std::to_wstring(b.hasIme) + L"/" + std::to_wstring(b.ime) +
+            L" chinese " + std::to_wstring(b.chinese) + L" full " + std::to_wstring(b.full) +
+            L" width " + std::to_wstring(b.width) + L" han " + std::to_wstring(b.han) + L" notes";
+        for (const Note& n : b.notes)
+        {
+            s += L" [" + std::to_wstring(n.delay) + L":";
+            for (uint16_t u : n.text) s += std::to_wstring(u) + L",";
+            s += L"]";
+        }
+        return s;
+    }
+
     static void AssertSame(const Shot& a, const Shot& b)
     {
+        goldenLines.push_back(Describe(b));
         Assert::AreEqual(a.hasConv, b.hasConv);
         Assert::AreEqual(a.conv, b.conv);
         Assert::AreEqual(a.hasDub, b.hasDub);
@@ -496,6 +525,12 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD_CLEANUP(EachCleanup)
     {
+        if (!goldenMethod.empty())
+        {
+            std::wstring name = goldenMethod;
+            goldenMethod.clear();
+            Golden::Check(L"LangBar", name, goldenLines);
+        }
         g_notes.clear();
         Global::isWindows8 = savedWin8;
         Global::ModifiersValue = savedMods;
@@ -510,6 +545,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(NoConversionIsNoop)
     {
+        GoldenMethod(L"NoConversionIsNoop");
         Apply(TF_CONVERSIONMODE_FULLSHAPE, FALSE, TRUE, TRUE, TRUE, TRUE);
         LangBarParityAccess::SetConvBox(*dime, nullptr);
         LangBarParityAccess::ConvCpp(*dime, store, nullptr);
@@ -526,6 +562,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(ConversionSyncsDoubleAndLeavesKeyboardOnWin7)
     {
+        GoldenMethod(L"ConversionSyncsDoubleAndLeavesKeyboardOnWin7");
         Global::isWindows8 = FALSE;
         Apply(TF_CONVERSIONMODE_FULLSHAPE, FALSE, TRUE, FALSE, FALSE, FALSE);
         LangBarParityAccess::ConvCpp(*dime, store, nullptr);
@@ -541,6 +578,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(ConversionSyncsImeToNative)
     {
+        GoldenMethod(L"ConversionSyncsImeToNative");
         Global::isWindows8 = TRUE;
         Apply(TF_CONVERSIONMODE_NATIVE, TRUE, FALSE, FALSE, FALSE, FALSE);
         LangBarParityAccess::ConvCpp(*dime, store, nullptr);
@@ -555,6 +593,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(ConversionOverrideWritesOpenWithoutReading)
     {
+        GoldenMethod(L"ConversionOverrideWritesOpenWithoutReading");
         Global::isWindows8 = TRUE;
         BOOL on = TRUE;
         Apply(0, FALSE, FALSE, FALSE, FALSE, FALSE);
@@ -580,6 +619,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PrivateClearsFullShapeWhenSingle)
     {
+        GoldenMethod(L"PrivateClearsFullShapeWhenSingle");
         CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_DOUBLE);
         DWORD mode = TF_CONVERSIONMODE_NATIVE | TF_CONVERSIONMODE_FULLSHAPE;
         Apply(mode, FALSE, FALSE, TRUE, TRUE, TRUE);
@@ -597,6 +637,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PrivateSetsFullShapeWhenDouble)
     {
+        GoldenMethod(L"PrivateSetsFullShapeWhenDouble");
         CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_SINGLE);
         Apply(TF_CONVERSIONMODE_NATIVE, TRUE, FALSE, TRUE, FALSE, FALSE);
         LangBarParityAccess::PrivCpp(*dime, store);
@@ -612,6 +653,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PrivateMatchedAndFailedGet)
     {
+        GoldenMethod(L"PrivateMatchedAndFailedGet");
         CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_SHIFT_SPACE);
         Apply(TF_CONVERSIONMODE_NATIVE, FALSE, FALSE, TRUE, FALSE, FALSE);
         LangBarParityAccess::PrivCpp(*dime, store);
@@ -636,6 +678,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(KeyboardOpenSetsNativeAndChinese)
     {
+        GoldenMethod(L"KeyboardOpenSetsNativeAndChinese");
         CConfig::SetShowNotifyDesktop(TRUE);
         Apply(0, FALSE, TRUE, FALSE, FALSE, FALSE);
         LangBarParityAccess::KeyCpp(*dime, store, GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
@@ -650,6 +693,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(KeyboardCloseClearsNativeWithoutDesktopNotify)
     {
+        GoldenMethod(L"KeyboardCloseClearsNativeWithoutDesktopNotify");
         CConfig::SetShowNotifyDesktop(FALSE);
         Apply(TF_CONVERSIONMODE_NATIVE | TF_CONVERSIONMODE_FULLSHAPE, FALSE, TRUE, FALSE, TRUE, FALSE);
         LangBarParityAccess::KeyCpp(*dime, store, Global::DIMEGuidCompartmentIMEMode);
@@ -664,6 +708,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(KeyboardUnknownAndFailedGet)
     {
+        GoldenMethod(L"KeyboardUnknownAndFailedGet");
         Apply(0, FALSE, FALSE, TRUE, FALSE, FALSE);
         LangBarParityAccess::KeyCpp(*dime, store, kUnknown);
         Shot a = Take();
@@ -688,6 +733,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(ShapeSwitchSetsWidthUnlessShiftSpace)
     {
+        GoldenMethod(L"ShapeSwitchSetsWidthUnlessShiftSpace");
         CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_SINGLE);
         Apply(0, FALSE, FALSE, FALSE, FALSE, FALSE);
         LangBarParityAccess::FullCpp(*dime);
@@ -713,6 +759,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(ShowGatesDesktopAndText)
     {
+        GoldenMethod(L"ShowGatesDesktopAndText");
         CConfig::SetShowNotifyDesktop(FALSE);
         g_notes.clear();
         LangBarParityAccess::ChnCpp(*dime, TRUE, 4);
@@ -746,6 +793,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PreservedImeRejectsAndToggles)
     {
+        GoldenMethod(L"PreservedImeRejectsAndToggles");
         CCompositionProcessorEngine eng(dime);
         LangBarParityAccess::SetGuids(eng);
         CConfig::SetShowNotifyDesktop(TRUE);
@@ -805,6 +853,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PreservedShiftKeyOnlyRejects)
     {
+        GoldenMethod(L"PreservedShiftKeyOnlyRejects");
         CCompositionProcessorEngine eng(dime);
         LangBarParityAccess::SetGuids(eng);
         LangBarParityAccess::AddShiftOnly(eng);
@@ -825,6 +874,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PreservedWidthInjectsOrToggles)
     {
+        GoldenMethod(L"PreservedWidthInjectsOrToggles");
         CCompositionProcessorEngine eng(dime);
         LangBarParityAccess::SetGuids(eng);
         CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_SINGLE);
@@ -857,6 +907,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PreservedUnknownAndConfigWithoutServiceAreEaten)
     {
+        GoldenMethod(L"PreservedUnknownAndConfigWithoutServiceAreEaten");
         CCompositionProcessorEngine eng(dime);
         LangBarParityAccess::SetGuids(eng);
         Apply(0, FALSE, FALSE, FALSE, FALSE, FALSE);
@@ -886,6 +937,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PreservedHanClosedAndToggleOff)
     {
+        GoldenMethod(L"PreservedHanClosedAndToggleOff");
         CCompositionProcessorEngine eng(dime);
         LangBarParityAccess::SetGuids(eng);
         CConfig::SetDoHanConvert(TRUE);
@@ -918,6 +970,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PreservedHanEnableSetsUpTable)
     {
+        GoldenMethod(L"PreservedHanEnableSetsUpTable");
         CCompositionProcessorEngine a(dime);
         CCompositionProcessorEngine b(dime);
         LangBarParityAccess::SetGuids(a);
@@ -942,6 +995,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(PublicDispatchMatchesBuild)
     {
+        GoldenMethod(L"PublicDispatchMatchesBuild");
         CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_DOUBLE);
         DWORD mode = TF_CONVERSIONMODE_NATIVE | TF_CONVERSIONMODE_FULLSHAPE;
         Apply(mode, FALSE, FALSE, TRUE, TRUE, TRUE);
@@ -995,6 +1049,7 @@ TEST_CLASS(LangBarParityTest)
 
     TEST_METHOD(ThreadMgrTogglesChineseAndShape)
     {
+        GoldenMethod(L"ThreadMgrTogglesChineseAndShape");
         RealStore real;
         (void)real;
         Global::isWindows8 = FALSE;
@@ -1073,6 +1128,9 @@ TEST_CLASS(LangBarParityTest)
         }
     }
 };
+std::wstring LangBarParityTest::goldenMethod;
+std::vector<std::wstring> LangBarParityTest::goldenLines;
+
 
 ITfThreadMgr* LangBarParityTest::tm = nullptr;
 ITfThreadMgr* LangBarParityTest::store = nullptr;

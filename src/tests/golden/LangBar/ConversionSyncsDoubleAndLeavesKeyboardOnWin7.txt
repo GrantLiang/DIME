@@ -1,0 +1,1 @@
+conv 1/8 dub 1/1 key 1/1 ime 1/0 chinese 0 full 0 width 1 han 0 notes

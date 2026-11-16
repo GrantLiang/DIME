@@ -22,6 +22,7 @@
 #include "../Config.h"
 #include "../CompositionProcessorEngine.h"
 #include "../TableDictionaryEngine.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -137,13 +138,13 @@ namespace DIMEUnitTests
         template <typename T>
         static T Pick(std::mt19937& rng, std::initializer_list<T> items)
         {
-            std::uniform_int_distribution<size_t> d(0, items.size() - 1);
-            return *(items.begin() + d(rng));
+            // Golden::Pick: the inputs are behind a golden file (phase 6c).
+            return *(items.begin() + Golden::Pick(rng, 0, (int)items.size() - 1));
         }
 
         static int Rand(std::mt19937& rng, int lo, int hi)
         {
-            return std::uniform_int_distribution<int>(lo, hi)(rng);
+            return Golden::Pick(rng, lo, hi);
         }
 
         static bool Chance(std::mt19937& rng, int percent)
@@ -265,6 +266,8 @@ namespace DIMEUnitTests
             const int kKeysPerState = 500;
             std::map<std::pair<int, int>, int> outcomes;
             int eatenCount = 0, total = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"states", 1);
 
             for (int seed = 1; seed <= kStates; seed++)
             {
@@ -293,7 +296,6 @@ namespace DIMEUnitTests
                                                                    : PHONETIC_KEYBOARD_LAYOUT::PHONETIC_STANDARD_KEYBOARD_LAYOUT);
 
                 BYTE kbd[256] = {};
-                memcpy(kbd, _savedKeyboard, sizeof(kbd));
                 kbd[VK_CAPITAL] = Chance(rng, 50) ? 0x01 : 0x00;
                 SetKeyboardState(kbd);
 
@@ -332,12 +334,23 @@ namespace DIMEUnitTests
                             ec, (int)sc.Category, (int)sc.Function, er, (int)sr.Category, (int)sr.Function);
                         Assert::Fail(msg);
                     }
+                    {
+                        wchar_t line[192];
+                        swprintf_s(line, L"%d %02X %04X %X %d %d %u %d %d \"%s\"%d -> %d %d %d %04X",
+                            (int)mode, vk, (UINT)wch, (UINT)Global::ModifiersValue, composing, (int)cmode, count, sel,
+                            withState ? 1 : 0, a.buffer.c_str(), a.bufferNull ? 1 : 0,
+                            er, (int)sr.Category, (int)sr.Function, (UINT)wr);
+                        ch.Add(line);
+                    }
                     if (withState)
                         outcomes[{ (int)sc.Category, (int)sc.Function }]++;
                     eatenCount += ec ? 1 : 0;
                     total++;
                 }
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"KeyClassify", L"RandomStates", golden);
 
             wchar_t summary[128];
             swprintf_s(summary, L"%d keys, %d eaten, %zu distinct (category, function) outcomes", total, eatenCount, outcomes.size());

@@ -27,6 +27,8 @@
 #include "../CompositionProcessorEngine.h"
 #include "../TableDictionaryEngine.h"
 
+#include "Golden.h"
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace
@@ -211,7 +213,8 @@ namespace DIMEUnitTests
         BOOL _savedBig5 = FALSE, _savedPriority = FALSE, _savedQuote = FALSE;
         std::wstring _tempDir;
 
-        static int Rand(std::mt19937& rng, int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); }
+        // Golden::Pick: the inputs are behind a golden file (phase 6c).
+        static int Rand(std::mt19937& rng, int lo, int hi) { return Golden::Pick(rng, lo, hi); }
         static bool Chance(std::mt19937& rng, int percent) { return Rand(rng, 0, 99) < percent; }
 
         static std::wstring RandomBuffer(std::mt19937& rng)
@@ -254,6 +257,8 @@ namespace DIMEUnitTests
         {
             const int kCases = 30000;
             int nonEmpty = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"cases", 300);
             for (int seed = 1; seed <= kCases; seed++)
             {
                 std::mt19937 rng((unsigned)seed);
@@ -304,9 +309,13 @@ namespace DIMEUnitTests
                     Logger::WriteMessage((std::wstring(head) + L"--- C++\n" + oc + L"\n--- Rust\n" + orr).c_str());
                     Assert::Fail(head);
                 }
+                ch.Add(orr);
+                ch.Next();
                 if (listCpp.Count())
                     nonEmpty++;
             }
+            ch.Finish();
+            Golden::Check(L"CandidateGen", L"RandomStates", golden);
             Logger::WriteMessage((std::to_wstring(kCases) + L" cases, " + std::to_wstring(nonEmpty) + L" with candidates").c_str());
         }
     };

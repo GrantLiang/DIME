@@ -1,0 +1,2 @@
+conv 1/1 dub 1/0 key 1/0 ime 1/1 chinese 1 full 0 width 1 han 0 notes
+conv 1/1 dub 1/0 key 1/0 ime 1/1 chinese 1 full 0 width 1 han 0 notes [3:20013,25991,]

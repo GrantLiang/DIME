@@ -1,0 +1,2 @@
+conv 1/0 dub 1/0 key 1/0 ime 1/0 chinese 0 full 1 width 2 han 0 notes
+conv 1/0 dub 1/0 key 1/0 ime 1/0 chinese 0 full 0 width 0 han 0 notes

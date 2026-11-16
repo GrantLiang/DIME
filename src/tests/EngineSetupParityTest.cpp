@@ -16,6 +16,8 @@
 #include "dime_ffi.h"
 #endif
 
+#include "Golden.h"
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 #if defined(DIME_RUST_AVAILABLE)
@@ -288,8 +290,23 @@ int DictType(CTableDictionaryEngine* e)
     return e ? (int)e->GetDictionaryType() : -1;
 }
 
+// The golden record of the test running (phase 6c): the Rust side (b) of each comparison.
+Golden::Log* g_golden = nullptr;
+
 void AssertSameKeys(CCompositionProcessorEngine& a, CCompositionProcessorEngine& b)
 {
+    if (g_golden)
+    {
+        g_golden->Add(L"keys " + std::to_wstring(EngineSetupParityAccess::KeyCount(b)));
+        for (UINT i = 0; i < EngineSetupParityAccess::KeyCount(b); i++)
+        {
+            const _KEYSTROKE* y = EngineSetupParityAccess::KeyAt(b, i);
+            wchar_t line[96];
+            swprintf_s(line, L"%u: %u %04X %04X %u %u %d", i, y->Index, (UINT)y->Printable, (UINT)y->CandIndex, y->VirtualKey,
+                y->Modifiers, (int)y->Function);
+            g_golden->Add(line);
+        }
+    }
     UINT n = EngineSetupParityAccess::KeyCount(a);
     Assert::AreEqual(n, EngineSetupParityAccess::KeyCount(b), L"keystroke count");
     for (UINT i = 0; i < n; i++)
@@ -309,6 +326,17 @@ void AssertSameKeys(CCompositionProcessorEngine& a, CCompositionProcessorEngine&
 
 void AssertSameRange(CCandidateRange& a, CCandidateRange& b, const wchar_t* label)
 {
+    if (g_golden)
+    {
+        g_golden->Add(std::wstring(L"range ") + label + L" " + std::to_wstring(b.Count()));
+        for (int i = 0; i < b.Count(); i++)
+        {
+            wchar_t line[96];
+            swprintf_s(line, L"%d: %u %04X %04X %u %u", i, b.GetAt(i)->Index, (UINT)b.GetAt(i)->Printable, (UINT)b.GetAt(i)->CandIndex,
+                b.GetAt(i)->VirtualKey, b.GetAt(i)->Modifiers);
+            g_golden->Add(line);
+        }
+    }
     Assert::AreEqual(a.Count(), b.Count(), label);
     for (int i = 0; i < a.Count(); i++)
     {
@@ -558,6 +586,8 @@ namespace DIMEUnitTests
 
         TEST_METHOD(DayiKeystrokeInsertsEqualAndEndkeyConverts)
         {
+            Golden::Log golden;
+            g_golden = &golden;
             EnvGuard g;
             Tree ct = g.Make(L"cpp");
             Tree rt = g.Make(L"rust");
@@ -583,10 +613,14 @@ namespace DIMEUnitTests
             Assert::AreEqual((int)KEYSTROKE_FUNCTION::FUNCTION_INPUT_AND_CONVERT, (int)EngineSetupParityAccess::KeyAt(cpp, slot)->Function);
             Assert::AreEqual((UINT)L'A', (UINT)EngineSetupParityAccess::KeyAt(cpp, slot)->Printable);
             Assert::AreEqual((UINT)MAX_RADICAL + 1, EngineSetupParityAccess::KeyCount(cpp));
+            g_golden = nullptr;
+            Golden::Check(L"EngineSetup", L"DayiKeystrokeInsertsEqualAndEndkeyConverts", golden);
         }
 
         TEST_METHOD(EndkeyUsesRawCode)
         {
+            Golden::Log golden;
+            g_golden = &golden;
             EnvGuard g;
             Tree ct = g.Make(L"cpp");
             Tree rt = g.Make(L"rust");
@@ -605,10 +639,14 @@ namespace DIMEUnitTests
             AssertSameKeys(cpp, rust);
             Assert::AreEqual((int)KEYSTROKE_FUNCTION::FUNCTION_INPUT, (int)EngineSetupParityAccess::KeyAt(cpp, (UINT)(L'A' - 32))->Function);
             Assert::AreEqual((int)KEYSTROKE_FUNCTION::FUNCTION_CONVERT, (int)EngineSetupParityAccess::KeyAt(cpp, (UINT)(L'a' - 32))->Function);
+            g_golden = nullptr;
+            Golden::Check(L"EngineSetup", L"EndkeyUsesRawCode", golden);
         }
 
         TEST_METHOD(CandidateRangesMatch)
         {
+            Golden::Log golden;
+            g_golden = &golden;
             EnvGuard g;
             CCompositionProcessorEngine cpp(nullptr), rust(nullptr);
             Global::imeMode = IME_MODE::IME_MODE_DAYI;
@@ -666,6 +704,8 @@ namespace DIMEUnitTests
             AssertSameRange(EngineSetupParityAccess::Cand(cpp), EngineSetupParityAccess::Cand(rust), L"space cap");
             Assert::AreEqual((UINT)L' ', (UINT)EngineSetupParityAccess::Cand(cpp).GetAt(0)->Printable);
             Assert::AreEqual((UINT)L'1', (UINT)EngineSetupParityAccess::Cand(cpp).GetAt(1)->Printable);
+            g_golden = nullptr;
+            Golden::Check(L"EngineSetup", L"CandidateRangesMatch", golden);
         }
 
         TEST_METHOD(PreservedKeysMatch)

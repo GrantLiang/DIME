@@ -21,6 +21,8 @@
 #include "../SentenceBuffer.h"
 #include "dime_ffi.h"
 
+#include "Golden.h"
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
@@ -126,10 +128,13 @@ namespace DIMEUnitTests
             static const wchar_t* const kReadings[] = { L"", L"a", L"人", L"ab", L"=1" };
 
             int ops = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"seeds", 1);
             for (int seed = 1; seed <= 300; seed++)
             {
                 std::mt19937 rng((unsigned)seed);
-                auto rand = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
+                // Golden::Pick: the inputs are behind a golden file (phase 6c).
+                auto rand = [&](int lo, int hi) { return Golden::Pick(rng, lo, hi); };
 
                 CSentenceBuffer cpp;
                 std::unique_ptr<DimeSentenceBuffer, decltype(&dime_sentence_buffer_free)> rust(dime_sentence_buffer_new(), dime_sentence_buffer_free);
@@ -196,7 +201,7 @@ namespace DIMEUnitTests
                         Assert::AreEqual(lc ? 1 : 0, lr, L"Learn result");
                         Assert::IsTrue(userCpp.Export() == userRust.Export(), L"learned user models differ");
                         userConvert.Learn(cpp);
-                        what = L"learn";
+                        what = L"learn " + std::to_wstring(lr) + L" [" + userRust.Export() + L"]";
                     }
                     else
                     {
@@ -212,8 +217,12 @@ namespace DIMEUnitTests
                         Logger::WriteMessage((L"--- C++\n" + dc + L"\n--- Rust\n" + dr + L"\n").c_str());
                         Assert::Fail((L"seed " + std::to_wstring(seed) + L" step " + std::to_wstring(k) + L" (" + what + L")").c_str());
                     }
+                    ch.Add(what + L" | " + reading + L" | " + dr);
                 }
+                ch.Next();
             }
+            ch.Finish();
+            Golden::Check(L"SentenceBuffer", L"RandomOperations", golden);
             Logger::WriteMessage((std::to_wstring(ops) + L" operations").c_str());
         }
     };
