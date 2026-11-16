@@ -823,6 +823,14 @@ void    dime_ui_candidate_layout_state(const DimeCandidate* c, int32_t set, int3
 void    dime_ui_candidate_paint(const DimeCandidate* c, void* dc, const DimeRect* paint);
 void*   dime_ui_candidate_child(const DimeCandidate* c, int32_t which);   /* 0 scroll bar HWND, 1 shadow HWND, 2 tracking mouse (0/1) */
 int32_t dime_ui_candidate_sb_state(const DimeCandidate* c, DimeSbSnapshot* snapshot, DimeRect* highlight, int32_t* radius, uint32_t* color);
+/* The Rust candidate window's own scroll bar (tests, phase 6b-2): the dime_ui_scrollbar_op codes;
+ * _SetScrollInfo(si) when si != NULL, _SetSelectionHighlight when rect != NULL. */
+void    dime_ui_candidate_sb_op(const DimeCandidate* c, uint32_t op, int32_t a, int32_t b);
+void    dime_ui_candidate_sb_set(const DimeCandidate* c, const DimeScrollInfo* si, const DimeRect* rect, int32_t radius, uint32_t color);
+/* Tests: the work area the Rust windows use on this thread (golden recordings); NULL: the monitors. */
+void    dime_ui_set_work_area_for_test(const DimeRect* rc);
+/* The timer test hook (g_baseWindowTimerTestHook for this window); NULL removes it. */
+void    dime_ui_candidate_set_timer_hook(const DimeCandidate* c, void (*hook)(void* ctx, int32_t start, uint32_t elapse, uintptr_t id), void* ctx);
 
 /* ---- The notify window owned by Rust (rust/crates/dime-ui/src/notifywin.rs, phase 3c-5e) ---- */
 typedef struct DimeNotifyClasses {

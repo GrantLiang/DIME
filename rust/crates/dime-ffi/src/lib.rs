@@ -4261,24 +4261,7 @@ pub unsafe extern "C" fn dime_ui_scrollbar_op(s: *const DimeScrollBar, op: u32, 
         let Some(s) = (unsafe { s.as_ref() }) else {
             return;
         };
-        let w = &s.0;
-        match op {
-            0 => w.show(a != 0),
-            1 => w.shift_line(a, b != 0),
-            2 => w.shift_page(a, b != 0),
-            3 => w.shift_position(a, b != 0),
-            4 => w.set_candidate_mouse_in(a != 0),
-            5 => w.on_scroll_activity(),
-            6 => w.owner_moved(),
-            7 => w.lbutton_down(layout::Point { x: a, y: b }),
-            8 => w.lbutton_up(),
-            9 => w.mouse_move(),
-            10 => w.timer(a as u32 as usize),
-            11 => w.set_hovered(a != 0),
-            12 => w.set_cur_pos(a, b),
-            13 => w.enable(a != 0),
-            _ => {}
-        }
+        scrollbar_op(&s.0, op, a, b)
     })
 }
 
@@ -4293,6 +4276,26 @@ pub unsafe extern "C" fn dime_ui_scrollbar_set_scroll_info(s: *const DimeScrollB
             s.0.set_scroll_info(*si);
         }
     })
+}
+
+fn scrollbar_op(w: &sbwin::ScrollBarWindow, op: u32, a: i32, b: i32) {
+    match op {
+        0 => w.show(a != 0),
+        1 => w.shift_line(a, b != 0),
+        2 => w.shift_page(a, b != 0),
+        3 => w.shift_position(a, b != 0),
+        4 => w.set_candidate_mouse_in(a != 0),
+        5 => w.on_scroll_activity(),
+        6 => w.owner_moved(),
+        7 => w.lbutton_down(layout::Point { x: a, y: b }),
+        8 => w.lbutton_up(),
+        9 => w.mouse_move(),
+        10 => w.timer(a as u32 as usize),
+        11 => w.set_hovered(a != 0),
+        12 => w.set_cur_pos(a, b),
+        13 => w.enable(a != 0),
+        _ => {}
+    }
 }
 
 /// `_SetSelectionHighlight` (RC26).
@@ -4840,6 +4843,74 @@ pub unsafe extern "C" fn dime_ui_candidate_child(c: *const DimeCandidate, which:
             0 => c.0.scroll_bar().map_or(ptr::null_mut(), |s| s.hwnd().0),
             1 => c.0.shadow().map_or(ptr::null_mut(), |s| s.hwnd().0),
             _ => c.0.is_tracking_mouse() as usize as *mut c_void,
+        }
+    })
+}
+
+/// Tests: the work area the Rust windows place themselves in on this thread
+/// (`CBaseWindow::GetWorkAreaFromPoint`); null reads the monitors again.
+///
+/// # Safety
+/// `rc` must be valid or null.
+#[no_mangle]
+pub unsafe extern "C" fn dime_ui_set_work_area_for_test(rc: *const layout::Rect) {
+    guard((), || candwin::set_work_area_for_test(unsafe { rc.as_ref() }.copied()))
+}
+
+/// The timer test hook of a candidate window (`g_baseWindowTimerTestHook`
+/// for it); null removes it.
+///
+/// # Safety
+/// `c` must be valid or null; `hook` and `ctx` valid while set.
+#[no_mangle]
+pub unsafe extern "C" fn dime_ui_candidate_set_timer_hook(
+    c: *const DimeCandidate,
+    hook: Option<notifywin::TimerHook>,
+    ctx: *mut c_void,
+) {
+    guard((), || {
+        if let Some(c) = unsafe { c.as_ref() } {
+            c.0.set_timer_hook(hook.map(|h| (h, ctx)));
+        }
+    })
+}
+
+/// The candidate window's own scroll bar driven like `dime_ui_scrollbar_op`
+/// (same `op` codes; tests: the golden scroll bar recordings, phase 6b-2).
+///
+/// # Safety
+/// `c` must be valid or null.
+#[no_mangle]
+pub unsafe extern "C" fn dime_ui_candidate_sb_op(c: *const DimeCandidate, op: u32, a: i32, b: i32) {
+    guard((), || {
+        if let Some(sb) = (unsafe { c.as_ref() }).and_then(|c| c.0.scroll_bar()) {
+            scrollbar_op(&sb, op, a, b);
+        }
+    })
+}
+
+/// The candidate window's own scroll bar: `_SetScrollInfo(si)` (`si` not
+/// null) and `_SetSelectionHighlight(rect, radius, color)` (`rect` not null)
+/// (tests).
+///
+/// # Safety
+/// `c` must be valid or null; `si` and `rect` valid or null.
+#[no_mangle]
+pub unsafe extern "C" fn dime_ui_candidate_sb_set(
+    c: *const DimeCandidate,
+    si: *const candwnd::ScrollInfo,
+    rect: *const layout::Rect,
+    radius: i32,
+    color: u32,
+) {
+    guard((), || {
+        if let Some(sb) = (unsafe { c.as_ref() }).and_then(|c| c.0.scroll_bar()) {
+            if let Some(si) = unsafe { si.as_ref() } {
+                sb.set_scroll_info(*si);
+            }
+            if let Some(r) = unsafe { rect.as_ref() } {
+                sb.set_selection_highlight(*r, radius, color);
+            }
         }
     })
 }

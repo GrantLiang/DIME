@@ -27,6 +27,8 @@
 #include "../BaseStructure.h"
 #include "../UIConstants.h"
 #include "WindowClassTestHelper.h"
+#include "Golden.h"
+#include "../Config.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -56,9 +58,10 @@ namespace
     {
         if (w == g_watchedCpp) g_timers[0].push_back(TimerText(start, elapse, id));
     }
-    void TimerHookRust(void*, int32_t start, uint32_t elapse, uintptr_t id)
+    // ctx: the list to append to (g_timers[1], or the golden window's).
+    void TimerHookRust(void* ctx, int32_t start, uint32_t elapse, uintptr_t id)
     {
-        g_timers[1].push_back(TimerText(start, elapse, id));
+        static_cast<std::vector<std::wstring>*>(ctx ? ctx : &g_timers[1])->push_back(TimerText(start, elapse, id));
     }
 
     std::vector<DWORD> PaintInto(HWND h, const std::function<void(HDC, PAINTSTRUCT*)>& paint, bool withPs)
@@ -156,6 +159,66 @@ namespace
         for (auto& t : g_timers[k]) s += t + L" ";
         return s;
     }
+
+    // ---- The golden window G (phase 6b-2) ----
+    // A third notify window, Rust, set up and driven like the pair but only
+    // while its GDI calls are recorded with synthetic text metrics at 96 dpi.
+
+    struct Dpi96
+    {
+        UINT saved = CConfig::testDpiOverride;
+        Dpi96() { CConfig::testDpiOverride = 96; }
+        ~Dpi96() { CConfig::testDpiOverride = saved; }
+    };
+
+    struct GoldenSide
+    {
+        Calls calls;
+        std::vector<std::wstring> timers;
+        CRustNotifyWindow* w = nullptr;
+        ~GoldenSide()
+        {
+            if (w) { dime_ui_notifywin_set_timer_hook(w->_GetRustWindow(), nullptr, nullptr); w->_Destroy(); delete w; }
+        }
+        HWND Wnd() const { return w->_GetWnd(); }
+    };
+
+    std::wstring CursorName(HCURSOR c)
+    {
+        if (!c) return L"none";
+        static const LPCWSTR ids[] = { IDC_ARROW, IDC_HAND, IDC_IBEAM };
+        static const wchar_t* names[] = { L"arrow", L"hand", L"ibeam" };
+        for (int i = 0; i < ARRAYSIZE(ids); i++)
+            if (c == LoadCursor(nullptr, ids[i])) return names[i];
+        return L"other";
+    }
+
+    std::wstring ObserveGolden(GoldenSide& g)
+    {
+        int st[6] = {};
+        dime_ui_notifywin_state(g.w->_GetRustWindow(), (int32_t*)st);
+        HWND h = g.Wnd(), shadow = (HWND)dime_ui_notifywin_shadow_hwnd(g.w->_GetRustWindow());
+        RECT rc = { 0, 0, 0, 0 };
+        GetWindowRect(h, &rc);
+        std::wstring s = L"title=" + std::to_wstring(st[0]) + L"x" + std::to_wstring(st[1]) +
+            L" pos=" + std::to_wstring(st[2]) + L"," + std::to_wstring(st[3]) +
+            L" delay=" + std::to_wstring(st[4]) + L" hide=" + std::to_wstring(st[5]) +
+            L" visible=" + std::to_wstring(IsWindowVisible(h)) +
+            L" rect=" + std::to_wstring(rc.left) + L"," + std::to_wstring(rc.top) + L"," + std::to_wstring(rc.right - rc.left) + L"x" + std::to_wstring(rc.bottom - rc.top) +
+            L" shadow=" + std::to_wstring(shadow ? IsWindowVisible(shadow) : -1) +
+            L" width=" + std::to_wstring(g.w->_GetWidth()) + L" height=" + std::to_wstring(g.w->_GetHeight()) + L" calls=";
+        for (auto& c : g.calls.log) s += c + L";";
+        s += L" timers=";
+        for (auto& t : g.timers) s += t + L" ";
+        return s;
+    }
+
+    void AddStep(Golden::Chunks& ch, const std::wstring& head, const std::vector<std::wstring>& calls)
+    {
+        ch.Add(head);
+        for (const std::wstring& c : calls) ch.Add(c);
+        ch.Next();
+    }
 }
 
 namespace DIMEUnitTests
@@ -172,6 +235,9 @@ namespace DIMEUnitTests
             const std::wstring pool[] = { L"中", L"英", L"全形", L"半形", L"ㄅㄆㄇ", L"a-b-c", L"反查：一二三四", L"特別碼 ABCD" };
             std::mt19937 rng(71);
             int compared = 0, sized = 0;
+            Dpi96 dpi96;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"paints", 8);
             for (const wchar_t* face : faces)
             for (int height : heights)
             {
@@ -208,12 +274,30 @@ namespace DIMEUnitTests
                     Assert::AreEqual(c.size(), r.size(), (where + L": bitmap size").c_str());
                     for (size_t i = 0; i < c.size(); i++)
                         if (c[i] != r[i]) Assert::Fail((where + L": pixel " + std::to_wstring(i) + L" differs").c_str());
+                    {
+                        GoldenSide g;
+                        Golden::GdiRecording rec;
+                        g.w = new CRustNotifyWindow(RecordNotify, &g.calls, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+                        g.w->_SetClassesForTest(RustNotifyTestClasses());
+                        Assert::IsTrue(g.w->_Create(12, nullptr, &sr) != FALSE);
+                        g.w->_SetTextColor(fg, bg);
+                        if (fillBrush) g.w->_SetFillColor(fill);
+                        PaintInto(g.Wnd(), [&](HDC dc, PAINTSTRUCT* ps) {
+                            DimeRect pr = {};
+                            if (ps) pr = { ps->rcPaint.left, ps->rcPaint.top, ps->rcPaint.right, ps->rcPaint.bottom };
+                            dime_ui_notifywin_paint(g.w->_GetRustWindow(), dc, ps ? &pr : nullptr);
+                        }, withPs);
+                        std::vector<std::wstring> calls = rec.Take();
+                        AddStep(ch, where + L" " + ObserveGolden(g), calls);
+                    }
                     if (ra.right - ra.left > 0) sized++;
                     compared++;
                 }
                 Global::defaultlFontHandle = savedFont;
                 DeleteObject(font);
             }
+            ch.Finish();
+            Golden::Check(L"Notify", L"Paint", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" notify paints compared, " + std::to_wstring(sized) + L" with a non-empty window").c_str());
         }
 
@@ -226,6 +310,9 @@ namespace DIMEUnitTests
             g_baseWindowTimerTestHook = TimerHookCpp;
             std::mt19937 rng(72);
             int compared = 0, callbacks = 0;
+            Dpi96 dpi96;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"steps", 20);
             const NOTIFY_TYPE types[] = { NOTIFY_TYPE::NOTIFY_CHN_ENG, NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP };
             for (int scenario = 0; scenario < 12; scenario++)
             {
@@ -246,6 +333,19 @@ namespace DIMEUnitTests
                 {
                     std::wstring a = Observe(p, 0), b = Observe(p, 1);
                     Assert::IsTrue(a == b, (L"after create\nC++  " + a + L"\nRust " + b).c_str());
+                }
+                GoldenSide g;
+                {
+                    Golden::GdiRecording rec;
+                    g.w = new CRustNotifyWindow(RecordNotify, &g.calls, types[scenario % 2]);
+                    g.w->_SetClassesForTest(RustNotifyTestClasses());
+                    Assert::IsTrue(g.w->_Create(12, nullptr, (scenario % 4 == 3) ? nullptr : &sr) != FALSE);
+                    if (scenario % 4 == 3) g.w->_SetString(&sr);
+                    g.w->_SetTextColor(RGB(0, 0, 0), RGB(255, 255, 255));
+                    g.w->_SetFillColor(RGB(255, 255, 255));
+                    dime_ui_notifywin_set_timer_hook(g.w->_GetRustWindow(), TimerHookRust, &g.timers);
+                    std::vector<std::wstring> calls = rec.Take();
+                    AddStep(ch, L"create " + ObserveGolden(g), calls);
                 }
                 for (int step = 0; step < 80; step++)
                 {
@@ -296,6 +396,37 @@ namespace DIMEUnitTests
                         st[k] = Observe(p, k) + L" res=" + std::to_wstring(res[k]) + L" cursor=" + std::to_wstring((INT_PTR)GetCursor()) +
                             L" wp=" + std::to_wstring(pos.flags);
                     }
+                    {
+                        HWND h = g.Wnd();
+                        HWND gs = (HWND)dime_ui_notifywin_shadow_hwnd(g.w->_GetRustWindow());
+                        SetCursor(nullptr);
+                        WINDOWPOS pos = {};
+                        pos.hwnd = h;
+                        pos.flags = wpFlags;
+                        if (flag && gs) pos.hwndInsertAfter = gs;
+                        LRESULT gr = 0;
+                        Golden::GdiRecording rec;
+                        switch (op)
+                        {
+                        case 0: case 1: g.w->_Show(flag || op == 0, delay, tth); break;
+                        case 2: dime_ui_notifywin_op(g.w->_GetRustWindow(), 4, (int32_t)timer, 0, 0); break;
+                        case 3: gr = SendMessage(h, WM_LBUTTONDOWN, 0, MAKELPARAM(x, y)); break;
+                        case 4: gr = SendMessage(h, WM_RBUTTONDOWN, 0, MAKELPARAM(x, y)); break;
+                        case 5: gr = SendMessage(h, WM_MOUSEMOVE, 0, MAKELPARAM(x, y)); break;
+                        case 6: gr = SendMessage(h, WM_SETCURSOR, (WPARAM)h, MAKELPARAM(HTCLIENT, flag ? WM_MOUSEMOVE : WM_LBUTTONUP)); break;
+                        case 7: gr = SendMessage(h, WM_MOUSEACTIVATE, 0, MAKELPARAM(HTCLIENT, mev)); break;
+                        case 8: gr = SendMessage(h, 0x024B /* WM_POINTERACTIVATE */, 0, 0); break;
+                        case 9: gr = SendMessage(h, flag ? WM_WINDOWPOSCHANGING : WM_WINDOWPOSCHANGED, 0, (LPARAM)&pos); break;
+                        case 10: gr = SendMessage(h, WM_SHOWWINDOW, flag, 0); break;
+                        case 11: gr = SendMessage(h, WM_PAINT, 0, 0); break;
+                        case 12: g.w->_Move(mx, my); break;
+                        case 13: gr = SendMessage(h, WM_LBUTTONUP, 0, MAKELPARAM(x, y)); break;
+                        case 14: gr = SendMessage(h, WM_TIMER, timer, 0); break;
+                        }
+                        std::vector<std::wstring> calls = rec.Take();
+                        AddStep(ch, L"op " + std::to_wstring(op) + L" " + ObserveGolden(g) + L" res=" + std::to_wstring(gr) +
+                            L" cursor=" + CursorName(GetCursor()) + L" wp=" + std::to_wstring(pos.flags), calls);
+                    }
                     if (st[0] != st[1])
                         Assert::Fail((L"scenario " + std::to_wstring(scenario) + L" step " + std::to_wstring(step) + L" op " + std::to_wstring(op) +
                             L"\nC++  " + st[0] + L"\nRust " + st[1]).c_str());
@@ -308,6 +439,8 @@ namespace DIMEUnitTests
             g_baseWindowTimerTestHook = nullptr;
             Global::defaultlFontHandle = savedFont;
             DeleteObject(font);
+            ch.Finish();
+            Golden::Check(L"Notify", L"Behavior", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" notify steps compared, " + std::to_wstring(callbacks) + L" callbacks").c_str());
             Assert::IsTrue(callbacks > 0, L"coverage");
         }

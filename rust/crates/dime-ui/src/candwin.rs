@@ -131,6 +131,8 @@ pub struct State {
     timer_object: Cell<bool>,
     shadow: Cell<Option<Rc<ShadowWindow>>>,
     scroll_bar: Cell<Option<Rc<ScrollBarWindow>>>,
+    /// Tests: told of each `_StartTimer` / `_EndTimer` (`g_baseWindowTimerTestHook`).
+    timer_hook: Cell<Option<(crate::notifywin::TimerHook, *mut c_void)>>,
     env: Env,
     classes: Classes,
     model: Model,
@@ -191,12 +193,18 @@ impl State {
     }
     /// `CBaseWindow::_StartTimer` / `_EndTimer`.
     fn start_timer(&self, elapse: u32, id: usize) {
+        if let Some((hook, ctx)) = self.timer_hook.get() {
+            unsafe { hook(ctx, 1, elapse, id) };
+        }
         self.timer_object.set(true);
         unsafe {
             SetTimer(Some(self.hwnd.get()), id, elapse, None);
         }
     }
     fn end_timer(&self, id: usize) {
+        if let Some((hook, ctx)) = self.timer_hook.get() {
+            unsafe { hook(ctx, 0, 0, id) };
+        }
         if id == DEFAULT_TIMER_ID {
             self.timer_object.set(false);
         }
@@ -598,9 +606,29 @@ unsafe extern "system" fn stay_on_top(hwnd: HWND, _msg: u32, _id: usize, _time: 
     }
 }
 
+thread_local! {
+    /// Tests: the work area every point is on (golden recordings, phase 6b-2:
+    /// the real one is the machine's screen).
+    static WORK_AREA_FOR_TEST: Cell<Option<Rect>> = const { Cell::new(None) };
+}
+
+/// Tests: `Some` makes [`work_area_from_point`] return that rectangle on this
+/// thread; `None` reads the monitors again.
+pub fn set_work_area_for_test(wa: Option<Rect>) {
+    WORK_AREA_FOR_TEST.with(|w| w.set(wa));
+}
+
+/// The work area [`set_work_area_for_test`] set on this thread, if any.
+pub fn work_area_for_test() -> Option<Rect> {
+    WORK_AREA_FOR_TEST.with(|w| w.get())
+}
+
 /// `CBaseWindow::GetWorkAreaFromPoint`: the monitor's work area, widened to the
 /// monitor when the point is outside it horizontally (Store apps' snapped view).
 pub fn work_area_from_point(pt: Point) -> Rect {
+    if let Some(wa) = WORK_AREA_FOR_TEST.with(|w| w.get()) {
+        return wa;
+    }
     unsafe {
         let monitor = MonitorFromPoint(POINT { x: pt.x, y: pt.y }, MONITOR_DEFAULTTONEAREST);
         if !monitor.is_invalid() {
@@ -684,6 +712,7 @@ impl CandidateWindow {
             timer_object: Cell::new(false),
             shadow: Cell::new(None),
             scroll_bar: Cell::new(None),
+            timer_hook: Cell::new(None),
             env,
             classes,
             model,
@@ -928,6 +957,10 @@ impl CandidateWindow {
     }
     pub fn shadow(&self) -> Option<Rc<ShadowWindow>> {
         self.st().shadow()
+    }
+    /// The timer test hook (tests); `None` removes it.
+    pub fn set_timer_hook(&self, hook: Option<(crate::notifywin::TimerHook, *mut c_void)>) {
+        self.st().timer_hook.set(hook);
     }
     /// The layout members (tests): `(cx_title, cy_row, padding, wnd_width)`.
     pub fn layout_state(&self) -> (i32, i32, i32, u32) {

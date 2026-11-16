@@ -25,6 +25,9 @@
 #include "../BaseStructure.h"
 #include "../UIConstants.h"
 #include "WindowClassTestHelper.h"
+#include "RustCandidateWindow.h"
+#include "Golden.h"
+#include "../Config.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -84,6 +87,78 @@ namespace
             L" capture=" + std::to_wstring(GetCapture() == s.w->_GetWnd()) +
             L" sel=" + std::to_wstring(s.w->_GetSelection()) + L" page=" + std::to_wstring(page) + L" timers=" + t;
     }
+
+    // ---- The golden window G (phase 6b-2) ----
+    // A Rust candidate window with its own Rust scroll bar, set up and driven
+    // like the pair (dime_ui_candidate_sb_op: the scroll bar's operations),
+    // only while its GDI calls are recorded with synthetic metrics at 96 dpi.
+
+    struct Dpi96
+    {
+        UINT saved = CConfig::testDpiOverride;
+        Dpi96() { CConfig::testDpiOverride = 96; }
+        ~Dpi96() { CConfig::testDpiOverride = saved; }
+    };
+
+    void GoldenTimerHook(void* ctx, int32_t start, uint32_t elapse, uintptr_t id)
+    {
+        static_cast<std::vector<TimerEvent>*>(ctx)->push_back({ start, elapse, id });
+    }
+
+    struct GoldenSide
+    {
+        CCandidateRange range;
+        std::vector<CCandidateListItem> items;
+        std::unique_ptr<CRustCandidateWindow> w;
+        std::vector<TimerEvent> timers;
+        DimeCandidate* C() const { return w->_GetRustWindow(); }
+        HWND Sb() const { return (HWND)dime_ui_candidate_child(C(), 0); }
+        ~GoldenSide()
+        {
+            if (w) { dime_ui_candidate_set_timer_hook(C(), nullptr, nullptr); w->_Destroy(); }
+        }
+    };
+
+    std::wstring GoldenSnapshot(GoldenSide& g)
+    {
+        DimeSbSnapshot st = {};
+        DimeRect hl = {};
+        int32_t radius = 0;
+        uint32_t color = 0;
+        dime_ui_candidate_sb_state(g.C(), &st, &hl, &radius, &color);
+        HWND h = g.Sb();
+        RECT rc = { 0, 0, 0, 0 };
+        GetWindowRect(h, &rc);
+        RECT pr = { 0, 0, 0, 0 };
+        GetWindowRect(g.w->_GetWnd(), &pr);
+        BYTE alpha = 0;
+        COLORREF key = 0;
+        DWORD flags = 0;
+        GetLayeredWindowAttributes(h, &key, &alpha, &flags);
+        int page = -1;
+        g.w->_GetCurrentPage(&page);
+        std::wstring t;
+        for (const TimerEvent& e : g.timers)
+            t += (e.start ? L"+" : L"-") + std::to_wstring(e.id) + (e.start ? L"@" + std::to_wstring(e.elapse) : L"") + L" ";
+        return L"si=" + std::to_wstring(st.si.max) + L"/" + std::to_wstring(st.si.page) + L"/" + std::to_wstring(st.si.pos) +
+            L" drag=" + std::to_wstring(st.dragging) + L"," + std::to_wstring(st.drag_start_y) + L"," + std::to_wstring(st.drag_start_pos) +
+            L" alpha=" + std::to_wstring(st.alpha) + L" fading=" + std::to_wstring(st.fading) + L" hovered=" + std::to_wstring(st.hovered) +
+            L" tracking=" + std::to_wstring(st.tracking) + L" held=" + std::to_wstring(st.held) + L" repeat=" + std::to_wstring(st.repeat_started) +
+            L" enabled=" + std::to_wstring(IsWindowEnabled(h)) + L" visible=" + std::to_wstring(IsWindowVisible(h)) +
+            L" rect=" + std::to_wstring(rc.left - pr.left) + L"," + std::to_wstring(rc.top - pr.top) + L"," + std::to_wstring(rc.right - rc.left) +
+            L"x" + std::to_wstring(rc.bottom - rc.top) + L" layeredAlpha=" + std::to_wstring(alpha) +
+            L" capture=" + std::to_wstring(GetCapture() == g.w->_GetWnd()) +
+            L" sel=" + std::to_wstring(g.w->_GetSelection()) + L" page=" + std::to_wstring(page) +
+            L" highlight=" + std::to_wstring(hl.left) + L"," + std::to_wstring(hl.top) + L"," + std::to_wstring(hl.right) + L"," +
+            std::to_wstring(hl.bottom) + L"/" + std::to_wstring(radius) + L" timers=" + t;
+    }
+
+    void AddStep(Golden::Chunks& ch, const std::wstring& head, const std::vector<std::wstring>& calls)
+    {
+        ch.Add(head);
+        for (const std::wstring& c : calls) ch.Add(c);
+        ch.Next();
+    }
 }
 
 namespace DIMEUnitTests
@@ -101,6 +176,9 @@ namespace DIMEUnitTests
 
             std::mt19937 rng(53);
             int compared = 0, notified = 0;
+            Dpi96 dpi96;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"steps", 30);
             for (int scenario = 0; scenario < 20; scenario++)
             {
                 int rowsInPage = 1 + (int)(rng() % 9);
@@ -142,16 +220,49 @@ namespace DIMEUnitTests
                     ReleaseCapture();   // _Show(TRUE) captures the mouse; start both sides without it
                 }
 
-                HWND capture[2] = { nullptr, nullptr };
+                GoldenSide g;
+                {
+                    Golden::GdiRecording rec;
+                    for (int r = 0; r < rowsInPage; r++) g.range.Append()->CandIndex = L'1' + (wchar_t)r;
+                    g.w = std::make_unique<CRustCandidateWindow>(NoCallback, nullptr, &g.range, FALSE);
+                    g.w->_SetClassesForTest(RustCandidateTestClasses());
+                    Assert::IsTrue(g.w->_Create(2, 12, nullptr) != FALSE, L"the golden window");
+                    dime_ui_candidate_set_timer_hook(g.C(), GoldenTimerHook, &g.timers);
+                    g.items.resize(count);
+                    for (UINT i = 0; i < count; i++)
+                    {
+                        g.items[i]._ItemString.Set(L"中", 1);
+                        g.w->_AddString(&g.items[i], FALSE);
+                    }
+                    UINT pages = count ? (count + rowsInPage - 1) / rowsInPage : 0;
+                    std::vector<UINT> pageIndex(pages);
+                    for (UINT pg = 0; pg < pages; pg++) pageIndex[pg] = pg * rowsInPage;
+                    if (pages) g.w->_SetPageIndex(pageIndex.data(), pages);
+                    g.w->_Move(400, 300);
+                    g.w->_ResizeWindow();
+                    g.w->_SetScrollInfo(count, rowsInPage);
+                    if (shown) g.w->_Show(TRUE);
+                    ReleaseCapture();
+                    std::vector<std::wstring> calls = rec.Take();
+                    AddStep(ch, L"create " + GoldenSnapshot(g), calls);
+                }
+
+                HWND capture[2] = { nullptr, nullptr }, gcapture = nullptr;
                 RECT sbClient = { 0, 0, 0, 0 };
                 GetClientRect(sides[0].sb->SbWnd(), &sbClient);
                 int sw = max(1, (int)sbClient.right), sh = max(1, (int)sbClient.bottom);
+                RECT gClient = { 0, 0, 0, 0 };
+                GetClientRect(g.Sb(), &gClient);
+                int gsw = max(1, (int)gClient.right), gsh = max(1, (int)gClient.bottom);
 
                 for (int step = 0; step < 150; step++)
                 {
                     int op = (int)(rng() % 21);
                     int a = (int)(rng() % (count + 10)) - 5, b = (int)(rng() % 8) - 1;
-                    POINT pt = { (LONG)(rng() % (sw + 6)) - 3, (LONG)(rng() % (sh + 10)) - 5 };
+                    // The golden scroll bar has its own size: same draws, its own range.
+                    uint32_t rx = rng(), ry = rng();
+                    POINT pt = { (LONG)(rx % (sw + 6)) - 3, (LONG)(ry % (sh + 10)) - 5 };
+                    POINT gpt = { (LONG)(rx % (gsw + 6)) - 3, (LONG)(ry % (gsh + 10)) - 5 };
                     CScrollInfo si;
                     si.nMax = (int)(rng() % 60); si.nPage = 1 + (int)(rng() % 10); si.nPos = (int)(rng() % 70) - 5;
                     UINT_PTR timers[] = { BTNREPEAT_TIMER_ID, UI::SCROLLBAR_COLLAPSE_TIMER_ID, FADE_TIMER_ID, 12345 };
@@ -194,6 +305,37 @@ namespace DIMEUnitTests
                         snap[k] = Snapshot(s, k);
                         capture[k] = GetCapture();
                     }
+                    {
+                        DimeCandidate* c = g.C();
+                        HWND gsb = g.Sb();
+                        if (gcapture) SetCapture(gcapture); else ReleaseCapture();
+                        Golden::GdiRecording rec;
+                        switch (op)
+                        {
+                        case 0: if (setInfo) { DimeScrollInfo gsi = { si.nMax, si.nPage, si.nPos }; dime_ui_candidate_sb_set(c, &gsi, nullptr, 0, 0); } break;
+                        case 1: dime_ui_candidate_sb_op(c, 12, a, b); break;
+                        case 2: dime_ui_candidate_sb_op(c, 1, b - 2, flag); break;
+                        case 3: dime_ui_candidate_sb_op(c, 2, b - 2, flag); break;
+                        case 4: dime_ui_candidate_sb_op(c, 3, a, flag); break;
+                        case 5: case 6: dime_ui_candidate_sb_op(c, 7, gpt.x, gpt.y); break;
+                        case 7: dime_ui_candidate_sb_op(c, 8, 0, 0); break;
+                        case 8: case 9: dime_ui_candidate_sb_op(c, 9, 0, 0); break;
+                        case 10: dime_ui_candidate_sb_op(c, 4, flag, 0); break;
+                        case 11: dime_ui_candidate_sb_op(c, 10, (int32_t)timer, 0); break;
+                        case 12: dime_ui_candidate_sb_op(c, 5, 0, 0); break;
+                        case 13: dime_ui_candidate_sb_op(c, 0, flag, 0); break;
+                        case 14: dime_ui_candidate_sb_op(c, 13, flag, 0); break;
+                        case 15: dime_ui_candidate_sb_op(c, 6, 0, 0); break;
+                        case 16: SendMessage(gsb, 0x02A3 /* WM_MOUSELEAVE */, 0, 0); break;
+                        case 17: SendMessage(gsb, paintMsg, 0, 0); break;
+                        case 18: SendMessage(gsb, WM_TIMER, timer, 0); break;
+                        case 19: { DimeRect hr = { 0, 0, 5, 5 }; dime_ui_candidate_sb_set(c, nullptr, &hr, radius, 0); break; }
+                        case 20: SendMessage(g.w->_GetWnd(), WM_TIMER, timer, 0); break;
+                        }
+                        std::vector<std::wstring> calls = rec.Take();
+                        AddStep(ch, L"op " + std::to_wstring(op) + L" " + GoldenSnapshot(g), calls);
+                        gcapture = GetCapture();
+                    }
                     ReleaseCapture();
                     if (snap[0] != snap[1])
                         Assert::Fail((L"scenario " + std::to_wstring(scenario) + L" step " + std::to_wstring(step) + L" op " + std::to_wstring(op) +
@@ -211,6 +353,8 @@ namespace DIMEUnitTests
             g_baseWindowTimerTestHook = nullptr;
             Global::defaultlFontHandle = savedFont;
             DeleteObject(font);
+            ch.Finish();
+            Golden::Check(L"ScrollBarProc", L"Events", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" scroll bar steps compared, " + std::to_wstring(notified) +
                 L" with the candidate selection moved by the scroll bar").c_str());
             Assert::IsTrue(notified > 0, L"coverage");

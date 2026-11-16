@@ -29,6 +29,7 @@
 #include "../Define.h"
 #include "../RustShadowWindow.h"
 #include "WindowClassTestHelper.h"
+#include "RustCandidateWindow.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -73,6 +74,41 @@ namespace
     ATOM RustShadowAtom() { return ClassAtom(L"DIME.Test.RustShadowWindow", true); }
     const DWORD kShadowExStyle = WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED;
     const DWORD kShadowStyle = WS_DISABLED | WS_POPUP;
+
+    // ---- The golden side (phase 6b-2) ----
+    // A Rust shadow (dime_ui_shadow_create) around a Rust candidate window,
+    // created and driven only while the GDI calls are recorded with
+    // synthetic metrics at 96 dpi.
+    uint32_t GoldenDpi(void*) { return 96; }
+    int32_t GoldenDark() { return CConfig::GetEffectiveDarkMode() ? 1 : 0; }
+    const DimeShadowEnv kGoldenEnv = { GoldenDpi, GoldenDark };
+
+    struct Dpi96
+    {
+        UINT saved = CConfig::testDpiOverride;
+        Dpi96() { CConfig::testDpiOverride = 96; }
+        ~Dpi96() { CConfig::testDpiOverride = saved; }
+    };
+
+    std::wstring GoldenState(DimeShadow* sh, HWND owner)
+    {
+        HWND h = (HWND)dime_ui_shadow_hwnd(sh);
+        RECT rc = { 0, 0, 0, 0 }, orc = { 0, 0, 0, 0 };
+        GetWindowRect(h, &rc);
+        GetWindowRect(owner, &orc);
+        uint32_t color = 0;
+        DimePoint shift = { 0, 0 };
+        int32_t gradient = 0;
+        dime_ui_shadow_state(sh, &color, &shift, &gradient);
+        return L"rect=" + std::to_wstring(rc.left - orc.left) + L"," + std::to_wstring(rc.top - orc.top) + L"," +
+            std::to_wstring(rc.right - rc.left) + L"x" + std::to_wstring(rc.bottom - rc.top) +
+            L" owner=" + std::to_wstring(orc.left) + L"," + std::to_wstring(orc.top) + L"," +
+            std::to_wstring(orc.right - orc.left) + L"x" + std::to_wstring(orc.bottom - orc.top) +
+            L" visible=" + std::to_wstring(IsWindowVisible(h)) +
+            L" layered=" + std::to_wstring((GetWindowLong(h, GWL_EXSTYLE) & WS_EX_LAYERED) != 0) +
+            L" color=" + std::to_wstring(color) + L" shift=" + std::to_wstring(shift.x) + L"," + std::to_wstring(shift.y) +
+            L" gradient=" + std::to_wstring(gradient);
+    }
 }
 
 namespace DIMEUnitTests
@@ -176,6 +212,9 @@ namespace DIMEUnitTests
 
             std::mt19937 rng(63);
             int compared = 0;
+            Dpi96 dpi96;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"steps", 30);
             for (int scenario = 0; scenario < 10; scenario++)
             {
                 CCandidateRange range[2];
@@ -194,6 +233,25 @@ namespace DIMEUnitTests
                 CRustShadowWindow* rust = new CRustShadowWindow(w[1]);
                 Assert::IsTrue(cpp->_Create(CppShadowAtom(), kShadowExStyle, kShadowStyle, w[0]) != FALSE);
                 Assert::IsTrue(rust->_Create(RustShadowAtom(), kShadowExStyle, kShadowStyle, w[1]) != FALSE);
+                CCandidateRange grange;
+                std::unique_ptr<CRustCandidateWindow> gw;
+                DimeShadow* gsh = nullptr;
+                {
+                    Golden::GdiRecording rec;
+                    for (int r = 0; r < 5; r++) grange.Append()->CandIndex = L'1' + (wchar_t)r;
+                    gw = std::make_unique<CRustCandidateWindow>(NoCallback, nullptr, &grange, FALSE);
+                    gw->_SetClassesForTest(RustCandidateTestClasses());
+                    Assert::IsTrue(gw->_Create(2, 12, nullptr) != FALSE, L"the golden owner");
+                    gw->_Move(300, 200);
+                    gw->_ResizeWindow();
+                    gsh = dime_ui_shadow_create(Global::dllInstanceHandle, RustShadowAtom(), kShadowExStyle, kShadowStyle,
+                        gw->_GetWnd(), w[1]->_GetCornerRadiusBase(), &kGoldenEnv);
+                    Assert::IsNotNull(gsh, L"the golden shadow");
+                    std::vector<std::wstring> calls = rec.Take();
+                    ch.Add(L"create " + GoldenState(gsh, gw->_GetWnd()));
+                    for (const std::wstring& c : calls) ch.Add(c);
+                    ch.Next();
+                }
                 for (int step = 0; step < 60; step++)
                 {
                     int op = (int)(rng() % 9);
@@ -220,6 +278,24 @@ namespace DIMEUnitTests
                         };
                         st[k] = (k == 0) ? act(cpp) : act(rust);
                     }
+                    {
+                        HWND gh = gw->_GetWnd();
+                        Golden::GdiRecording rec;
+                        switch (op)
+                        {
+                        case 0: gw->_Move(x, y); break;
+                        case 1: SetWindowPos(gh, nullptr, x, y, cx, cy, SWP_NOZORDER | SWP_NOACTIVATE); break;
+                        case 2: dime_ui_shadow_show(gsh, flag); break;
+                        case 3: case 5: case 6: case 7: dime_ui_shadow_owner_moved(gsh, flag); break;
+                        case 4: dime_ui_shadow_setting_change(gsh); break;
+                        case 8: SetWindowPos(gh, nullptr, 0, 0, 0, 0,
+                                    SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | (flag ? SWP_SHOWWINDOW : SWP_HIDEWINDOW)); break;
+                        }
+                        std::vector<std::wstring> calls = rec.Take();
+                        ch.Add(L"op " + std::to_wstring(op) + L" " + GoldenState(gsh, gh));
+                        for (const std::wstring& c : calls) ch.Add(c);
+                        ch.Next();
+                    }
                     if (st[0] != st[1])
                         Assert::Fail((L"scenario " + std::to_wstring(scenario) + L" step " + std::to_wstring(step) + L" op " + std::to_wstring(op) +
                             L"\nC++  " + st[0] + L"\nRust " + st[1]).c_str());
@@ -228,11 +304,15 @@ namespace DIMEUnitTests
                 cpp->_Destroy();
                 delete cpp;
                 delete rust;
+                dime_ui_shadow_free(gsh);
+                gw->_Destroy();
                 for (int k = 0; k < 2; k++) DestroyAndDelete(w[k]);
             }
             CConfig::SetColorMode(savedMode);
             Global::defaultlFontHandle = savedFont;
             DeleteObject(font);
+            ch.Finish();
+            Golden::Check(L"Shadow", L"Behavior", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" shadow steps compared").c_str());
         }
     };

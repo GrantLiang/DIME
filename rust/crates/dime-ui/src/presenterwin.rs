@@ -616,6 +616,10 @@ impl Host for Owned<'_> {
         }
     }
     fn screen_bottom(&mut self) -> i32 {
+        // Tests: the screen of the work area they set (golden recordings).
+        if let Some(wa) = crate::candwin::work_area_for_test() {
+            return wa.bottom;
+        }
         unsafe { GetSystemMetrics(SM_CYSCREEN) }
     }
 }

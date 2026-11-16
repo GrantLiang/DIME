@@ -1,0 +1,9 @@
+paints 0..7 82bd7a6cf2aba607
+paints 8..15 87170caef8433a75
+paints 16..23 76e36ca1c0b9da79
+paints 24..31 01af04352488ca0d
+paints 32..39 3ebc0d93fcb6f2a0
+paints 40..47 a1f2cf8fd1343e94
+paints 48..55 be1093ea1c8c4778
+paints 56..63 270093036aa7e4be
+paints 64..71 3941d8e1561f9260

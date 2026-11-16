@@ -27,6 +27,7 @@
 #include "../BaseStructure.h"
 #include "../Define.h"
 #include "WindowClassTestHelper.h"
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -76,6 +77,8 @@ namespace
         Recorder cppRec;
         CCandidateWindow* cpp = nullptr;
         RustSide rust;
+        DimeCandColors colors = {};
+        COLORREF fill = 0;
 
         void Setup(std::mt19937& rng, int rowsInPage, UINT wndWidth, const std::vector<std::wstring>& texts)
         {
@@ -87,9 +90,9 @@ namespace
             }
             cpp = new CCandidateWindow(RecordAction, &cppRec, &cppRange, FALSE);
             cpp->_SetScrollBarForTest(FALSE, CppScrollBarTestAtom());
-            DimeCandColors colors = { (uint32_t)(rng() & 0xFFFFFF), (uint32_t)(rng() & 0xFFFFFF), (uint32_t)(rng() & 0xFFFFFF),
-                                      (uint32_t)(rng() & 0xFFFFFF), (uint32_t)(rng() & 0xFFFFFF), (uint32_t)(rng() & 0xFFFFFF) };
-            COLORREF fill = (COLORREF)(rng() & 0xFFFFFF);
+            colors = { (uint32_t)(rng() & 0xFFFFFF), (uint32_t)(rng() & 0xFFFFFF), (uint32_t)(rng() & 0xFFFFFF),
+                       (uint32_t)(rng() & 0xFFFFFF), (uint32_t)(rng() & 0xFFFFFF), (uint32_t)(rng() & 0xFFFFFF) };
+            fill = (COLORREF)(rng() & 0xFFFFFF);
             Assert::IsTrue(cpp->_Create(wndWidth, 12, nullptr) != FALSE);
             Assert::IsNotNull(cpp->_GetWnd(), L"a real C++ window");
             cpp->_SetNumberColor(colors.number, colors.number_bk);
@@ -161,10 +164,10 @@ namespace
             L" sbHover=" + std::to_wstring(ss.hovered) + L" sbDrag=" + std::to_wstring(ss.dragging) + L" sbAlpha=" + std::to_wstring(ss.alpha) +
             L" shadow=" + R(Rel(shadow, wr)) + L"/" + std::to_wstring(shadow ? IsWindowVisible(shadow) : -1);
     }
-    std::wstring ObserveRust(Pair& p)
+    std::wstring ObserveRust(RustSide& rs)
     {
-        DimeCandidate* c = p.rust.c;
-        HWND h = p.rust.Wnd();
+        DimeCandidate* c = rs.c;
+        HWND h = rs.Wnd();
         RECT wr = { 0, 0, 0, 0 };
         GetWindowRect(h, &wr);
         int32_t st[4] = {};
@@ -177,13 +180,13 @@ namespace
         HWND sb = (HWND)dime_ui_candidate_child(c, 0);
         HWND shadow = (HWND)dime_ui_candidate_child(c, 1);
         int page = -1;
-        p.rust.model->GetCurrentPage(&page);
+        rs.model->GetCurrentPage(&page);
         std::wstring a;
-        for (int x : p.rust.rec.actions) a += std::to_wstring(x);
+        for (int x : rs.rec.actions) a += std::to_wstring(x);
         return L"rect=" + R(wr) + L" visible=" + std::to_wstring(IsWindowVisible(h)) +
             L" layout=" + std::to_wstring(st[0]) + L"," + std::to_wstring(st[1]) + L"," + std::to_wstring(st[2]) + L"," + std::to_wstring(st[3]) +
             L" width=" + std::to_wstring(dime_ui_candidate_width(c)) +
-            L" sel=" + std::to_wstring(p.rust.model->Selection()) + L" page=" + std::to_wstring(page) + L" actions=" + a +
+            L" sel=" + std::to_wstring(rs.model->Selection()) + L" page=" + std::to_wstring(page) + L" actions=" + a +
             L" capture=" + std::to_wstring(GetCapture() == h) + L" tracking=" + std::to_wstring(dime_ui_candidate_child(c, 2) != nullptr) +
             L" sb=" + R(Rel(sb, wr)) + L"/" + std::to_wstring(ss.si.max) + L"/" + std::to_wstring(ss.si.page) + L"/" + std::to_wstring(ss.si.pos) +
             L" sbEnabled=" + std::to_wstring(hasSb ? (IsWindowEnabled(sb) ? 1 : 0) : -1) + L" sbVisible=" + std::to_wstring(hasSb ? IsWindowVisible(sb) : -1) +
@@ -219,6 +222,60 @@ namespace
         return px;
     }
 
+    // ---- The golden window G (phase 6b-2) ----
+    // A third window, Rust, set up like the pair and driven the same way,
+    // but only while its GDI calls are recorded with synthetic text metrics
+    // at 96 dpi: its sizes and calls do not depend on the machine's fonts.
+
+    struct Dpi96
+    {
+        UINT saved = CConfig::testDpiOverride;
+        Dpi96() { CConfig::testDpiOverride = 96; }
+        ~Dpi96() { CConfig::testDpiOverride = saved; }
+    };
+
+    void SetupGolden(RustSide& g, const Pair& p, int rowsInPage, UINT wndWidth, const std::vector<std::wstring>& texts,
+        std::vector<std::wstring>& calls)
+    {
+        Golden::GdiRecording rec;
+        const wchar_t keys[] = L"1234567890";
+        for (int r = 0; r < rowsInPage; r++) g.range.Append()->CandIndex = keys[r % 10];
+        Assert::IsTrue(g.Create(wndWidth, p.colors, p.fill), L"the golden window");
+        UINT count = (UINT)texts.size();
+        g.items.resize(count);
+        for (UINT i = 0; i < count; i++)
+        {
+            g.items[i]._ItemString.Set(texts[i].c_str(), texts[i].size());
+            g.w->_AddString(&g.items[i], FALSE);
+        }
+        UINT pages = count ? (count + rowsInPage - 1) / rowsInPage : 0;
+        std::vector<UINT> pageIndex(pages);
+        for (UINT pg = 0; pg < pages; pg++) pageIndex[pg] = pg * rowsInPage;
+        if (pages) g.w->_SetPageIndex(pageIndex.data(), pages);
+        g.w->_SetScrollInfo((int)count, rowsInPage);
+        g.w->_Move(300, 300);
+        g.w->_ResizeWindow();
+        calls = rec.Take();
+    }
+
+    // The cursor by name: handle values of system cursors are the session's.
+    std::wstring CursorName(HCURSOR c)
+    {
+        if (!c) return L"none";
+        static const LPCWSTR ids[] = { IDC_ARROW, IDC_HAND, IDC_IBEAM, IDC_SIZENS, IDC_SIZEALL };
+        static const wchar_t* names[] = { L"arrow", L"hand", L"ibeam", L"sizens", L"sizeall" };
+        for (int i = 0; i < ARRAYSIZE(ids); i++)
+            if (c == LoadCursor(nullptr, ids[i])) return names[i];
+        return L"other";
+    }
+
+    void AddStep(Golden::Chunks& ch, const std::wstring& head, const std::vector<std::wstring>& calls)
+    {
+        ch.Add(head);
+        for (const std::wstring& c : calls) ch.Add(c);
+        ch.Next();
+    }
+
     const std::wstring kPool[] = { L"中", L"國", L"美麗", L"台灣大學", L"Wi-Fi", L"一二三四五六七八九十甲乙丙丁戊",
                                    L"abcdefghijklmnopqrstuvwxyz", L"ㄅㄆㄇ" };
 }
@@ -246,6 +303,9 @@ namespace DIMEUnitTests
         {
             std::mt19937 rng(81);
             int compared = 0;
+            Dpi96 dpi96;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"paints", 6);
             for (int s = 0; s < 40; s++)
             {
                 int rows = 1 + (int)(rng() % 9);
@@ -254,6 +314,10 @@ namespace DIMEUnitTests
                 for (auto& t : texts) t = kPool[rng() % ARRAYSIZE(kPool)];
                 Pair p;
                 p.Setup(rng, rows, width, texts);
+                RustSide g;
+                std::vector<std::wstring> setup;
+                SetupGolden(g, p, rows, width, texts, setup);
+                AddStep(ch, L"create " + ObserveRust(g), setup);
                 for (int v = 0; v < 3; v++)
                 {
                     if (!texts.empty())
@@ -261,6 +325,7 @@ namespace DIMEUnitTests
                         int sel = (int)(rng() % texts.size());
                         p.cpp->_SetSelection(sel, FALSE);
                         p.rust.w->_SetSelection(sel, FALSE);
+                        g.w->_SetSelection(sel, FALSE);
                     }
                     RECT rc = { 0, 0, 0, 0 };
                     GetClientRect(p.cpp->_GetWnd(), &rc);
@@ -275,14 +340,27 @@ namespace DIMEUnitTests
                         DimeRect pr = { rc.left, rc.top, rc.right, rc.bottom };
                         dime_ui_candidate_paint(p.rust.c, dc, &pr);
                     });
-                    std::wstring oc = ObserveCpp(p), orr = ObserveRust(p);
+                    std::wstring oc = ObserveCpp(p), orr = ObserveRust(p.rust);
                     if (oc != orr)
                         Assert::Fail((L"paint " + std::to_wstring(s) + L"/" + std::to_wstring(v) + L"\nC++  " + oc + L"\nRust " + orr).c_str());
                     for (size_t i = 0; i < c.size(); i++)
                         if (c[i] != r[i]) Assert::Fail((L"paint " + std::to_wstring(s) + L"/" + std::to_wstring(v) + L": pixel " + std::to_wstring(i)).c_str());
+                    {
+                        RECT grc = { 0, 0, 0, 0 };
+                        GetClientRect(g.Wnd(), &grc);
+                        Golden::GdiRecording rec;
+                        PaintInto(max(1, (int)grc.right), max(1, (int)grc.bottom), [&](HDC dc) {
+                            DimeRect pr = { grc.left, grc.top, grc.right, grc.bottom };
+                            dime_ui_candidate_paint(g.c, dc, &pr);
+                        });
+                        std::vector<std::wstring> calls = rec.Take();
+                        AddStep(ch, L"paint " + ObserveRust(g), calls);
+                    }
                     compared++;
                 }
             }
+            ch.Finish();
+            Golden::Check(L"CandidateWindow", L"Paint", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" candidate paints compared").c_str());
         }
 
@@ -290,20 +368,32 @@ namespace DIMEUnitTests
         {
             std::mt19937 rng(82);
             int compared = 0, selects = 0, cancels = 0;
+            Dpi96 dpi96;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"messages", 25);
             for (int scenario = 0; scenario < 20; scenario++)
             {
                 std::vector<std::wstring> texts(rng() % 40);
                 for (auto& t : texts) t = kPool[rng() % ARRAYSIZE(kPool)];
                 Pair p;
-                p.Setup(rng, 1 + (int)(rng() % 9), 1 + rng() % 4, texts);
+                int rows = 1 + (int)(rng() % 9);
+                UINT width = 1 + rng() % 4;
+                p.Setup(rng, rows, width, texts);
                 {
-                    std::wstring a = ObserveCpp(p), b = ObserveRust(p);
+                    std::wstring a = ObserveCpp(p), b = ObserveRust(p.rust);
                     Assert::IsTrue(a == b, (L"after create\nC++  " + a + L"\nRust " + b).c_str());
                 }
+                RustSide g;
+                std::vector<std::wstring> setup;
+                SetupGolden(g, p, rows, width, texts, setup);
+                AddStep(ch, L"create " + ObserveRust(g), setup);
                 RECT client = { 0, 0, 0, 0 };
                 GetClientRect(p.cpp->_GetWnd(), &client);
-                int cw = max(1, (int)client.right), ch = max(1, (int)client.bottom);
-                HWND capture[2] = { nullptr, nullptr };
+                int cw = max(1, (int)client.right), chh = max(1, (int)client.bottom);
+                RECT gclient = { 0, 0, 0, 0 };
+                GetClientRect(g.Wnd(), &gclient);
+                int gcw = max(1, (int)gclient.right), gch = max(1, (int)gclient.bottom);
+                HWND capture[2] = { nullptr, nullptr }, gcapture = nullptr;
                 for (int step = 0; step < 100; step++)
                 {
                     UINT msg = 0;
@@ -311,12 +401,16 @@ namespace DIMEUnitTests
                     LPARAM lp = 0;
                     bool useWindowPos = false;
                     WINDOWPOS pos = {};
-                    int x = (int)(rng() % (cw + 20)) - 10, y = (int)(rng() % (ch + 20)) - 10;
+                    // The golden window has its own size: same draws, its own range.
+                    uint32_t rx = rng(), ry = rng();
+                    int x = (int)(rx % (cw + 20)) - 10, y = (int)(ry % (chh + 20)) - 10;
+                    int gx = (int)(rx % (gcw + 20)) - 10, gy = (int)(ry % (gch + 20)) - 10;
+                    bool xy = false;
                     switch (rng() % 16)
                     {
-                    case 0: case 1: msg = WM_MOUSEMOVE; lp = MAKELPARAM(x, y); break;
-                    case 2: msg = WM_LBUTTONDOWN; lp = MAKELPARAM(x, y); break;
-                    case 3: msg = WM_LBUTTONUP; lp = MAKELPARAM(x, y); break;
+                    case 0: case 1: msg = WM_MOUSEMOVE; lp = MAKELPARAM(x, y); xy = true; break;
+                    case 2: msg = WM_LBUTTONDOWN; lp = MAKELPARAM(x, y); xy = true; break;
+                    case 3: msg = WM_LBUTTONUP; lp = MAKELPARAM(x, y); xy = true; break;
                     case 4: msg = WM_MOUSEWHEEL; wp = MAKEWPARAM(0, (rng() % 2) ? WHEEL_DELTA : (WORD)-WHEEL_DELTA); break;
                     case 5: msg = WM_VSCROLL; wp = MAKEWPARAM(rng() % 9, rng() % (texts.size() + 3)); break;
                     case 6: msg = WM_SETCURSOR; lp = MAKELPARAM(HTCLIENT, (rng() % 2) ? WM_MOUSEMOVE : WM_LBUTTONUP); break;
@@ -338,7 +432,7 @@ namespace DIMEUnitTests
                     case 11: msg = 0x02A3 /* WM_MOUSELEAVE */; break;
                     case 12: msg = WM_CTLCOLORSCROLLBAR; break;
                     case 13: msg = 0x024B /* WM_POINTERACTIVATE */; break;
-                    case 14: msg = (rng() % 2) ? WM_RBUTTONDOWN : WM_MBUTTONUP; lp = MAKELPARAM(x, y); break;
+                    case 14: msg = (rng() % 2) ? WM_RBUTTONDOWN : WM_MBUTTONUP; lp = MAKELPARAM(x, y); xy = true; break;
                     case 15: msg = WM_PAINT; break;
                     }
                     std::wstring obs[2];
@@ -351,9 +445,23 @@ namespace DIMEUnitTests
                         wpos.hwnd = h;
                         LRESULT r = SendMessage(h, msg, wp, useWindowPos ? (LPARAM)&wpos : lp);
                         if (msg == WM_CTLCOLORSCROLLBAR) r = (r != 0);   // each window answers with its own brush
-                        obs[k] = (k == 0 ? ObserveCpp(p) : ObserveRust(p)) + L" result=" + std::to_wstring(r) +
+                        obs[k] = (k == 0 ? ObserveCpp(p) : ObserveRust(p.rust)) + L" result=" + std::to_wstring(r) +
                             L" cursor=" + std::to_wstring((INT_PTR)GetCursor()) + L" wp=" + std::to_wstring(useWindowPos ? wpos.flags : 0);
                         capture[k] = GetCapture();
+                    }
+                    {
+                        if (gcapture) SetCapture(gcapture); else ReleaseCapture();
+                        SetCursor(nullptr);
+                        WINDOWPOS wpos = pos;
+                        wpos.hwnd = g.Wnd();
+                        Golden::GdiRecording rec;
+                        LRESULT r = SendMessage(g.Wnd(), msg, wp, useWindowPos ? (LPARAM)&wpos : xy ? MAKELPARAM(gx, gy) : lp);
+                        std::vector<std::wstring> calls = rec.Take();
+                        if (msg == WM_CTLCOLORSCROLLBAR) r = (r != 0);
+                        AddStep(ch, L"msg " + std::to_wstring(msg) + L" " + std::to_wstring((uint32_t)wp) + L" " + std::to_wstring((uint32_t)(xy ? MAKELPARAM(gx, gy) : useWindowPos ? 0 : lp)) +
+                            L" " + ObserveRust(g) + L" result=" + std::to_wstring(r) + L" cursor=" + CursorName(GetCursor()) +
+                            L" wp=" + std::to_wstring(useWindowPos ? wpos.flags : 0), calls);
+                        gcapture = GetCapture();
                     }
                     ReleaseCapture();
                     if (obs[0] != obs[1])
@@ -363,6 +471,8 @@ namespace DIMEUnitTests
                 }
                 for (int a : p.cppRec.actions) (a == 0 ? selects : cancels)++;
             }
+            ch.Finish();
+            Golden::Check(L"CandidateWindow", L"Messages", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" candidate messages compared, " + std::to_wstring(selects) + L" selections, " +
                 std::to_wstring(cancels) + L" cancels").c_str());
             Assert::IsTrue(selects > 0 && cancels > 0, L"coverage");
@@ -372,12 +482,21 @@ namespace DIMEUnitTests
         {
             std::mt19937 rng(83);
             int compared = 0;
+            Dpi96 dpi96;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"operations", 30);
             for (int scenario = 0; scenario < 20; scenario++)
             {
                 std::vector<std::wstring> texts(rng() % 40);
                 for (auto& t : texts) t = kPool[rng() % ARRAYSIZE(kPool)];
                 Pair p;
-                p.Setup(rng, 1 + (int)(rng() % 9), 1 + rng() % 4, texts);
+                int rows = 1 + (int)(rng() % 9);
+                UINT width = 1 + rng() % 4;
+                p.Setup(rng, rows, width, texts);
+                RustSide g;
+                std::vector<std::wstring> setup;
+                SetupGolden(g, p, rows, width, texts, setup);
+                AddStep(ch, L"create " + ObserveRust(g), setup);
                 for (int step = 0; step < 60; step++)
                 {
                     int op = (int)(rng() % 14);
@@ -430,7 +549,41 @@ namespace DIMEUnitTests
                         case 13: ret = k == 0 ? cw->_MovePage(n, flag) : rw->_MovePage(n, flag); break;
                         }
                         if (ret != -1) extent[k] += L" ret=" + std::to_wstring(ret);
-                        obs[k] = (k == 0 ? ObserveCpp(p) : ObserveRust(p)) + extent[k];
+                        obs[k] = (k == 0 ? ObserveCpp(p) : ObserveRust(p.rust)) + extent[k];
+                    }
+                    {
+                        // The golden window: the same operation, recorded. Its
+                        // _GetWindowExtent is left out (it depends on the screen's
+                        // work area).
+                        ReleaseCapture();
+                        CRustCandidateWindow* rw = g.w.get();
+                        std::wstring more;
+                        Golden::GdiRecording rec;
+                        switch (op)
+                        {
+                        case 0: rw->_Show(flag); break;
+                        case 1: rw->_Move(x, y); break;
+                        case 2: rw->_ResizeWindow(); break;
+                        case 3: rw->_SetCandStringLength(w); break;
+                        case 4: rw->_SetTextColor(c1, c2); rw->_SetFillColor(c2); break;
+                        case 5: rw->_SetScrollInfo((int)texts.size() + n, 3 + (n & 3)); break;
+                        case 6: dime_ui_candidate_op(g.c, 6, n, flag); break;
+                        case 7: dime_ui_candidate_op(g.c, 7, n, flag); break;
+                        case 8: dime_ui_candidate_op(g.c, 8, x & 63, flag); break;
+                        case 9: rw->_InvalidateRect(); break;
+                        case 10:
+                        {
+                            RECT cand = { 0, 0, 0, 0 };
+                            rw->_GetClientRect(&cand);
+                            more = L" client=" + R(cand);
+                            break;
+                        }
+                        case 11: more = L" ret=" + std::to_wstring(rw->_MoveSelection(n, flag)); break;
+                        case 12: more = L" ret=" + std::to_wstring(rw->_SetSelection(index, flag)); break;
+                        case 13: more = L" ret=" + std::to_wstring(rw->_MovePage(n, flag)); break;
+                        }
+                        std::vector<std::wstring> calls = rec.Take();
+                        AddStep(ch, L"op " + std::to_wstring(op) + L" " + ObserveRust(g) + more, calls);
                     }
                     ReleaseCapture();
                     const std::wstring& a = obs[0];
@@ -441,6 +594,8 @@ namespace DIMEUnitTests
                     compared++;
                 }
             }
+            ch.Finish();
+            Golden::Check(L"CandidateWindow", L"Operations", golden);
             Logger::WriteMessage((std::to_wstring(compared) + L" candidate operations compared").c_str());
         }
 
