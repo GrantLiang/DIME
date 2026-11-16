@@ -3,7 +3,6 @@
 
 #include "pch.h"
 #include "DIME.h"
-#include "BaseWindow.h"
 #include "Globals.h"
 
 // Stub implementations for DLL reference counting

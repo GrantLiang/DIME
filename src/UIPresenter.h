@@ -38,21 +38,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <array>
 #include "KeyHandlerEditSession.h"
-#include "CandidateWindow.h"
-#include "NotifyWindow.h"
+#include "UIWindowTypes.h"
 #include "TfTextLayoutSink.h"
 #include "DIME.h"
 #include "BaseStructure.h"
 #include "UIACaretTracker.h"
-
-// The C++ windows and placement state. The Rust product build leaves them out:
-// dime-ui::presenterwin owns that state (phase 4b-3). Tests still compile it so
-// a presenter with _useRustPresenter off is a real C++ presenter.
-#if !defined(DIME_USE_RUST_ENGINE) || defined(DIME_UNIT_TESTING)
-#define DIME_CPP_PRESENTER 1
-typedef CCandidateWindow DimeCandidateWindow;
-typedef CNotifyWindow DimeNotifyWindow;
-#endif
 
 #ifdef DIME_UNIT_TESTING
 // Forward declaration for integration tests
@@ -65,9 +55,7 @@ class CReadingLine;
 struct DimePresenter;   // dime_ffi.h: the presenter owned by Rust (phase 4b-2a)
 class CCompositionProcessorEngine;
 class CDIME;
-#ifdef DIME_RUST_AVAILABLE
 class CRustSessionHost;   // the key-handler host calls the private TSF pieces (phase 4b-2c)
-#endif
 
 // What _LayoutChangeNotification reads from TSF / Win32 before placing the windows
 // (DimeLayoutFacts in the Rust build; phase 4b-1, docs/RUST_TSF_SHELL.md).
@@ -108,9 +96,7 @@ class CUIPresenter :
     friend class DIMEIntegratedTests::UIPresenterIntegrationTest;
     friend class PresenterLayoutParityAccess;   // tests/PresenterLayoutParityTest.cpp
 #endif
-#ifdef DIME_RUST_AVAILABLE
     friend class CRustSessionHost;
-#endif
 
 public:
     CUIPresenter(_In_ CDIME *pTextService, CCompositionProcessorEngine *pCompositionProcessorEngine);
@@ -195,9 +181,7 @@ public:
 	BOOL IsNotifyShown();
 	LONG GetCompRangeHeight() const;
 	void ResetCompRange();
-#ifdef DIME_RUST_AVAILABLE
 	DimePresenter* HostPresenter() const { return _useRustPresenter ? _rp : nullptr; }   // phase 4b-2c
-#endif
 
 	BOOL isUILessMode() const {return !_isShowMode;}
 private:
@@ -242,12 +226,6 @@ private:
 	void _PaintNotifySlotForTest(NOTIFY_TYPE notifyType, HDC dc, PAINTSTRUCT* ps);   // as WM_PAINT
 	void _PaintCandidateForTest(HDC dc, PAINTSTRUCT* ps);
 	BOOL _CandScrollInfoForTest(int* info);   // the scroll bar's nMax, nPage, nPos
-	// The classes the Rust presenter makes its notify windows with (default: Global::Atom*; the C++
-	// test build registers those with CBaseWindow's window procedure).
-	void _SetNotifyClassesForTest(ATOM notify, ATOM shadow) { _notifyAtomForTest = notify; _notifyShadowAtomForTest = shadow; }
-#ifdef DIME_RUST_AVAILABLE
-	void _SetCandidateClassesForTest(const DimeCandClasses& classes) { _candClassesForTest = classes; }
-#endif
 #endif
     virtual HRESULT CALLBACK _CandidateChangeNotification(_In_ enum CANDWND_ACTION action);
 	virtual HRESULT CALLBACK _NotifyChangeNotification(_In_ enum NOTIFY_WND action, _In_ WPARAM wParam, _In_ LPARAM lParam);
@@ -281,15 +259,6 @@ private:
     void SetPageIndexWithScrollInfo(_In_ CDIMEArray<CCandidateListItem> *pCandidateList);
 
 protected:
-#ifdef DIME_CPP_PRESENTER
-    std::unique_ptr<DimeCandidateWindow> _pCandidateWnd;
-	// One notify window per NOTIFY_TYPE. Lazily instantiated by MakeNotifyWindow.
-	// Concurrency invariant (see docs/MULTI_NOTIFY.md): at most NOTIFY_REVERSE_LOOKUP
-	// and NOTIFY_SPECIAL_CODE coexist, both wiped together by ClearNotify on next
-	// keystroke; CHN_ENG cannot coexist with hint slots in practice. Future hints
-	// with timeToHide>0 would need restack-on-hide — not implemented here.
-	std::array<std::unique_ptr<DimeNotifyWindow>, (size_t)NOTIFY_TYPE::NOTIFY_COUNT> _pNotifyWnds;
-#endif
     BOOL _isShowMode;
 
 
@@ -301,22 +270,11 @@ private:
     DWORD _uiElementId;
     CDIME* _pTextService;
     LONG _refCount;
-#ifdef DIME_CPP_PRESENTER
-	POINT _candLocation;
-	POINT _notifyLocation;
-	RECT _rectCompRange;
-#endif
 	CUIACaretTracker _uiaCaretTracker;
 
 	BOOL _inFocus;
 	BOOL _useRustPresenter;   // the presenter state, notify stack and placement decisions in Rust (DIME_USE_RUST_ENGINE) or C++
 	DimePresenter* _rp;       // with DIME_RUST_AVAILABLE (else null)
-#ifdef DIME_UNIT_TESTING
-	ATOM _notifyAtomForTest = 0, _notifyShadowAtomForTest = 0;
-#ifdef DIME_RUST_AVAILABLE
-	DimeCandClasses _candClassesForTest = {};
-#endif
-#endif
 };
 
 

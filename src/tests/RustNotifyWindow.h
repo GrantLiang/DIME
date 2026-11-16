@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "NotifyWindow.h"
+#include "UIWindowTypes.h"
 
 #ifdef DIME_RUST_AVAILABLE
 #include "dime_ffi.h"

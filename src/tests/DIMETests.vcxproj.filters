@@ -77,9 +77,6 @@
     <ClCompile Include="..\\DIME.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\\BaseWindow.cpp">
-      <Filter>Source Files\DIME Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\CompositionProcessorEngine.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
@@ -87,9 +84,6 @@
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
     <ClCompile Include="..\\CandidateHandler.cpp">
-      <Filter>Source Files\DIME Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\\CandidateWindow.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
     <ClCompile Include="..\\Compartment.cpp">
@@ -149,9 +143,6 @@
     <ClCompile Include="..\\LanguageBar.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\\NotifyWindow.cpp">
-      <Filter>Source Files\DIME Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\\RegKey.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
@@ -161,16 +152,10 @@
     <ClCompile Include="..\\ReverseConversionProvider.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\\ScrollBarWindow.cpp">
-      <Filter>Source Files\DIME Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\\SearchCandidateProvider.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
     <ClCompile Include="..\\SetupCompositionProcesseorEngine.cpp">
-      <Filter>Source Files\DIME Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\\ShadowWindow.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
     <ClCompile Include="..\\ShowConfig.cpp">

@@ -1,17 +1,13 @@
 // WindowClassTestHelper.h - register DIME's window classes once per test process.
 //
 // Global::RegisterWindowClass() fails when a class is already registered and then
-// leaves that class's atom at 0; CBaseWindow::_Create with atom 0 silently creates
-// a "virtual" window without an HWND. Tests that need real windows call
+// leaves that class's atom at 0. Tests that need real windows call
 // EnsureWindowClassesRegistered(), which recovers the atoms of classes that are
 // already registered.
 #pragma once
 
 #include <Windows.h>
 #include "../Globals.h"
-#include "../BaseWindow.h"
-#include "../CandidateWindow.h"
-#include "../NotifyWindow.h"
 #ifdef DIME_RUST_AVAILABLE
 #include "dime_ffi.h"
 #endif
@@ -52,59 +48,33 @@ inline void EnsureWindowClassesRegistered()
         wc.cbSize = sizeof(wc);
         *c.atom = static_cast<ATOM>(GetClassInfoExW(Global::dllInstanceHandle, c.name, &wc));
     }
-#ifdef DIME_USE_RUST_ENGINE
-    // DIME.CandidateWindow has Rust's window procedure: C++ CCandidateWindow objects get their own class.
-    if (g_cppCandidateWindowAtomForTest == 0)
-    {
-        const wchar_t* name = L"DIME.Test.CppCandidateWindow";
-        WNDCLASSEXW wc = {};
-        wc.cbSize = sizeof(wc);
-        ATOM atom = static_cast<ATOM>(GetClassInfoExW(Global::dllInstanceHandle, name, &wc));
-        if (!atom) CBaseWindow::_InitPopupWindowClass(name, &atom);
-        g_cppCandidateWindowAtomForTest = atom;
-    }
-    // Likewise DIME.NotifyWindow: C++ CNotifyWindow objects get their own class.
-    if (g_cppNotifyWindowAtomForTest == 0)
-    {
-        const wchar_t* name = L"DIME.Test.CppNotifyWindow";
-        WNDCLASSEXW wc = {};
-        wc.cbSize = sizeof(wc);
-        ATOM atom = static_cast<ATOM>(GetClassInfoExW(Global::dllInstanceHandle, name, &wc));
-        if (!atom) CBaseWindow::_InitPopupWindowClass(name, &atom);
-        g_cppNotifyWindowAtomForTest = atom;
-    }
-#endif
 }
 
 #ifdef DIME_RUST_AVAILABLE
-// A window class registered by one implementation (CBaseWindow's window procedure or dime-ui's),
-// whatever the build registered for the real classes; child / shadow class styles.
-inline ATOM TestClassAtomKind(const wchar_t* name, bool rust, bool popup)
+// A test window class with dime-ui's window procedure (popup: the candidate / notify
+// styles; else the child / shadow class styles).
+inline ATOM TestClassAtomKind(const wchar_t* name, bool popup)
 {
     EnsureWindowClassesRegistered();
     WNDCLASSEXW wc = {};
     wc.cbSize = sizeof(wc);
     ATOM atom = (ATOM)GetClassInfoExW(Global::dllInstanceHandle, name, &wc);
     if (atom) return atom;
-    if (rust) return dime_ui_register_window_class(Global::dllInstanceHandle, (const uint16_t*)name, popup ? 1 : 0);
-    if (popup) CBaseWindow::_InitPopupWindowClass(name, &atom);
-    else CBaseWindow::_InitWindowClass(name, &atom);
-    return atom;
+    return dime_ui_register_window_class(Global::dllInstanceHandle, (const uint16_t*)name, popup ? 1 : 0);
 }
-inline ATOM TestClassAtom(const wchar_t* name, bool rust) { return TestClassAtomKind(name, rust, false); }
-inline ATOM CppScrollBarTestAtom() { return TestClassAtom(L"DIME.Test.CppScrollBarWindow", false); }
-inline ATOM RustScrollBarTestAtom() { return TestClassAtom(L"DIME.Test.RustScrollBarWindow", true); }
+inline ATOM TestClassAtom(const wchar_t* name) { return TestClassAtomKind(name, false); }
+inline ATOM RustScrollBarTestAtom() { return TestClassAtom(L"DIME.Test.RustScrollBarWindow"); }
 // The classes of a test CRustNotifyWindow (_SetClassesForTest).
 inline DimeNotifyClasses RustNotifyTestClasses()
 {
-    return { TestClassAtomKind(L"DIME.Test.RustNotifyWindow", true, true), TestClassAtom(L"DIME.Test.RustShadowWindow", true) };
+    return { TestClassAtomKind(L"DIME.Test.RustNotifyWindow", true), TestClassAtom(L"DIME.Test.RustShadowWindow") };
 }
-// The classes of a test CRustCandidateWindow (_SetClassesForTest): Rust test classes for the
-// candidate window and its shadow / scroll bar, whatever the build registered for the real ones.
+// The classes of a test CRustCandidateWindow (_SetClassesForTest): test classes for the
+// candidate window and its shadow / scroll bar, beside the ones registered for the real windows.
 inline DimeCandClasses RustCandidateTestClasses()
 {
-    return { TestClassAtomKind(L"DIME.Test.RustCandidateWindow", true, true),
-             TestClassAtom(L"DIME.Test.RustShadowWindow", true),
+    return { TestClassAtomKind(L"DIME.Test.RustCandidateWindow", true),
+             TestClassAtom(L"DIME.Test.RustShadowWindow"),
              RustScrollBarTestAtom(),
              Global::AtomNotifyWindow, Global::AtomNotifyShadowWindow };
 }

@@ -48,15 +48,11 @@
     <None Include="tests\DIMETests.vcxproj" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BaseWindow.h" />
     <ClInclude Include="BuildInfo.h" />
     <ClInclude Include="CandidateListModel.h" />
     <ClInclude Include="RustCandidateListModel.h" />
     <ClInclude Include="RustSessionHost.h" />
-    <ClInclude Include="UILayout.h" />
-    <ClInclude Include="RustShadowWindow.h" />
 
-    <ClInclude Include="CandidateWindow.h" />
     <ClInclude Include="Compartment.h" />
     <ClInclude Include="CompositionProcessorEngine.h" />
     <ClInclude Include="Config.h" />
@@ -65,7 +61,6 @@
     <ClInclude Include="EnumTfCandidates.h" />
     <ClInclude Include="KeyStateCategory.h" />
     <ClInclude Include="BaseStructure.h" />
-    <ClInclude Include="NotifyWindow.h" />
     <ClInclude Include="PhoneticComposition.h" />
     <ClInclude Include="PhoneticSymbols.h" />
     <ClInclude Include="ReverseConversionProvider.h" />
@@ -84,8 +79,6 @@
     <ClInclude Include="RegKey.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="DIME.h" />
-    <ClInclude Include="ScrollBarWindow.h" />
-    <ClInclude Include="ShadowWindow.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TableDictionaryEngine.h" />
     <ClInclude Include="RustTableDictionaryEngine.h" />
@@ -96,26 +89,19 @@
     <ClInclude Include="TipCandidateString.h" />
     <ClInclude Include="UIConstants.h" />
     <ClInclude Include="UIPresenter.h" />
+    <ClInclude Include="UIWindowTypes.h" />
     <ClInclude Include="UIACaretTracker.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActiveLanguageProfileNotifySink.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <!-- The C++ UI windows (CBaseWindow and its subclasses) are only in the C++ build: the Rust
-         build's windows are owned by dime-ui (docs/RUST_WINDOW_OWNERSHIP.md, 3c-5f). DIMETests
-         still compiles them for the parity tests. -->
-    <ClCompile Include="BaseWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
+    <!-- The UI windows are owned by dime-ui (docs/RUST_WINDOW_OWNERSHIP.md); the C++ ones
+         (CBaseWindow and its subclasses, UILayout) were removed in phase 6b-3. -->
     <ClCompile Include="CandidateHandler.cpp" />
     <ClCompile Include="CandidateListModel.cpp" />
     <ClCompile Include="RustCandidateListModel.cpp" />
     <ClCompile Include="RustSessionHost.cpp" />
-    <!-- Layout math is dime-ui in the Rust build. UILayout.cpp stays for the C++ build
-         (CandidateWindow / ScrollBarWindow / DIME_CPP_PRESENTER). Tests compile their own. -->
-    <ClCompile Include="UILayout.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
-    <ClCompile Include="RustShadowWindow.cpp" />
-
-    <ClCompile Include="CandidateWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="Config.cpp" />
     <!-- The legacy PropertySheet (ConfigDialog.cpp) and its dialog resources were
          removed in phase 5b-10; DIMESettings.exe is the only settings UI. -->
@@ -128,7 +114,6 @@
     <ClCompile Include="KeyProcesser.cpp" />
     <!-- The key state routing is in Rust in the Rust build (dime-core::session::handle_key, phase 4a). -->
     <ClCompile Include="KeyStateCategory.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
-    <ClCompile Include="NotifyWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="BaseStructure.cpp" />
     <ClCompile Include="ReverseConversion.cpp" />
     <ClCompile Include="ReverseConversionProvider.cpp" />
@@ -156,12 +141,10 @@
     <ClCompile Include="LanguageBar.cpp" />
     <ClCompile Include="Register.cpp" />
     <ClCompile Include="RegKey.cpp" />
-    <ClCompile Include="ScrollBarWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="Server.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="SetupCompositionProcesseorEngine.cpp" />
-    <ClCompile Include="ShadowWindow.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="ShowConfig.cpp" />
     <ClCompile Include="StartComposition.cpp">
       <PreprocessorDefinitions Condition="'$(DiagnosticLogging)'=='true'">DEBUG_PRINT;%(PreprocessorDefinitions)</PreprocessorDefinitions>

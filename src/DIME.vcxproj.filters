@@ -83,13 +83,7 @@
     <None Include="docs\TEST_REPORT.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BaseWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CandidateListModel.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CandidateWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Compartment.h">
@@ -137,12 +131,6 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ScrollBarWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadowWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TableDictionaryEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -188,9 +176,6 @@
     <ClInclude Include="DisplayString.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NotifyWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DIME.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -224,9 +209,6 @@
       <Filter>Source Files\TextService\IMInterface\Dictionary</Filter>
     </ClCompile>
     <ClCompile Include="CandidateListModel.cpp">
-      <Filter>Source Files\UI\Candidate</Filter>
-    </ClCompile>
-    <ClCompile Include="CandidateWindow.cpp">
       <Filter>Source Files\UI\Candidate</Filter>
     </ClCompile>
     <ClCompile Include="File.cpp">
@@ -304,15 +286,6 @@
     <ClCompile Include="Globals.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NotifyWindow.cpp">
-      <Filter>Source Files\UI\NotifyWindow</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseWindow.cpp">
-      <Filter>Source Files\UI</Filter>
-    </ClCompile>
-    <ClCompile Include="ShadowWindow.cpp">
-      <Filter>Source Files\UI</Filter>
-    </ClCompile>
     <ClCompile Include="BaseStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -369,9 +342,6 @@
     </ClCompile>
     <ClCompile Include="EditSession.cpp">
       <Filter>Source Files\TextService</Filter>
-    </ClCompile>
-    <ClCompile Include="ScrollBarWindow.cpp">
-      <Filter>Source Files\UI\Candidate</Filter>
     </ClCompile>
     <ClCompile Include="CompositionProcessorEngine.cpp">
       <Filter>Source Files\TextService\IMInterface\CompositionProcesserEngine</Filter>

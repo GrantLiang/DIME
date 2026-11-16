@@ -559,10 +559,6 @@ void CRustSessionHost::NotifyShowFacts(void* ctx, uint32_t kind, DimeNotifyShowF
     out->has_context = self->_notifyContext ? 1 : 0;
     out->hinstance = Global::dllInstanceHandle;
     DimeNotifyClasses classes = { Global::AtomNotifyWindow, Global::AtomNotifyShadowWindow };
-#ifdef DIME_UNIT_TESTING
-    if (ui->_notifyAtomForTest)
-        classes = { ui->_notifyAtomForTest, ui->_notifyShadowAtomForTest };
-#endif
     out->notify_class = classes.notify;
     out->notify_shadow_class = classes.notify_shadow;
     if (CConfig::GetEffectiveDarkMode())
@@ -772,10 +768,6 @@ void CRustSessionHost::CandidateOpen(void* ctx, int32_t nullRange, DimeCandOpenF
 
     DimeCandClasses classes = { Global::AtomCandidateWindow, Global::AtomCandidateShadowWindow,
                                 Global::AtomCandidateScrollBarWindow, Global::AtomNotifyWindow, Global::AtomNotifyShadowWindow };
-#ifdef DIME_UNIT_TESTING
-    if (ui->_candClassesForTest.candidate)
-        classes = ui->_candClassesForTest;
-#endif
     out->cls_candidate = classes.candidate;
     out->cls_shadow = classes.candidate_shadow;
     out->cls_scroll = classes.scroll_bar;

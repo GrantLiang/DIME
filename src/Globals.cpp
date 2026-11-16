@@ -42,10 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Globals.h"
 #include "Private.h"
 #include "resource.h"
-#include "BaseWindow.h"
-#ifdef DIME_USE_RUST_ENGINE
 #include "dime_ffi.h"
-#endif
 #include "define.h"
 #include "BaseStructure.h"
 
@@ -156,7 +153,6 @@ extern const WCHAR StringDelimiter = L'\"';
 // {1DE68A87-FF3B-46A0-8F80-46730B2491B1}
 extern const CLSID DIMECLSID =
 { 0x1de68a87, 0xff3b, 0x46a0, { 0x8f, 0x80, 0x46, 0x73, 0xb, 0x24, 0x91, 0xb1 } };
-
 
 
 //---------------------------------------------------------------------
@@ -291,77 +287,41 @@ ATOM AtomNotifyShadowWindow;
 BOOL RegisterWindowClass()
 {
     // Candidate and Notify use popup class (no CS_IME, with CS_DROPSHADOW) for DWM shadow
-#ifdef DIME_USE_RUST_ENGINE
     // The candidate window is owned by Rust (dime-ui::candwin, via the presenter).
     AtomCandidateWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)CandidateClassName, 1);
     if (AtomCandidateWindow == 0)
     {
         return FALSE;
     }
-#else
-    if (!CBaseWindow::_InitPopupWindowClass(CandidateClassName, &AtomCandidateWindow))
-    {
-        return FALSE;
-    }
-#endif
-#ifdef DIME_USE_RUST_ENGINE
     // Shadow windows are owned by Rust (dime-ui::shadow, CRustShadowWindow): its window procedure.
     AtomCandidateShadowWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)CandidateShadowClassName, 0);
     if (AtomCandidateShadowWindow == 0)
     {
         return FALSE;
     }
-#else
-    if (!CBaseWindow::_InitWindowClass(CandidateShadowClassName, &AtomCandidateShadowWindow))
-    {
-        return FALSE;
-    }
-#endif
-#ifdef DIME_USE_RUST_ENGINE
     // The candidate scroll bar is owned by Rust (dime-ui::sbwin, CRustScrollBarWindow).
     AtomCandidateScrollBarWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)CandidateScrollBarClassName, 0);
     if (AtomCandidateScrollBarWindow == 0)
     {
         return FALSE;
     }
-#else
-    if (!CBaseWindow::_InitWindowClass(CandidateScrollBarClassName, &AtomCandidateScrollBarWindow))
-    {
-        return FALSE;
-    }
-#endif
 
-#ifdef DIME_USE_RUST_ENGINE
     // The notify window is owned by Rust (dime-ui::notifywin, via the presenter).
     AtomNotifyWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)NotifyClassName, 1);
     if (AtomNotifyWindow == 0)
     {
         return FALSE;
     }
-#else
-    if (!CBaseWindow::_InitPopupWindowClass(NotifyClassName, &AtomNotifyWindow))
-    {
-        return FALSE;
-    }
-#endif
-#ifdef DIME_USE_RUST_ENGINE
     // Shadow windows are owned by Rust (dime-ui::shadow, CRustShadowWindow): its window procedure.
     AtomNotifyShadowWindow = dime_ui_register_window_class(dllInstanceHandle, (const uint16_t*)NotifyShadowClassName, 0);
     if (AtomNotifyShadowWindow == 0)
     {
         return FALSE;
     }
-#else
-    if (!CBaseWindow::_InitWindowClass(NotifyShadowClassName, &AtomNotifyShadowWindow))
-    {
-        return FALSE;
-    }
-#endif
 
     return TRUE;
 }
 
-#ifdef DIME_USE_RUST_ENGINE
 // The window classes are unregistered at DLL_PROCESS_DETACH in the Rust build
 // (docs/RUST_WINDOW_OWNERSHIP.md); the C++ build keeps them registered as before.
 void UnregisterWindowClass()
@@ -376,7 +336,6 @@ void UnregisterWindowClass()
         *atom = 0;
     }
 }
-#endif
 
 //---------------------------------------------------------------------
 // defined full width characters for Double/Single byte conversion

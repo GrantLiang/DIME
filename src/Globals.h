@@ -172,7 +172,6 @@ inline BOOL IsTooSimilar(COLORREF cr1, COLORREF cr2)
 }
 
 
-
 //---------------------------------------------------------------------
 // extern
 //---------------------------------------------------------------------
@@ -189,9 +188,7 @@ extern ATOM AtomNotifyWindow;
 extern ATOM AtomNotifyShadowWindow;
 
 BOOL RegisterWindowClass();
-#ifdef DIME_USE_RUST_ENGINE
 void UnregisterWindowClass();
-#endif
 
 extern LONG dllRefCount;
 
@@ -313,7 +310,6 @@ void debugPrint(const WCHAR* format, ...);
 #else
 inline static void debugPrint(const WCHAR* format, ...) { (void)format; }
 #endif
-
 
 
 #endif

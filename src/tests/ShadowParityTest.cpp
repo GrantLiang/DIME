@@ -43,7 +43,7 @@ namespace
 {
     HRESULT NoCallback(void*, enum CANDWND_ACTION) { return S_OK; }
 
-    ATOM RustShadowAtom() { return TestClassAtom(L"DIME.Test.RustShadowWindow", true); }
+    ATOM RustShadowAtom() { return TestClassAtom(L"DIME.Test.RustShadowWindow"); }
     const DWORD kShadowExStyle = WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED;
     const DWORD kShadowStyle = WS_DISABLED | WS_POPUP;
     // CBaseWindow's corner radius base of the candidate window (the owner).
