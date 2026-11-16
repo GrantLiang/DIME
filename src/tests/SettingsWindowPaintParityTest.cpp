@@ -7,6 +7,11 @@
 * the breadcrumb, the hamburger, owner-drawn buttons, swatches (also through
 * SettingsOwnerDraw's WM_DRAWITEM / WM_CTLCOLOR* handling), and the
 * themed message box, in light and dark themes and at several dpis.
+*
+* Golden files (src/tests/golden/SettingsWindowPaint): the GDI / GDI+ calls
+* of a separate Rust paint per case, recorded with synthetic text metrics
+* (Golden::GdiRecording), so they do not depend on the machine's fonts;
+* plus the Rust fonts' LOGFONTs and the WM_CTLCOLOR* results.
 ********************************************************************************/
 #include "pch.h"
 #include "CppUnitTest.h"
@@ -22,6 +27,7 @@
 #include "../DIMESettings/SettingsOwnerDraw.h"
 #include "../DIMESettings/SettingsPageLayout.h"
 #include "dime_ffi.h"
+#include "Golden.h"
 
 #pragma comment(lib, "gdiplus.lib")
 
@@ -62,6 +68,36 @@ namespace
         return px;
     }
 
+    // The golden log of the running test method (null outside one).
+    Golden::Log* g_golden = nullptr;
+
+    // Records a separate Rust paint (synthetic metrics) as one golden line.
+    void RecordRust(int w, int h, COLORREF bg, const std::function<void(HDC)>& rust, const std::wstring& what)
+    {
+        if (!g_golden) return;
+        std::vector<std::wstring> calls;
+        {
+            Golden::GdiRecording rec;
+            Render(w, h, bg, rust);
+            calls = rec.Take();
+        }
+        Golden::Hash hash;
+        std::wstring detail;
+        for (const std::wstring& c : calls) {
+            hash.Add(c);
+            detail += c + L"\n";
+        }
+        g_golden->Add(what + L" " + std::to_wstring(w) + L"x" + std::to_wstring(h) + L": " + std::to_wstring(calls.size())
+            + L" calls " + hash.Hex(), detail);
+    }
+
+    // Points g_golden at a test method's log for its lifetime.
+    struct GoldenScope
+    {
+        explicit GoldenScope(Golden::Log& log) { g_golden = &log; }
+        ~GoldenScope() { g_golden = nullptr; }
+    };
+
     size_t InkCount(const std::vector<DWORD>& px)
     {
         size_t n = 0;
@@ -84,6 +120,7 @@ namespace
                 Assert::Fail(msg);
             }
         }
+        RecordRust(w, h, bg, rust, what);
     }
 
     SettingsSnapshot MakeSnapshot(int variant)
@@ -166,6 +203,8 @@ namespace DIMEUnitTests
 
         TEST_METHOD(Fonts)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             for (UINT dpi : { 96u, 120u, 144u, 192u }) {
                 SWP::Fonts a = {}, b = {};
                 SWP::Cpp::CreateFonts(dpi, &a);
@@ -181,14 +220,21 @@ namespace DIMEUnitTests
                     // bytes after the NUL are whatever followed the string.
                     Assert::IsTrue(memcmp(&la, &lb, offsetof(LOGFONTW, lfFaceName)) == 0, L"LOGFONT fields");
                     Assert::AreEqual(std::wstring(la.lfFaceName), std::wstring(lb.lfFaceName), L"LOGFONT face");
+                    golden.Add(L"dpi " + std::to_wstring(dpi) + L" font " + std::to_wstring(i) + L": height "
+                        + std::to_wstring(lb.lfHeight) + L" weight " + std::to_wstring(lb.lfWeight) + L" italic "
+                        + std::to_wstring(lb.lfItalic) + L" charset " + std::to_wstring(lb.lfCharSet) + L" quality "
+                        + std::to_wstring(lb.lfQuality) + L" face [" + lb.lfFaceName + L"]");
                     DeleteObject(fa[i]);
                     DeleteObject(fb[i]);
                 }
             }
+            Golden::Check(L"SettingsWindowPaint", L"Fonts", golden);
         }
 
         TEST_METHOD(CardsTogglesSwatchesButtons)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             for (bool dark : { false, true }) {
                 ThemeColors tc = ComputeThemeColors(dark);
                 for (UINT dpi : { 96u, 144u, 192u }) {
@@ -226,10 +272,13 @@ namespace DIMEUnitTests
                     for (HFONT o : { f.title, f.cardHeader, f.body, f.desc, f.mdl2, f.mdl2Icon }) DeleteObject(o);
                 }
             }
+            Golden::Check(L"SettingsWindowPaint", L"CardsTogglesSwatchesButtons", golden);
         }
 
         TEST_METHOD(CandidatePreview)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             for (int v = 0; v < 24; v++) {
                 SettingsSnapshot s = MakeSnapshot(v);
                 for (UINT dpi : { 96u, 144u }) {
@@ -246,10 +295,13 @@ namespace DIMEUnitTests
                     }
                 }
             }
+            Golden::Check(L"SettingsWindowPaint", L"CandidatePreview", golden);
         }
 
         TEST_METHOD(SidebarAndBreadcrumb)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             for (bool dark : { false, true }) {
                 for (UINT dpi : { 96u, 144u }) {
                     for (int sel = 0; sel < 6; sel++) {
@@ -283,10 +335,13 @@ namespace DIMEUnitTests
                         L"collapsed sidebar", false);
                 }
             }
+            Golden::Check(L"SettingsWindowPaint", L"SidebarAndBreadcrumb", golden);
         }
 
         TEST_METHOD(Pages)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             int imeCount = 0;
             GetIMEPageLayout(&imeCount);
             std::mt19937 rng(31);
@@ -330,10 +385,13 @@ namespace DIMEUnitTests
                 }
             }
             Assert::IsTrue(cases >= 32, L"page cases");
+            Golden::Check(L"SettingsWindowPaint", L"Pages", golden);
         }
 
         TEST_METHOD(WindowFrames)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             int frames = 0;
             for (bool dark : { false, true }) {
                 for (UINT dpi : { 96u, 144u }) {
@@ -372,12 +430,15 @@ namespace DIMEUnitTests
                 }
             }
             Assert::IsTrue(frames >= 144, L"frame cases");
+            Golden::Check(L"SettingsWindowPaint", L"WindowFrames", golden);
         }
 
         // SettingsOwnerDraw (5b-8j): WM_DRAWITEM for buttons, swatches, and
         // items that are not ours, through the dispatch-free Cpp / Rust pair.
         TEST_METHOD(OwnerDrawItems)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             HWND btn = CreateWindowExW(0, L"BUTTON", L"", WS_POPUP | BS_OWNERDRAW, 0, 0, 10, 10,
                 nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
             Assert::IsNotNull(btn, L"button");
@@ -436,11 +497,14 @@ namespace DIMEUnitTests
             }
             DestroyWindow(btn);
             Assert::IsTrue(painted >= 100, L"painted items");
+            Golden::Check(L"SettingsWindowPaint", L"OwnerDrawItems", golden);
         }
 
         // SettingsOwnerDraw (5b-8j): WM_CTLCOLOREDIT / WM_CTLCOLORLISTBOX.
         TEST_METHOD(OwnerCtlColor)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             HDC screen = GetDC(nullptr);
             for (bool dark : { false, true }) {
                 ThemeColors tc = ComputeThemeColors(dark);
@@ -459,6 +523,13 @@ namespace DIMEUnitTests
                     Assert::AreEqual((DWORD)GetBkColor(da), (DWORD)GetBkColor(db), (what + L" bk").c_str());
                     Assert::AreEqual(ba == given, bb == given, (what + L" brush kept").c_str());
                     Assert::AreEqual(ba != nullptr, bb != nullptr, (what + L" brush exists").c_str());
+                    LOGBRUSH lg = {};
+                    if (bb) GetObjectW(bb, sizeof(lg), &lg);
+                    wchar_t line[160];
+                    swprintf_s(line, L"%s: handled %d text %06X bk %06X brush %s %06X", what.c_str(), (int)rb,
+                        (unsigned)GetTextColor(db), (unsigned)GetBkColor(db), bb == given ? L"given" : (bb ? L"new" : L"none"),
+                        bb ? (unsigned)lg.lbColor : 0u);
+                    golden.Add(line);
                     if (ba && ba != given) {
                         LOGBRUSH la = {}, lb = {};
                         GetObjectW(ba, sizeof(la), &la);
@@ -473,10 +544,13 @@ namespace DIMEUnitTests
                 }
             }
             ReleaseDC(nullptr, screen);
+            Golden::Check(L"SettingsWindowPaint", L"OwnerCtlColor", golden);
         }
 
         TEST_METHOD(ThemedMessageBoxPaint)
         {
+            Golden::Log golden;
+            GoldenScope scope(golden);
             static const wchar_t* labels[] = { L"是(Y)", L"否(N)", L"取消" };
             for (bool dark : { false, true }) {
                 ThemeColors tc = ComputeThemeColors(dark);
@@ -498,6 +572,7 @@ namespace DIMEUnitTests
                     DeleteObject(font);
                 }
             }
+            Golden::Check(L"SettingsWindowPaint", L"ThemedMessageBoxPaint", golden);
         }
     };
 }

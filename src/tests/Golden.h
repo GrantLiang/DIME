@@ -95,6 +95,23 @@ private:
     std::wstring detail;
 };
 
+#ifdef DIME_RUST_AVAILABLE
+// Records the Rust settings window's GDI / GDI+ calls on this thread from
+// construction to Take() (phase 6a-3, dime-settings gdi.rs). With synthetic
+// metrics the text measurements come from the requested font heights, so
+// the log is the same on every machine; the drawing itself then differs
+// from a normal paint, so record a separate paint into a scratch bitmap.
+class GdiRecording {
+public:
+    explicit GdiRecording(bool synthetic = true);
+    ~GdiRecording();
+    // The calls so far, one per line; ends the recording.
+    std::vector<std::wstring> Take();
+private:
+    bool taken = false;
+};
+#endif
+
 // `s` with every occurrence of `from` replaced by `to`.
 std::wstring Replace(std::wstring s, const std::wstring& from, const std::wstring& to);
 

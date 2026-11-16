@@ -478,6 +478,53 @@ pub extern "C" fn dime_settings_set_system_dark_for_test(value: i32) {
     })
 }
 
+/// Test hook: starts recording the settings window's GDI / GDI+ calls on
+/// this thread (`dime_settings::gdi`); `synthetic` != 0 answers text
+/// measurements from the requested font heights instead of the installed
+/// fonts.
+#[no_mangle]
+pub extern "C" fn dime_settings_gdi_record_start(synthetic: i32) {
+    crate::guard((), || dime_settings::gdi::record_start(synthetic != 0))
+}
+
+thread_local! {
+    /// A finished recording, until a call with a buffer takes it.
+    static GDI_LOG: std::cell::RefCell<Option<Vec<u16>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Test hook: ends the recording; the calls, one per line ('\n' after each),
+/// go to `out` (`cap` units with the NUL). Returns the full length. A null
+/// `out` only asks for the length (the text waits for the next call); a
+/// buffer takes the text.
+#[no_mangle]
+pub unsafe extern "C" fn dime_settings_gdi_record_take(out: *mut u16, cap: usize) -> usize {
+    crate::guard(0, || {
+        GDI_LOG.with(|g| {
+            let mut g = g.borrow_mut();
+            let lines = dime_settings::gdi::record_take();
+            if g.is_none() || !lines.is_empty() {
+                let mut text = String::new();
+                for line in lines {
+                    text.push_str(&line);
+                    text.push('\n');
+                }
+                *g = Some(text.encode_utf16().collect());
+            }
+            let len = g.as_ref().map_or(0, Vec::len);
+            if !out.is_null() && cap > 0 {
+                let units = g.take().unwrap_or_default();
+                let n = units.len().min(cap - 1);
+                // SAFETY: `out` holds `cap` units.
+                unsafe {
+                    std::ptr::copy_nonoverlapping(units.as_ptr(), out, n);
+                    *out.add(n) = 0;
+                }
+            }
+            len
+        })
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

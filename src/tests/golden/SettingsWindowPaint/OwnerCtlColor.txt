@@ -1,0 +1,4 @@
+dark=0 preset=0: handled 0 text 030201 bk 060504 brush given 000000
+dark=0 preset=1: handled 0 text 030201 bk 060504 brush given 090909
+dark=1 preset=0: handled 1 text EDEDED bk 302D2D brush new 302D2D
+dark=1 preset=1: handled 1 text EDEDED bk 302D2D brush given 090909

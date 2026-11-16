@@ -13,9 +13,8 @@ use crate::layout::scale;
 use crate::paint::{paint_button, paint_swatch, Handle, Rect};
 
 windows_link::link!("user32.dll" "system" fn GetWindowTextW(wnd: Handle, buf: *mut u16, cap: i32) -> i32);
-windows_link::link!("gdi32.dll" "system" fn CreateSolidBrush(color: u32) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn SetTextColor(hdc: Handle, color: u32) -> u32);
-windows_link::link!("gdi32.dll" "system" fn SetBkColor(hdc: Handle, color: u32) -> u32);
+// Painting and measuring go through the recordable wrappers (gdi.rs).
+use crate::gdi::{CreateSolidBrush, SetTextColor, SetBkColor};
 
 const ODT_BUTTON: u32 = 4;
 const ODT_STATIC: u32 = 5;

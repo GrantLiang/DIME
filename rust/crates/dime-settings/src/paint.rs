@@ -25,131 +25,62 @@ use dime_config::ImeMode;
 use crate::layout::{card_rows, ctrl_right, row_height, row_shown, row_spans, scale, RowContext, EXPANDED_SLOTS};
 use crate::msgbox::{first_button_x, Layout as MsgBoxLayout};
 
-pub type Handle = *mut c_void;
+pub use crate::gdi::{Handle, Rect};
+use crate::gdi::{BitmapInfo, BlendFunction, Size, TextMetric};
+use crate::gdi::{
+    AlphaBlend,
+    CreateCompatibleDC,
+    CreateDIBSection,
+    CreateFontW,
+    CreatePen,
+    CreateRectRgn,
+    CreateRoundRectRgn,
+    CreateSolidBrush,
+    DeleteDC,
+    DeleteObject,
+    DestroyIcon,
+    DrawIconEx,
+    DrawTextW,
+    ExtSelectClipRgn,
+    ExtTextOutW,
+    FillRect,
+    FillRgn,
+    GdipAddPathArc,
+    GdipClosePathFigure,
+    GdipCreateFromHDC,
+    GdipCreatePath,
+    GdipCreatePen1,
+    GdipCreateSolidFill,
+    GdipDeleteBrush,
+    GdipDeleteGraphics,
+    GdipDeletePath,
+    GdipDeletePen,
+    GdipDrawPath,
+    GdipFillEllipse,
+    GdipFillPath,
+    GdipSetSmoothingMode,
+    GetDC,
+    GetStockObject,
+    GetTextExtentPoint32W,
+    GetTextFaceW,
+    GetTextMetricsW,
+    LineTo,
+    LoadImageW,
+    MoveToEx,
+    ReleaseDC,
+    RestoreDC,
+    RoundRect,
+    SaveDC,
+    SelectObject,
+    SetBkColor,
+    SetBkMode,
+    SetTextColor,
+    SetViewportOrgEx,
+};
 
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Rect {
-    pub left: i32,
-    pub top: i32,
-    pub right: i32,
-    pub bottom: i32,
-}
 
-impl Rect {
-    pub const fn new(left: i32, top: i32, right: i32, bottom: i32) -> Rect {
-        Rect {
-            left,
-            top,
-            right,
-            bottom,
-        }
-    }
-}
 
-#[repr(C)]
-#[derive(Default)]
-struct Size {
-    cx: i32,
-    cy: i32,
-}
 
-#[repr(C)]
-#[derive(Default)]
-struct TextMetric {
-    tm_height: i32,
-    tm_ascent: i32,
-    tm_descent: i32,
-    tm_internal_leading: i32,
-    tm_external_leading: i32,
-    tm_ave_char_width: i32,
-    tm_max_char_width: i32,
-    tm_weight: i32,
-    tm_overhang: i32,
-    tm_digitized_aspect_x: i32,
-    tm_digitized_aspect_y: i32,
-    tm_first_char: u16,
-    tm_last_char: u16,
-    tm_default_char: u16,
-    tm_break_char: u16,
-    tm_italic: u8,
-    tm_underlined: u8,
-    tm_struck_out: u8,
-    tm_pitch_and_family: u8,
-    tm_char_set: u8,
-}
-
-#[repr(C)]
-#[derive(Default)]
-struct BitmapInfo {
-    bi_size: u32,
-    bi_width: i32,
-    bi_height: i32,
-    bi_planes: u16,
-    bi_bit_count: u16,
-    bi_compression: u32,
-    bi_size_image: u32,
-    bi_x_pels_per_meter: i32,
-    bi_y_pels_per_meter: i32,
-    bi_clr_used: u32,
-    bi_clr_important: u32,
-    colors: u32,
-}
-
-#[repr(C)]
-struct BlendFunction {
-    op: u8,
-    flags: u8,
-    constant_alpha: u8,
-    alpha_format: u8,
-}
-
-windows_link::link!("gdi32.dll" "system" fn CreatePen(style: i32, width: i32, color: u32) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn CreateSolidBrush(color: u32) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn SelectObject(hdc: Handle, obj: Handle) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn DeleteObject(obj: Handle) -> i32);
-windows_link::link!("gdi32.dll" "system" fn RoundRect(hdc: Handle, l: i32, t: i32, r: i32, b: i32, w: i32, h: i32) -> i32);
-windows_link::link!("gdi32.dll" "system" fn CreateRoundRectRgn(l: i32, t: i32, r: i32, b: i32, w: i32, h: i32) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn FillRgn(hdc: Handle, rgn: Handle, brush: Handle) -> i32);
-windows_link::link!("gdi32.dll" "system" fn MoveToEx(hdc: Handle, x: i32, y: i32, old: *mut c_void) -> i32);
-windows_link::link!("gdi32.dll" "system" fn LineTo(hdc: Handle, x: i32, y: i32) -> i32);
-windows_link::link!("gdi32.dll" "system" fn SetBkMode(hdc: Handle, mode: i32) -> i32);
-windows_link::link!("gdi32.dll" "system" fn SetTextColor(hdc: Handle, color: u32) -> u32);
-windows_link::link!("gdi32.dll" "system" fn SetBkColor(hdc: Handle, color: u32) -> u32);
-windows_link::link!("gdi32.dll" "system" fn CreateFontW(h: i32, w: i32, esc: i32, orient: i32, weight: i32, italic: u32, underline: u32, strike: u32, charset: u32, out_precision: u32, clip_precision: u32, quality: u32, pitch_and_family: u32, face: *const u16) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn GetTextExtentPoint32W(hdc: Handle, s: *const u16, c: i32, size: *mut Size) -> i32);
-windows_link::link!("gdi32.dll" "system" fn GetTextMetricsW(hdc: Handle, tm: *mut TextMetric) -> i32);
-windows_link::link!("gdi32.dll" "system" fn ExtTextOutW(hdc: Handle, x: i32, y: i32, options: u32, rc: *const Rect, s: *const u16, c: u32, dx: *const i32) -> i32);
-windows_link::link!("gdi32.dll" "system" fn GetStockObject(i: i32) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn CreateCompatibleDC(hdc: Handle) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn CreateDIBSection(hdc: Handle, bmi: *const BitmapInfo, usage: u32, bits: *mut *mut c_void, section: Handle, offset: u32) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn DeleteDC(hdc: Handle) -> i32);
-windows_link::link!("gdi32.dll" "system" fn GetTextFaceW(hdc: Handle, c: i32, name: *mut u16) -> i32);
-
-windows_link::link!("user32.dll" "system" fn FillRect(hdc: Handle, rc: *const Rect, brush: Handle) -> i32);
-windows_link::link!("user32.dll" "system" fn DrawTextW(hdc: Handle, s: *const u16, c: i32, rc: *mut Rect, format: u32) -> i32);
-windows_link::link!("user32.dll" "system" fn LoadImageW(inst: Handle, name: *const u16, kind: u32, cx: i32, cy: i32, load: u32) -> Handle);
-windows_link::link!("user32.dll" "system" fn DrawIconEx(hdc: Handle, x: i32, y: i32, icon: Handle, cx: i32, cy: i32, step: u32, brush: Handle, flags: u32) -> i32);
-windows_link::link!("user32.dll" "system" fn DestroyIcon(icon: Handle) -> i32);
-windows_link::link!("user32.dll" "system" fn GetDC(wnd: Handle) -> Handle);
-windows_link::link!("user32.dll" "system" fn ReleaseDC(wnd: Handle, hdc: Handle) -> i32);
-
-windows_link::link!("msimg32.dll" "system" fn AlphaBlend(dst: Handle, x: i32, y: i32, w: i32, h: i32, src: Handle, sx: i32, sy: i32, sw: i32, sh: i32, blend: BlendFunction) -> i32);
-
-windows_link::link!("gdiplus.dll" "system" fn GdipCreateFromHDC(hdc: Handle, graphics: *mut Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipDeleteGraphics(graphics: Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipSetSmoothingMode(graphics: Handle, mode: i32) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipCreatePath(fill_mode: i32, path: *mut Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipDeletePath(path: Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipAddPathArc(path: Handle, x: f32, y: f32, w: f32, h: f32, start: f32, sweep: f32) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipClosePathFigure(path: Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipCreateSolidFill(color: u32, brush: *mut Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipDeleteBrush(brush: Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipFillPath(graphics: Handle, brush: Handle, path: Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipCreatePen1(color: u32, width: f32, unit: i32, pen: *mut Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipDeletePen(pen: Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipDrawPath(graphics: Handle, pen: Handle, path: Handle) -> i32);
-windows_link::link!("gdiplus.dll" "system" fn GdipFillEllipse(graphics: Handle, brush: Handle, x: f32, y: f32, w: f32, h: f32) -> i32);
 
 const PS_SOLID: i32 = 0;
 const TRANSPARENT: i32 = 1;
@@ -292,7 +223,7 @@ fn text_extent(hdc: Handle, text: &[u16]) -> Size {
 /// RAII for a GDI+ object so lifetimes mirror the C++ wrappers' scopes.
 struct Gp {
     handle: Handle,
-    delete: unsafe extern "system" fn(Handle) -> i32,
+    delete: unsafe fn(Handle) -> i32,
 }
 
 impl Drop for Gp {
@@ -1735,11 +1666,6 @@ pub fn paint_msgbox(
     }
 }
 
-windows_link::link!("gdi32.dll" "system" fn CreateRectRgn(l: i32, t: i32, r: i32, b: i32) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn SaveDC(hdc: Handle) -> i32);
-windows_link::link!("gdi32.dll" "system" fn RestoreDC(hdc: Handle, saved: i32) -> i32);
-windows_link::link!("gdi32.dll" "system" fn ExtSelectClipRgn(hdc: Handle, rgn: Handle, mode: i32) -> i32);
-windows_link::link!("gdi32.dll" "system" fn SetViewportOrgEx(hdc: Handle, x: i32, y: i32, old: *mut c_void) -> i32);
 
 const RGN_AND: i32 = 1;
 

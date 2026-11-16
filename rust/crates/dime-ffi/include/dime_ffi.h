@@ -1168,6 +1168,13 @@ size_t dime_settings_skip_program_name_for_test(const uint16_t* cmd, uint16_t* o
 /* Test hook: -1 makes the system-dark check read the system again; 0 / 1
  * make it return that (like CConfig::testSystemDarkOverride). */
 void dime_settings_set_system_dark_for_test(int32_t value);
+/* Test hooks (phase 6a-3): record the settings window's GDI / GDI+ calls on
+ * this thread. synthetic != 0 answers text measurements from the requested
+ * font heights, so the log does not depend on the installed fonts. take
+ * ends the recording and writes the calls ('\n' after each) to out (cap
+ * units with the NUL); it returns the full length. */
+void dime_settings_gdi_record_start(int32_t synthetic);
+size_t dime_settings_gdi_record_take(uint16_t* out, size_t cap);
 
 /* ---- Settings model (phase 5b-1, dime-config::settings_model) ----------
  * Window-free SettingsModel functions. snapshot is a C++ SettingsSnapshot

@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <fstream>
 #include "Golden.h"
+#ifdef DIME_RUST_AVAILABLE
+#include "dime_ffi.h"
+#endif
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -202,6 +205,36 @@ void Chunks::Finish()
     detail.clear();
     first = items;
 }
+
+#ifdef DIME_RUST_AVAILABLE
+GdiRecording::GdiRecording(bool synthetic)
+{
+    dime_settings_gdi_record_start(synthetic ? 1 : 0);
+}
+
+GdiRecording::~GdiRecording()
+{
+    if (!taken) dime_settings_gdi_record_take(nullptr, 0);
+}
+
+std::vector<std::wstring> GdiRecording::Take()
+{
+    taken = true;
+    size_t n = dime_settings_gdi_record_take(nullptr, 0);
+    std::vector<uint16_t> buf(n + 1);
+    dime_settings_gdi_record_take(buf.data(), buf.size());
+    std::wstring text((const wchar_t*)buf.data(), n);
+    std::vector<std::wstring> lines;
+    size_t start = 0;
+    while (start < text.size()) {
+        size_t nl = text.find(L'\n', start);
+        if (nl == std::wstring::npos) nl = text.size();
+        lines.push_back(text.substr(start, nl - start));
+        start = nl + 1;
+    }
+    return lines;
+}
+#endif
 
 std::wstring Replace(std::wstring s, const std::wstring& from, const std::wstring& to)
 {

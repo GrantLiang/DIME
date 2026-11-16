@@ -35,6 +35,8 @@ pub mod command;
 pub mod controls;
 pub mod driver;
 #[cfg(windows)]
+pub mod gdi;
+#[cfg(windows)]
 pub mod editor;
 pub mod frame;
 pub mod layout;

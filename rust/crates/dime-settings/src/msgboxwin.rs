@@ -100,14 +100,10 @@ windows_link::link!("user32.dll" "system" fn GetMessageW(msg: *mut Msg, h: Handl
 windows_link::link!("user32.dll" "system" fn TranslateMessage(msg: *const Msg) -> i32);
 windows_link::link!("user32.dll" "system" fn DispatchMessageW(msg: *const Msg) -> isize);
 windows_link::link!("user32.dll" "system" fn SetForegroundWindow(h: Handle) -> i32);
-windows_link::link!("user32.dll" "system" fn GetDC(h: Handle) -> Handle);
-windows_link::link!("user32.dll" "system" fn ReleaseDC(h: Handle, dc: Handle) -> i32);
-windows_link::link!("user32.dll" "system" fn DrawTextW(dc: Handle, s: *const u16, c: i32, rc: *mut Rect, format: u32) -> i32);
 windows_link::link!("kernel32.dll" "system" fn GetModuleHandleW(name: *const u16) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn CreateFontW(h: i32, w: i32, esc: i32, orient: i32, weight: i32, italic: u32, underline: u32, strike: u32, charset: u32, out_precision: u32, clip_precision: u32, quality: u32, pitch_and_family: u32, face: *const u16) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn SelectObject(dc: Handle, obj: Handle) -> Handle);
-windows_link::link!("gdi32.dll" "system" fn DeleteObject(obj: Handle) -> i32);
 windows_link::link!("dwmapi.dll" "system" fn DwmSetWindowAttribute(h: Handle, attr: u32, value: *const c_void, size: u32) -> i32);
+// Painting and measuring go through the recordable wrappers (gdi.rs).
+use crate::gdi::{GetDC, ReleaseDC, DrawTextW, CreateFontW, SelectObject, DeleteObject};
 
 const GWLP_USERDATA: i32 = -21;
 const GWL_STYLE: i32 = -16;
