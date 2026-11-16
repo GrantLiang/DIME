@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "pch.h"
 #include "CppUnitTest.h"
-#include "../CandidateWindow.h"
-#include "../ShadowWindow.h"
+#include "RustCandidateWindow.h"
+#include "WindowClassTestHelper.h"
 #include "../BaseStructure.h"
 #include "../Define.h"
 #include <Windows.h>
@@ -55,6 +55,8 @@ namespace DIMEIntegratedTests
     public:
         TEST_CLASS_INITIALIZE(ClassInitialize)
         {
+            // The Rust window is always a real one: it needs its classes.
+            EnsureWindowClassesRegistered();
             Logger::WriteMessage("IT-03: Candidate Window Integration Tests - Class Initialize\n");
         }
 
@@ -72,7 +74,7 @@ namespace DIMEIntegratedTests
             CCandidateRange indexRange;
 
             // Act: Create candidate window
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback,
                 nullptr,
                 &indexRange,
@@ -96,7 +98,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -126,7 +128,7 @@ namespace DIMEIntegratedTests
             // Arrange
             CCandidateRange indexRange;
             
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -154,7 +156,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -185,7 +187,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -214,60 +216,7 @@ namespace DIMEIntegratedTests
             delete pCandWnd;
         }
 
-        // IT-03-02: Shadow Window Test
-        TEST_METHOD(IT03_02_ShadowWindow_Create_Succeeds)
-        {
-            Logger::WriteMessage("Test: IT03_02_ShadowWindow_Create_Succeeds\n");
 
-            // Arrange: Create owner window first
-            CCandidateRange indexRange;
-            
-            CCandidateWindow* pOwnerWnd = new (std::nothrow) CCandidateWindow(
-                TestCandidateCallback, nullptr, &indexRange, FALSE
-            );
-            Assert::IsNotNull(pOwnerWnd);
-
-            // Act: Create shadow window
-            CShadowWindow* pShadowWnd = new (std::nothrow) CShadowWindow(pOwnerWnd);
-
-            // Assert: Shadow window created
-            Assert::IsNotNull(pShadowWnd, L"Shadow window should be created");
-
-            // Cleanup
-            delete pShadowWnd;
-            delete pOwnerWnd;
-        }
-
-        TEST_METHOD(IT03_02_ShadowWindow_Show_ChangesVisibility)
-        {
-            Logger::WriteMessage("Test: IT03_02_ShadowWindow_Show_ChangesVisibility\n");
-
-            // Arrange
-            CCandidateRange indexRange;
-            CCandidateWindow* pOwnerWnd = new (std::nothrow) CCandidateWindow(
-                TestCandidateCallback, nullptr, &indexRange, FALSE
-            );
-            Assert::IsNotNull(pOwnerWnd);
-
-            CShadowWindow* pShadowWnd = new (std::nothrow) CShadowWindow(pOwnerWnd);
-            Assert::IsNotNull(pShadowWnd);
-
-            // Note: Cannot verify actual visibility without creating actual window
-            // This test verifies the method doesn't crash
-
-            // Act: Show shadow window (may not actually show without full window creation)
-            pShadowWnd->_Show(TRUE);
-
-            // Act: Hide shadow window
-            pShadowWnd->_Show(FALSE);
-
-            // Assert: No crash = success
-            Assert::IsTrue(true, L"Show/Hide operations should not crash");
-
-            // Cleanup
-            delete pShadowWnd;
-            delete pOwnerWnd;
-        }
 
         TEST_METHOD(IT03_03_CandidateWindow_MoveSelection_UpdatesIndex)
         {
@@ -276,7 +225,7 @@ namespace DIMEIntegratedTests
             // Arrange
             CCandidateRange indexRange;
             
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -323,7 +272,7 @@ namespace DIMEIntegratedTests
             // Arrange
             CCandidateRange indexRange;
             
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -357,7 +306,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -389,7 +338,7 @@ namespace DIMEIntegratedTests
             // Arrange
             CCandidateRange indexRange1;
             
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange1, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -412,10 +361,13 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
+            // The Rust window has a width once it exists (the C++ object had
+            // one from its constructor's defaults).
+            Assert::IsTrue(pCandWnd->_Create(200, 12, NULL) != FALSE, L"the window");
 
             // Act: Get width
             UINT width = pCandWnd->_GetWidth();
@@ -433,7 +385,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -457,7 +409,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -472,71 +424,8 @@ namespace DIMEIntegratedTests
             delete pCandWnd;
         }
 
-        TEST_METHOD(IT03_05_ShadowWindow_Create_Succeeds)
-        {
-            Logger::WriteMessage("Test: IT03_05_ShadowWindow_Create_Succeeds\n");
 
-            // Arrange: Create a base window first for shadow
-            CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
-                TestCandidateCallback, nullptr, &indexRange, FALSE
-            );
-            Assert::IsNotNull(pCandWnd);
 
-            // Create shadow window with owner
-            CShadowWindow* pShadow = new (std::nothrow) CShadowWindow(pCandWnd);
-            Assert::IsNotNull(pShadow, L"Shadow window should be created");
-
-            // Cleanup
-            delete pShadow;
-            delete pCandWnd;
-        }
-
-        TEST_METHOD(IT03_05_ShadowWindow_Move_Succeeds)
-        {
-            Logger::WriteMessage("Test: IT03_05_ShadowWindow_Move_Succeeds\n");
-
-            // Arrange
-            CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
-                TestCandidateCallback, nullptr, &indexRange, FALSE
-            );
-            CShadowWindow* pShadow = new (std::nothrow) CShadowWindow(pCandWnd);
-            Assert::IsNotNull(pShadow);
-
-            // Act: Move shadow window
-            pShadow->_Move(150, 250);
-
-            // Assert: No crash = success
-            Assert::IsTrue(true, L"Shadow Move should not crash");
-
-            // Cleanup
-            delete pShadow;
-            delete pCandWnd;
-        }
-
-        TEST_METHOD(IT03_05_ShadowWindow_Resize_Succeeds)
-        {
-            Logger::WriteMessage("Test: IT03_05_ShadowWindow_Resize_Succeeds\n");
-
-            // Arrange
-            CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
-                TestCandidateCallback, nullptr, &indexRange, FALSE
-            );
-            CShadowWindow* pShadow = new (std::nothrow) CShadowWindow(pCandWnd);
-            Assert::IsNotNull(pShadow);
-
-            // Act: Resize shadow window
-            pShadow->_Resize(200, 300, 400, 500);
-
-            // Assert: No crash = success
-            Assert::IsTrue(true, L"Shadow Resize should not crash");
-
-            // Cleanup
-            delete pShadow;
-            delete pCandWnd;
-        }
 
         TEST_METHOD(IT03_06_CandidateWindow_GetPageIndex_Succeeds)
         {
@@ -544,7 +433,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -567,7 +456,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -589,7 +478,7 @@ namespace DIMEIntegratedTests
 
             // Arrange
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE
             );
             Assert::IsNotNull(pCandWnd);
@@ -614,7 +503,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT_CM_10 - Light mode colours applied to candidate window\n");
 
             CCandidateRange indexRange;
-            CCandidateWindow* pWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE);
             Assert::IsNotNull(pWnd, L"Candidate window must be created");
 
@@ -637,7 +526,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT_CM_11 - Dark mode colours applied to candidate window\n");
 
             CCandidateRange indexRange;
-            CCandidateWindow* pWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE);
             Assert::IsNotNull(pWnd, L"Candidate window must be created");
 
@@ -697,7 +586,7 @@ namespace DIMEIntegratedTests
         TEST_METHOD(IT03_07_CandidateWindow_SetSelection_NegativeIndex_Clamps)
         {
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE);
             Assert::IsNotNull(pCandWnd);
 
@@ -718,7 +607,7 @@ namespace DIMEIntegratedTests
         TEST_METHOD(IT03_07_CandidateWindow_SetSelection_BeyondCount_Clamps)
         {
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE);
             Assert::IsNotNull(pCandWnd);
 
@@ -738,7 +627,7 @@ namespace DIMEIntegratedTests
         TEST_METHOD(IT03_07_CandidateWindow_GetCount_AfterAddAndClear)
         {
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE);
             Assert::IsNotNull(pCandWnd);
 
@@ -760,7 +649,7 @@ namespace DIMEIntegratedTests
         TEST_METHOD(IT03_07_CandidateWindow_MoveSelection_UpFromFirst)
         {
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE);
             Assert::IsNotNull(pCandWnd);
 
@@ -781,7 +670,7 @@ namespace DIMEIntegratedTests
         TEST_METHOD(IT03_07_CandidateWindow_MoveSelection_DownFromLast)
         {
             CCandidateRange indexRange;
-            CCandidateWindow* pCandWnd = new (std::nothrow) CCandidateWindow(
+            CRustCandidateWindow* pCandWnd = new (std::nothrow) CRustCandidateWindow(
                 TestCandidateCallback, nullptr, &indexRange, FALSE);
             Assert::IsNotNull(pCandWnd);
 

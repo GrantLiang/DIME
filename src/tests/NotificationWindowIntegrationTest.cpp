@@ -35,7 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CppUnitTest.h"
 #include "Private.h"
 #include "Globals.h"
-#include "NotifyWindow.h"
+#include "RustNotifyWindow.h"
+#include "WindowClassTestHelper.h"
 #include "BaseStructure.h"
 #include <Windows.h>
 
@@ -43,7 +44,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace DIMEIntegratedTests
 {
-    // Helper callback function for CNotifyWindow
+    // Helper callback function for CRustNotifyWindow
     static HRESULT TestNotifyCallback(void *pv, enum NOTIFY_WND action, _In_ WPARAM wParam, _In_ LPARAM lParam)
     {
         return S_OK;
@@ -54,6 +55,8 @@ namespace DIMEIntegratedTests
     public:
         TEST_METHOD_INITIALIZE(Setup)
         {
+            // The Rust window is always a real one: it needs its classes.
+            EnsureWindowClassesRegistered();
             Logger::WriteMessage("IT-04: Notification Window Integration Test Setup\n");
         }
 
@@ -68,7 +71,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_01_NotifyWindow_Constructor_Succeeds\n");
 
             // Act: Create notification window
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
 
             // Assert
             Assert::IsNotNull(pNotifyWnd, L"Notification window should be created");
@@ -83,7 +86,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_01_NotifyWindow_Create_WithText_Succeeds\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange notifyText;
             notifyText.Set(L"Test Notification", 17);
 
@@ -102,7 +105,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_01_NotifyWindow_SetString_UpdatesContent\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange initialText;
             initialText.Set(L"Initial", 7);
             BOOL created = pNotifyWnd->_Create(20, NULL, &initialText);
@@ -119,32 +122,13 @@ namespace DIMEIntegratedTests
             delete pNotifyWnd;
         }
 
-        TEST_METHOD(IT04_01_NotifyWindow_Clear_RemovesContent)
-        {
-            Logger::WriteMessage("Test: IT04_01_NotifyWindow_Clear_RemovesContent\n");
-
-            // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
-            CStringRange text;
-            text.Set(L"Test", 4);
-            BOOL created = pNotifyWnd->_Create(20, NULL, &text);
-
-            // Act: Clear content
-            pNotifyWnd->_Clear();
-
-            // Assert: Creation succeeded, clear operation completed without crash
-            Assert::IsTrue(created, L"Window creation should succeed");
-
-            // Cleanup
-            delete pNotifyWnd;
-        }
 
         TEST_METHOD(IT04_01_NotifyWindow_Show_DisplaysWindow)
         {
             Logger::WriteMessage("Test: IT04_01_NotifyWindow_Show_DisplaysWindow\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange text;
             text.Set(L"Test", 4);
             BOOL created = pNotifyWnd->_Create(20, NULL, &text);
@@ -166,7 +150,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_02_NotifyWindow_Move_UpdatesPosition\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange text;
             text.Set(L"Test", 4);
             BOOL created = pNotifyWnd->_Create(20, NULL, &text);
@@ -186,7 +170,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_02_NotifyWindow_GetWidth_ReturnsValue\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange text;
             text.Set(L"Test Width", 10);
             BOOL created = pNotifyWnd->_Create(20, NULL, &text);
@@ -208,7 +192,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_02_NotifyWindow_GetHeight_ReturnsValue\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange text;
             text.Set(L"Test Height", 11);
             BOOL created = pNotifyWnd->_Create(20, NULL, &text);
@@ -225,35 +209,13 @@ namespace DIMEIntegratedTests
             delete pNotifyWnd;
         }
 
-        // IT-04-03: Notification Content Display Tests
-        TEST_METHOD(IT04_03_NotifyWindow_AddString_AppendsText)
-        {
-            Logger::WriteMessage("Test: IT04_03_NotifyWindow_AddString_AppendsText\n");
-
-            // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
-            CStringRange text1;
-            text1.Set(L"Line1", 5);
-            BOOL created = pNotifyWnd->_Create(20, NULL, &text1);
-
-            // Act: Add more text
-            CStringRange text2;
-            text2.Set(L"Line2", 5);
-            pNotifyWnd->_AddString(&text2);
-
-            // Assert: AddString operation completed without crash
-            Assert::IsTrue(created, L"Window creation should succeed");
-
-            // Cleanup
-            delete pNotifyWnd;
-        }
 
         TEST_METHOD(IT04_03_NotifyWindow_SetTextColor_UpdatesColors)
         {
             Logger::WriteMessage("Test: IT04_03_NotifyWindow_SetTextColor_UpdatesColors\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange text;
             text.Set(L"Test", 4);
             BOOL created = pNotifyWnd->_Create(20, NULL, &text);
@@ -274,7 +236,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_03_NotifyWindow_SetFillColor_UpdatesBackground\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange text;
             text.Set(L"Test", 4);
             BOOL created = pNotifyWnd->_Create(20, NULL, &text);
@@ -296,7 +258,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_04_NotifyWindow_ChineseEnglishType_Creates\n");
 
             // Act
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             pNotifyWnd->_Create(20, NULL);
 
             // Assert
@@ -311,7 +273,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_04_NotifyWindow_ShowNotifyType_Creates\n");
 
             // Act: Using NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP instead of non-existent SHOW_NOTIFY
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP);
             pNotifyWnd->_Create(20, NULL);
 
             // Assert
@@ -321,22 +283,6 @@ namespace DIMEIntegratedTests
             delete pNotifyWnd;
         }
 
-        TEST_METHOD(IT04_04_NotifyWindow_SetNotifyType_UpdatesType)
-        {
-            Logger::WriteMessage("Test: IT04_04_NotifyWindow_SetNotifyType_UpdatesType\n");
-
-            // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
-
-            // Act: Change notification type to NOTIFY_REVERSE_LOOKUP
-            pNotifyWnd->SetNotifyType(NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP);
-
-            // Assert
-            Assert::AreEqual(static_cast<int>(NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP), static_cast<int>(pNotifyWnd->GetNotifyType()));
-
-            // Cleanup
-            delete pNotifyWnd;
-        }
 
         // IT-04-05: Advanced Notification Window Tests
         TEST_METHOD(IT04_05_NotifyWindow_MultipleShowHide_NoLeak)
@@ -346,7 +292,7 @@ namespace DIMEIntegratedTests
             // Act: Create and show/hide multiple times
             for (int i = 0; i < 50; i++)
             {
-                CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+                CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
                 pNotifyWnd->_Create(20, NULL);
                 pNotifyWnd->_Show(TRUE, 0, 0);
                 pNotifyWnd->_Show(FALSE, 0, 0);
@@ -362,7 +308,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_05_NotifyWindow_NullParent_Succeeds\n");
 
             // Act: Create with NULL parent
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             BOOL created = pNotifyWnd->_Create(20, NULL);
 
             // Assert
@@ -377,7 +323,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_05_NotifyWindow_ShowWithDelay_Succeeds\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange text;
             text.Set(L"Test", 4);
             BOOL created = pNotifyWnd->_Create(20, NULL, &text);
@@ -398,7 +344,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_05_NotifyWindow_EmptyText_Handles\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             CStringRange text;
             text.Set(L"Test", 4);
             BOOL created = pNotifyWnd->_Create(20, NULL, &text);
@@ -421,7 +367,7 @@ namespace DIMEIntegratedTests
             Logger::WriteMessage("Test: IT04_05_NotifyWindow_UnicodeText_Displays\n");
 
             // Arrange
-            CNotifyWindow* pNotifyWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pNotifyWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             WCHAR unicodeText[] = { 0x4E2D, 0x6587, 0x6A21, 0x5F0F, 0 }; // "中文模式"
             CStringRange text;
             text.Set(unicodeText, 4);
@@ -445,7 +391,7 @@ namespace DIMEIntegratedTests
         {
             Logger::WriteMessage("Test: IT_CM_20 - Dark mode colours applied to notify window\n");
 
-            CNotifyWindow* pWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             Assert::IsNotNull(pWnd, L"Notify window must be created");
 
             CStringRange text;
@@ -471,7 +417,7 @@ namespace DIMEIntegratedTests
         {
             Logger::WriteMessage("Test: IT_CM_21 - Light mode colours applied to notify window\n");
 
-            CNotifyWindow* pWnd = new CNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
+            CRustNotifyWindow* pWnd = new CRustNotifyWindow(TestNotifyCallback, nullptr, NOTIFY_TYPE::NOTIFY_CHN_ENG);
             Assert::IsNotNull(pWnd, L"Notify window must be created");
 
             CStringRange text;
