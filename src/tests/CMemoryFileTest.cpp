@@ -453,7 +453,7 @@ namespace DIMEUnitTests
 
             LCID locale = MAKELCID(
                 MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT);
-            CTableDictionaryEngine* engine = new (std::nothrow) CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 locale, pMem, DICTIONARY_TYPE::CIN_DICTIONARY);
             Assert::IsNotNull(engine, L"CTableDictionaryEngine must construct");
 

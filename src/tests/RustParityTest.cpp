@@ -171,7 +171,10 @@ namespace DIMEUnitTests
                 if (!file.CreateFile(path.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ)) return false;
                 const WCHAR* buf = file.GetReadBufferPointer();
                 if (!buf) return false;
-                cpp = new CTableDictionaryEngine(kLcid, &file, type);
+                // The C++ engine (CDictionarySearch) was removed in phase 6d-2: this side
+                // is the IME's engine, CRustTableDictionaryEngine, against dime_engine_*
+                // directly; the golden files are the reference.
+                cpp = CTableDictionaryEngine::Create(kLcid, &file, type);
                 rust = dime_engine_new(kLcid, (const uint16_t*)buf, file.GetFileSize() / sizeof(WCHAR), (int32_t)type);
                 Assert::IsNotNull(rust);
                 dime_engine_set_has_cin_phrase_section(rust, Global::hasCINPhraseSection);

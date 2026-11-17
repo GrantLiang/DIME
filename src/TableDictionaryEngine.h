@@ -56,20 +56,26 @@ public:
 			_pRadicalIndexMap = nullptr;
 		}
 	}
+    // The searches and the config parsing are the Rust engine's
+    // (CRustTableDictionaryEngine overrides them; dime-core). The C++ parser
+    // and search (DictionaryParser / DictionarySearch) were removed in phase
+    // 6d-2: here they do nothing, for engines that only hold a radical map or
+    // are test doubles. This class keeps the radical map, the select / end
+    // keys the Rust ParseConfig fills, and the sorting.
     // Collect word from phrase string.
     // param
     //     [in] psrgKeyCode - Specified key code pointer
     //     [out] pasrgWordString - Specified returns pointer of word as CStringRange.
     // returns
     //     none.
-    virtual VOID CollectWord(_In_ CStringRange *pKeyCode, _Inout_ CDIMEArray<CStringRange> *pWordStrings);
-    virtual VOID CollectWord(_In_ CStringRange *pKeyCode, _Inout_ CDIMEArray<CCandidateListItem> *pItemList);
+    virtual VOID CollectWord(_In_ CStringRange *pKeyCode, _Inout_ CDIMEArray<CStringRange> *pWordStrings) { UNREFERENCED_PARAMETER(pKeyCode); UNREFERENCED_PARAMETER(pWordStrings); }
+    virtual VOID CollectWord(_In_ CStringRange *pKeyCode, _Inout_ CDIMEArray<CCandidateListItem> *pItemList) { UNREFERENCED_PARAMETER(pKeyCode); UNREFERENCED_PARAMETER(pItemList); }
 
-    virtual VOID CollectWordForWildcard(_In_ CStringRange *psrgKeyCode, _Inout_ CDIMEArray<CCandidateListItem> *pItemList, _In_opt_ CTableDictionaryEngine* wordFreqTableDictionaryEngine = nullptr);
+    virtual VOID CollectWordForWildcard(_In_ CStringRange *psrgKeyCode, _Inout_ CDIMEArray<CCandidateListItem> *pItemList, _In_opt_ CTableDictionaryEngine* wordFreqTableDictionaryEngine = nullptr) { UNREFERENCED_PARAMETER(psrgKeyCode); UNREFERENCED_PARAMETER(pItemList); UNREFERENCED_PARAMETER(wordFreqTableDictionaryEngine); }
 
-	virtual VOID CollectWordFromConvertedString(_In_ CStringRange *pString, _Inout_ CDIMEArray<CCandidateListItem> *pItemList);
-    virtual VOID CollectWordFromConvertedStringForWildcard(_In_ CStringRange *pString, _Inout_ CDIMEArray<CCandidateListItem> *pItemList);
-	virtual VOID ParseConfig(IME_MODE imeMode);
+	virtual VOID CollectWordFromConvertedString(_In_ CStringRange *pString, _Inout_ CDIMEArray<CCandidateListItem> *pItemList) { UNREFERENCED_PARAMETER(pString); UNREFERENCED_PARAMETER(pItemList); }
+    virtual VOID CollectWordFromConvertedStringForWildcard(_In_ CStringRange *pString, _Inout_ CDIMEArray<CCandidateListItem> *pItemList) { UNREFERENCED_PARAMETER(pString); UNREFERENCED_PARAMETER(pItemList); }
+	virtual VOID ParseConfig(IME_MODE imeMode) { UNREFERENCED_PARAMETER(imeMode); }
 	VOID SetSearchSection(SEARCH_SECTION searchSection) { _searchSection =searchSection;}
 
 	VOID SortListItemByFindKeyCode(_Inout_ CDIMEArray<CCandidateListItem> *pItemList);
@@ -81,9 +87,8 @@ public:
 	PWCH GetSelkey() { return _pSelkey; };
 	PWCH GetEndkey() { return _pEndkey; };
 
-	// Factory used by all production call sites. Returns the Rust-backed
-	// engine (CRustTableDictionaryEngine) when built with DIME_USE_RUST_ENGINE,
-	// otherwise the C++ engine. Returns nullptr on allocation failure.
+	// Factory used by all production call sites: the Rust-backed engine
+	// (CRustTableDictionaryEngine). Returns nullptr on allocation failure.
 	static CTableDictionaryEngine* Create(LCID locale, _In_ CFile *pDictionaryFile, _In_ DICTIONARY_TYPE dictionaryType);
 
 protected:

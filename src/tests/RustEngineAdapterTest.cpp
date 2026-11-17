@@ -53,6 +53,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <set>
 #include <vector>
 
+#include "Golden.h"
+#include <memory>
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace DIMEUnitTests
@@ -101,8 +104,18 @@ namespace DIMEUnitTests
             return out;
         }
 
+        // The golden record of the running method (phase 6d): every Rust result Same
+        // sees, checked against src/tests/golden/DictionaryAdapter/<method>.txt.
+        Golden::Chunks* g_chunks = nullptr;
+
         void Same(const std::wstring& cpp, const std::wstring& rust, const std::wstring& what)
         {
+            if (g_chunks)
+            {
+                g_chunks->Add(what);
+                g_chunks->Add(rust);
+                g_chunks->Next();
+            }
             if (cpp != rust)
                 Assert::Fail((what + L": C++ and Rust engines differ | C++: " + Visible(cpp) + L" | Rust: " + Visible(rust)).c_str());
         }
@@ -121,7 +134,7 @@ namespace DIMEUnitTests
                 file.reset(new CFile());
                 if (!file->CreateFile(path.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ)) return false;
                 if (!file->GetReadBufferPointer()) return false;
-                cpp.reset(new CTableDictionaryEngine(kAdapterLcid, file.get(), type));
+                cpp.reset(CTableDictionaryEngine::Create(kAdapterLcid, file.get(), type));   // the C++ engine was removed (6d-2)
                 rust.reset(new CRustTableDictionaryEngine(kAdapterLcid, file.get(), type));
                 BOOL autoCompose = CConfig::GetAutoCompose();
                 BOOL hasPhrase = Global::hasPhraseSection;
@@ -286,7 +299,28 @@ namespace DIMEUnitTests
 
     TEST_CLASS(RustEngineAdapterTest)
     {
+        std::wstring _goldenMethod;
+        std::unique_ptr<Golden::Log> _golden;
+        std::unique_ptr<Golden::Chunks> _chunks;
+
+        void GoldenMethod(const wchar_t* name)
+        {
+            _goldenMethod = name;
+            _golden.reset(new Golden::Log());
+            _chunks.reset(new Golden::Chunks(*_golden, L"checks", 50));
+            g_chunks = _chunks.get();
+        }
+
     public:
+        TEST_METHOD_CLEANUP(GoldenCleanup)
+        {
+            g_chunks = nullptr;
+            if (_goldenMethod.empty()) return;
+            std::wstring name = _goldenMethod;
+            _goldenMethod.clear();
+            _chunks->Finish();
+            Golden::Check(L"DictionaryAdapter", name, *_golden);
+        }
         TEST_METHOD(Factory_MatchesBuildFlavor)
         {
             // Rust engine by default; C++ with /p:DimeTestRustEngine=false.
@@ -304,6 +338,7 @@ namespace DIMEUnitTests
 
         TEST_METHOD(ShippedTables_SameResultsThroughCppInterface)
         {
+            GoldenMethod(L"ShippedTables");
             std::wstring root = AdapterRepoRoot() + L"installer\\";
             EnginePair freq;
             bool haveFreq = freq.Open(root + L"TCFreq.cin", DICTIONARY_TYPE::CIN_DICTIONARY);
@@ -359,7 +394,7 @@ namespace DIMEUnitTests
                 Assert::IsTrue(f.CreateFile(path.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ) != FALSE);
                 std::unique_ptr<CTableDictionaryEngine> e(useRust
                     ? new CRustTableDictionaryEngine(MAKELCID(1028, SORT_DEFAULT), &f, DICTIONARY_TYPE::INI_DICTIONARY)
-                    : new CTableDictionaryEngine(MAKELCID(1028, SORT_DEFAULT), &f, DICTIONARY_TYPE::INI_DICTIONARY));
+                    : CTableDictionaryEngine::Create(MAKELCID(1028, SORT_DEFAULT), &f, DICTIONARY_TYPE::INI_DICTIONARY));   // the C++ engine was removed (6d-2)
                 e->ParseConfig(IME_MODE::IME_MODE_DAYI);
                 return ConfigSnapshot::Take();
             };
@@ -367,6 +402,11 @@ namespace DIMEUnitTests
             ConfigSnapshot rust = parseWith(true);
             original.Restore();
 
+            {
+                Golden::Log golden;
+                golden.AddText(rust.ToString());
+                Golden::Check(L"DictionaryAdapter", L"IniConfig", golden);
+            }
             Assert::AreEqual(cpp.ToString(), rust.ToString());
             Assert::AreEqual(18u, (unsigned)cpp.fontSize, L"INI was not applied at all");
         }

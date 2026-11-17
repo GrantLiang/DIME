@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "Private.h"
 #include "TableDictionaryEngine.h"
-#include "DictionarySearch.h"
 #include "DIME.h"
 #ifdef DIME_USE_RUST_ENGINE
 #include "RustTableDictionaryEngine.h"
@@ -64,221 +63,10 @@ CTableDictionaryEngine::CTableDictionaryEngine(LCID locale, _In_ CFile *pDiction
 }
 
 
-//+---------------------------------------------------------------------------
-//
-// CollectWord
-//
-//----------------------------------------------------------------------------
-
-VOID CTableDictionaryEngine::CollectWord(_In_ CStringRange *pKeyCode, _Inout_ CDIMEArray<CStringRange> *pWordStrings)
-{
-    CDictionaryResult* pdret = nullptr;
-	CDictionarySearch dshSearch(_locale, _pDictionaryFile, pKeyCode, _keywordDelimiter);
-
-	if(_dictionaryType == DICTIONARY_TYPE::TTS_DICTIONARY)
-		dshSearch.SetSearchSection(_searchSection);
-
-    while (dshSearch.FindPhrase(&pdret))
-    {
-        for (UINT index = 0; index < pdret->_FindPhraseList.Count(); index++)
-        {
-            CStringRange* pPhrase = nullptr;
-            pPhrase = pWordStrings->Append();
-            if (pPhrase)
-            {
-                *pPhrase = *pdret->_FindPhraseList.GetAt(index);
-            }
-        }
-
-        delete pdret;
-        pdret = nullptr;
-    }
-}
-
-VOID CTableDictionaryEngine::CollectWord(_In_ CStringRange *pKeyCode, _Inout_ CDIMEArray<CCandidateListItem> *pItemList)
-{
-    CDictionaryResult* pdret = nullptr;
-    CDictionarySearch dshSearch(_locale, _pDictionaryFile, pKeyCode, _keywordDelimiter);
-
-	if(_dictionaryType == DICTIONARY_TYPE::TTS_DICTIONARY)
-		dshSearch.SetSearchSection(_searchSection);
-
-	if (_sortedCIN)
-	{
-		WCHAR initial = towupper(*pKeyCode->Get());
-		_T_RadicalIndexMap::iterator it = _pRadicalIndexMap->find(initial);
-		if (it != _pRadicalIndexMap->end())
-		{
-			dshSearch.setSearchOffset(it->second);
-		}
-	}
-
-    while (dshSearch.FindPhrase(&pdret))
-    {
-		if (_sortedCIN && pdret->_FindPhraseList.Count()) dshSearch.setSortedSearchResultFound(TRUE);
-
-        for (UINT iIndex = 0; iIndex < pdret->_FindPhraseList.Count(); iIndex++)
-        {
-            CCandidateListItem* pLI = nullptr;
-            pLI = pItemList->Append();
-            if (pLI)
-            {
-                pLI->_ItemString.Set(*pdret->_FindPhraseList.GetAt(iIndex));
-                pLI->_FindKeyCode.Set(pdret->_FindKeyCode.Get(), pdret->_FindKeyCode.GetLength());
-            }
-        }
-
-        delete pdret;
-        pdret = nullptr;
-    }
-}
-
-//+---------------------------------------------------------------------------
-//
-// CollectWordForWildcard
-//
-//----------------------------------------------------------------------------
-
-VOID CTableDictionaryEngine::CollectWordForWildcard(_In_ CStringRange *pKeyCode, _Inout_ CDIMEArray<CCandidateListItem> *pItemList, _In_opt_ CTableDictionaryEngine* wordFreqTableDictionaryEngine)
-{
-    CDictionaryResult* pdret = nullptr;
-    CDictionarySearch dshSearch(_locale, _pDictionaryFile, pKeyCode, _keywordDelimiter);
-	
-	BOOL dupped = FALSE;
-
-	
-	if(_dictionaryType == DICTIONARY_TYPE::TTS_DICTIONARY)
-		dshSearch.SetSearchSection(_searchSection);
-
-    while (dshSearch.FindPhraseForWildcard(&pdret))
-    {
-		dupped = FALSE;
-        for (UINT iIndex = 0; iIndex < pdret->_FindPhraseList.Count(); iIndex++)
-        {
-			//check if the itemText is dupped.
-			for (UINT i = 0; i < pItemList->Count(); i++)
-			{
-				if (CStringRange::Compare(_locale, &pItemList->GetAt(i)->_ItemString, pdret->_FindPhraseList.GetAt(iIndex)) == CSTR_EQUAL)
-				{
-					dupped = TRUE;
-					break;
-				}
-			}
 
 
-			if (!dupped)
-			{
-				CCandidateListItem* pLI = nullptr;
-				pLI = pItemList->Append();
-				if (pLI)
-				{
-					pLI->_ItemString.Set(*pdret->_FindPhraseList.GetAt(iIndex));
-					pLI->_FindKeyCode.Set(pdret->_FindKeyCode.Get(), pdret->_FindKeyCode.GetLength());
-					if (wordFreqTableDictionaryEngine)
-					{
-						if (pLI->_ItemString.GetLength() > 1)
-							pLI->_WordFrequency = (int)pLI->_ItemString.GetLength();
-						else
-						{
-							CDIMEArray<CCandidateListItem> candidateList;
-							wordFreqTableDictionaryEngine->CollectWord(&pLI->_ItemString, &candidateList);
-							pLI->_WordFrequency = (candidateList.Count() == 1)
-								? _wtoi(candidateList.GetAt(0)->_ItemString.Get()) : 0;
-						}
-					}
 
-				}
-			}
-        }
 
-        delete pdret;
-        pdret = nullptr;
-    }
-}
-
-//+---------------------------------------------------------------------------
-//
-// CollectWordFromConvertedStringForWildcard
-//
-//----------------------------------------------------------------------------
-
-VOID CTableDictionaryEngine::CollectWordFromConvertedStringForWildcard(_In_ CStringRange *pString, _Inout_ CDIMEArray<CCandidateListItem> *pItemList)
-{
-    CDictionaryResult* pdret = nullptr;
-	CDictionarySearch dshSearch(_locale, _pDictionaryFile, pString, _keywordDelimiter);
-
-	if(_dictionaryType == DICTIONARY_TYPE::TTS_DICTIONARY)
-		dshSearch.SetSearchSection(_searchSection);
-
-    while (dshSearch.FindConvertedStringForWildcard(&pdret)) // TAIL ALL CHAR MATCH
-    {
-        for (UINT index = 0; index < pdret->_FindPhraseList.Count(); index++)
-        {
-            CCandidateListItem* pLI = nullptr;
-            pLI = pItemList->Append();
-            if (pLI)
-            {
-                pLI->_ItemString.Set(*pdret->_FindPhraseList.GetAt(index));
-                pLI->_FindKeyCode.Set(pdret->_FindKeyCode.Get(), pdret->_FindKeyCode.GetLength());
-            }
-        }
-
-        delete pdret;
-        pdret = nullptr;
-    }
-}
-
-//+---------------------------------------------------------------------------
-//
-// CollectWordFromConvertedString
-//
-//----------------------------------------------------------------------------
-
-VOID CTableDictionaryEngine::CollectWordFromConvertedString(_In_ CStringRange *pString, _Inout_ CDIMEArray<CCandidateListItem> *pItemList)
-{
-    CDictionaryResult* pdret = nullptr;
-    CDictionarySearch dshSearch(_locale, _pDictionaryFile, pString, _keywordDelimiter);
-	
-	if(_dictionaryType == DICTIONARY_TYPE::TTS_DICTIONARY)
-		dshSearch.SetSearchSection(_searchSection);
-
-    while (dshSearch.FindConvertedString(&pdret)) // TAIL ALL CHAR MATCH
-    {
-        for (UINT index = 0; index < pdret->_FindPhraseList.Count(); index++)
-        {
-            CCandidateListItem* pLI = nullptr;
-            pLI = pItemList->Append();
-            if (pLI)
-            {
-                pLI->_ItemString.Set(*pdret->_FindPhraseList.GetAt(index));
-                pLI->_FindKeyCode.Set(pdret->_FindKeyCode.Get(), pdret->_FindKeyCode.GetLength());
-            }
-        }
-
-        delete pdret;
-        pdret = nullptr;
-    }
-	
-}
-VOID CTableDictionaryEngine::ParseConfig(IME_MODE imeMode)
-{
-	if ( _dictionaryType != DICTIONARY_TYPE::INI_DICTIONARY && _pRadicalMap->size())
-	{
-		for(_T_RadicalMap::iterator item = _pRadicalMap->begin(); item != _pRadicalMap->end(); ++item)
-		{
-			delete [] item->second;
-		}
-		_pRadicalMap->clear();
-	}
-	CDictionarySearch dshSearch(_locale, _pDictionaryFile, NULL, _keywordDelimiter);
-	if (dshSearch.ParseConfig(imeMode, _pRadicalMap, _pRadicalIndexMap, _pSelkey, _pEndkey) 
-		&& _dictionaryType == DICTIONARY_TYPE::CIN_DICTIONARY && _pRadicalIndexMap && _pRadicalIndexMap->size())
-	{
-		_sortedCIN = TRUE;
-	}
-	
-
-}
 
 //+---------------------------------------------------------------------------
 // SortListItemByFindKeyCode
@@ -467,9 +255,5 @@ VOID CTableDictionaryEngine::MergeSortByWordFrequency(_Inout_ CDIMEArray<CCandid
 
 CTableDictionaryEngine* CTableDictionaryEngine::Create(LCID locale, _In_ CFile *pDictionaryFile, _In_ DICTIONARY_TYPE dictionaryType)
 {
-#ifdef DIME_USE_RUST_ENGINE
 	return new (std::nothrow) CRustTableDictionaryEngine(locale, pDictionaryFile, dictionaryType);
-#else
-	return new (std::nothrow) CTableDictionaryEngine(locale, pDictionaryFile, dictionaryType);
-#endif
 }

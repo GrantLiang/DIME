@@ -38,7 +38,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <shellscalingapi.h>
 #include "Globals.h"
 #include "DIME.h"
-#include "DictionarySearch.h"
 #include "File.h"
 #include "TableDictionaryEngine.h"
 #include "TfInputProcessorProfile.h"

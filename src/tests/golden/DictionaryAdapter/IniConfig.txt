@@ -1,0 +1,1 @@
+size=18 weight=700 maxCodes=7 beep=0 spacePD=1 arrow=1 big5=1 han=1 auto=1 item=16744448 color=2 pad=1 scope=3 phon=1 face=Microsoft JhengHei

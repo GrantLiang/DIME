@@ -161,7 +161,7 @@ namespace DIMEUnitTests
                 return nullptr;
             }
 
-            return new CTableDictionaryEngine(
+            return CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 file,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -238,7 +238,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"test_dict.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -298,7 +298,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"test_dict2.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -341,7 +341,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"sorted.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -385,7 +385,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"test_dict3.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -435,7 +435,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"wildcard_dict.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -478,7 +478,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"dup_dict.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -542,13 +542,13 @@ namespace DIMEUnitTests
             std::wstring freqPath = testDir + L"freq_dict.cin";
             Assert::IsTrue(freqFile->CreateFile(freqPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* mainEngine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* mainEngine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 mainFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
             );
 
-            CTableDictionaryEngine* freqEngine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* freqEngine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 freqFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -608,7 +608,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"dict.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -658,7 +658,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"reverse_dict.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -707,7 +707,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"multi_key_dict.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -750,7 +750,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"reverse_wild_dict.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -812,7 +812,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"dict2.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -1140,7 +1140,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"config_dict.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -1167,7 +1167,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"sorted_indexed.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY
@@ -1210,7 +1210,7 @@ namespace DIMEUnitTests
             std::wstring fullPath = testDir + L"dict1.cin";
             Assert::IsTrue(dictFile->CreateFile(fullPath.c_str(), GENERIC_READ, OPEN_EXISTING, FILE_SHARE_READ));
 
-            CTableDictionaryEngine* engine = new CTableDictionaryEngine(
+            CTableDictionaryEngine* engine = CTableDictionaryEngine::Create(
                 MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL), SORT_DEFAULT),
                 dictFile,
                 DICTIONARY_TYPE::CIN_DICTIONARY

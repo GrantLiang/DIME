@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "Private.h"
 #include "RustTableDictionaryEngine.h"
+#include "Globals.h"
 
 #ifdef DIME_RUST_AVAILABLE
 
-#include "DictionarySearch.h"
 #include "Config.h"
 #include "dime_ffi.h"
 #include <vector>

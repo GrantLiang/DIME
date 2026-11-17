@@ -92,12 +92,6 @@
     <ClCompile Include="..\\Composition.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\\DictionaryParser.cpp">
-      <Filter>Source Files\DIME Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\\DictionarySearch.cpp">
-      <Filter>Source Files\DIME Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\\DisplayAttribute.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
@@ -196,9 +190,6 @@
     </ClCompile>
     <ClCompile Include="UIPresenterIntegrationTest.cpp">
       <Filter>Source Files\Integration Tests</Filter>
-    </ClCompile>
-    <ClCompile Include="DictionaryTest.cpp">
-      <Filter>Source Files\Unit Tests</Filter>
     </ClCompile>
     <ClCompile Include="CMemoryFileTest.cpp">
       <Filter>Source Files\Unit Tests</Filter>

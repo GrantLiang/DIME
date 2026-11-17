@@ -52,13 +52,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CppUnitTest.h"
 #include "../Globals.h"
 #include "../Config.h"
-#include "../DictionarySearch.h"
 #include "../DIMESettings/CLI.h"
 #include "dime_ffi.h"
 #include <fstream>
 #include <iterator>
 #include <string>
 #include <vector>
+
+#include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -256,33 +257,33 @@ namespace DIMEUnitTests
         TEST_METHOD(ApplyIniConfigEntry_AllKeysAllValues)
         {
             int checked = 0;
+            Golden::Log golden;
+            Golden::Chunks ch(golden, L"pairs", 100);
             for (const wchar_t* key : kKeys)
             {
                 for (const wchar_t* value : kValues)
                 {
-#ifdef _DEBUG
-                    // ApplyIniConfigEntry asserts FontFaceName is shorter than LF_FACESIZE - 1.
+                    // The C++ ApplyIniConfigEntry asserted (Debug) FontFaceName is shorter than
+                    // LF_FACESIZE - 1; skipped in every configuration so the golden file is one.
                     if (_wcsicmp(key, L"FontFaceName") == 0 && wcslen(value) >= LF_FACESIZE - 1) continue;
-#endif
                     Scramble(checked % 5, checked % 2 ? L"before" : nullptr);
                     DimeSettings* r = CConfig::CreateRustSettings();
 
                     std::wstring k(key), v(value); // NUL-terminated: _wtoi/wcstoul read past the range
-                    CStringRange keyRange, valueRange;
-                    keyRange.Set(k.c_str(), k.length());
-                    valueRange.Set(v.c_str(), v.length());
-                    ApplyIniConfigEntry(kLcid, &keyRange, &valueRange);
-                    State cpp = FromCpp();
 
                     dime_settings_apply_entry(r, kLcid, reinterpret_cast<const uint16_t*>(k.c_str()), k.length(),
                         reinterpret_cast<const uint16_t*>(v.c_str()), v.length());
                     State rust = FromRust(r);
                     dime_settings_free(r);
+                    ch.Add(std::wstring(key) + L"=" + value + L" desc " + std::to_wstring(rust.hasDescription) + L" " + rust.description);
+                    ch.Add(&rust.values, sizeof(rust.values));
+                    ch.Next();
 
-                    AssertSame(cpp, rust, std::wstring(L"key '") + key + L"' value '" + value + L"'");
                     checked++;
                 }
             }
+            ch.Finish();
+            Golden::Check(L"ConfigIni", L"ApplyIniConfigEntry", golden);
             Logger::WriteMessage((L"ApplyIniConfigEntry pairs checked: " + std::to_wstring(checked) + L"\n").c_str());
         }
 
