@@ -38,8 +38,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // fixes by hand are pinned, and on commit CSentenceUserModel learns from them
 // (preferred character per code, and the pairs it forms with its neighbours).
 //
-// This file is free of TSF so it can be unit tested; CDIME drives it from
-// SentenceHandler.cpp.
+// The sentence itself (positions, cursor, conversion, learning) is the Rust
+// session's (dime-core::session / sentence_buffer); the C++ CSentenceBuffer
+// was removed in phase 6c. This file keeps the lexicon and the user model
+// CDIME loads, saves and hands to the session. Free of TSF so it can be unit
+// tested.
 
 #pragma once
 
@@ -49,7 +52,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 struct DimeLexicon;
 struct DimeUserModel;
-class CSentenceBuffer;
 
 // Word list + character frequencies used by the conversion.  Without the Rust
 // library (DIME_RUST_AVAILABLE undefined) it is an empty shell and the
@@ -95,8 +97,6 @@ public:
 	void Clear();
 	size_t WordCount() const;
 	size_t ChoiceCount() const;
-	// Learn from the pinned positions of a sentence about to be committed.
-	bool Learn(const CSentenceBuffer& sentence);
 
 	// Add the entries of a file written by SaveFile (missing file: 0).
 	size_t LoadFile(_In_z_ LPCWSTR path);
@@ -107,59 +107,4 @@ public:
 
 private:
 	DimeUserModel* _pModel;
-};
-
-struct CSentencePosition
-{
-	std::wstring code;                     // keystrokes typed for this character
-	std::vector<std::wstring> candidates;  // in table order, never empty
-	int pinned = -1;                       // candidate fixed by the user, or -1
-	int chosen = 0;                        // candidate picked by the conversion
-};
-
-class CSentenceBuffer
-{
-public:
-	// Longest sentence kept in the composition; reaching it commits the sentence.
-	static const size_t MaxPositions = 40;
-
-	bool IsEmpty() const { return _positions.empty(); }
-	size_t Count() const { return _positions.size(); }
-	const CSentencePosition& At(size_t i) const { return _positions[i]; }
-
-	// Cursor: number of positions before the insertion point (0..Count()).
-	size_t Cursor() const { return _cursor; }
-	void MoveLeft() { if (_cursor > 0) _cursor--; }
-	void MoveRight() { if (_cursor < _positions.size()) _cursor++; }
-	void Home() { _cursor = 0; }
-	void End() { _cursor = _positions.size(); }
-
-	// Insert a position at the cursor and move the cursor past it.  Empty
-	// candidate lists are ignored.  pinned outside the list means "not pinned".
-	bool Insert(const std::wstring& code, const std::vector<std::wstring>& candidates, int pinned);
-	bool RemoveBeforeCursor();
-	bool RemoveAtCursor();
-	void Clear() { _positions.clear(); _cursor = 0; }
-
-	// The position the candidate window edits: the one under the cursor, or
-	// the last one when the cursor is at the end.  Count() when empty.
-	size_t EditTarget() const;
-	// Fix position pos to candidate index (or unpin with -1).
-	bool Pin(size_t pos, int index);
-
-	// Run the conversion and update every position's chosen candidate.
-	void Convert(_In_opt_ const CSentenceLexicon* pLexicon, _In_opt_ const CSentenceUserModel* pUser = nullptr);
-
-	// Concatenated chosen candidates.
-	std::wstring Text() const;
-	// Length (in WCHARs) of the text of the first n positions.
-	size_t TextLength(size_t n) const;
-	// Text of positions [0, Cursor()) + reading + text of [Cursor(), Count()).
-	std::wstring Display(const std::wstring& reading) const;
-	// Offset of the caret in Display(reading).
-	size_t DisplayCaret(const std::wstring& reading) const { return TextLength(_cursor) + reading.length(); }
-
-private:
-	std::vector<CSentencePosition> _positions;
-	size_t _cursor = 0;
 };

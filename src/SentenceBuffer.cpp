@@ -40,36 +40,6 @@ namespace
 	static_assert(sizeof(WCHAR) == sizeof(uint16_t), "WCHAR must be UTF-16");
 	inline const uint16_t* U16(const WCHAR* p) { return reinterpret_cast<const uint16_t*>(p); }
 
-	// The flattened arrays dime_sentence_convert / dime_user_model_learn take.
-	struct SentenceArrays
-	{
-		std::vector<const uint16_t*> codes;
-		std::vector<size_t> codeLens;
-		std::vector<size_t> starts;
-		std::vector<const uint16_t*> cands;
-		std::vector<size_t> candLens;
-		std::vector<int32_t> pinned;
-		std::vector<int32_t> chosen;
-
-		explicit SentenceArrays(const CSentenceBuffer& b)
-		{
-			starts.push_back(0);
-			for (size_t i = 0; i < b.Count(); i++)
-			{
-				const CSentencePosition& position = b.At(i);
-				codes.push_back(U16(position.code.c_str()));
-				codeLens.push_back(position.code.length());
-				for (const std::wstring& c : position.candidates)
-				{
-					cands.push_back(U16(c.c_str()));
-					candLens.push_back(c.length());
-				}
-				starts.push_back(cands.size());
-				pinned.push_back(position.pinned);
-				chosen.push_back(position.chosen);
-			}
-		}
-	};
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -175,14 +145,6 @@ size_t CSentenceUserModel::ChoiceCount() const
 	return dime_user_model_choice_count(_pModel);
 }
 
-bool CSentenceUserModel::Learn(const CSentenceBuffer& sentence)
-{
-	if (_pModel == nullptr || sentence.IsEmpty()) return false;
-	SentenceArrays a(sentence);
-	return dime_user_model_learn(_pModel, sentence.Count(), a.codes.data(), a.codeLens.data(), a.starts.data(),
-		a.cands.data(), a.candLens.data(), a.pinned.data(), a.chosen.data()) != 0;
-}
-
 size_t CSentenceUserModel::LoadFile(_In_z_ LPCWSTR path)
 {
 	HANDLE h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
@@ -228,98 +190,4 @@ BOOL CSentenceUserModel::SaveFile(_In_z_ LPCWSTR path) const
 	if (!ok)
 		DeleteFileW(temp.c_str());
 	return ok;
-}
-
-//////////////////////////////////////////////////////////////////////
-// CSentenceBuffer
-//////////////////////////////////////////////////////////////////////
-
-bool CSentenceBuffer::Insert(const std::wstring& code, const std::vector<std::wstring>& candidates, int pinned)
-{
-	if (candidates.empty()) return false;
-
-	CSentencePosition position;
-	position.code = code;
-	position.candidates = candidates;
-	position.pinned = (pinned >= 0 && (size_t)pinned < candidates.size()) ? pinned : -1;
-	position.chosen = position.pinned >= 0 ? position.pinned : 0;
-
-	_positions.insert(_positions.begin() + _cursor, position);
-	_cursor++;
-	return true;
-}
-
-bool CSentenceBuffer::RemoveBeforeCursor()
-{
-	if (_cursor == 0) return false;
-	_positions.erase(_positions.begin() + (_cursor - 1));
-	_cursor--;
-	return true;
-}
-
-bool CSentenceBuffer::RemoveAtCursor()
-{
-	if (_cursor >= _positions.size()) return false;
-	_positions.erase(_positions.begin() + _cursor);
-	return true;
-}
-
-size_t CSentenceBuffer::EditTarget() const
-{
-	if (_positions.empty()) return 0;
-	return _cursor < _positions.size() ? _cursor : _positions.size() - 1;
-}
-
-bool CSentenceBuffer::Pin(size_t pos, int index)
-{
-	if (pos >= _positions.size()) return false;
-	CSentencePosition& position = _positions[pos];
-	if (index >= (int)position.candidates.size()) return false;
-	position.pinned = index < 0 ? -1 : index;
-	if (position.pinned >= 0) position.chosen = position.pinned;
-	return true;
-}
-
-void CSentenceBuffer::Convert(_In_opt_ const CSentenceLexicon* pLexicon, _In_opt_ const CSentenceUserModel* pUser)
-{
-	if (_positions.empty()) return;
-
-	SentenceArrays a(*this);
-	if (dime_sentence_convert(pLexicon ? pLexicon->Handle() : nullptr, pUser ? pUser->Handle() : nullptr,
-		_positions.size(), a.codes.data(), a.codeLens.data(), a.starts.data(),
-		a.cands.data(), a.candLens.data(), a.pinned.data(), a.chosen.data()))
-	{
-		for (size_t i = 0; i < _positions.size(); i++)
-		{
-			int k = a.chosen[i];
-			_positions[i].chosen = (k >= 0 && (size_t)k < _positions[i].candidates.size()) ? k : 0;
-		}
-		return;
-	}
-
-	for (CSentencePosition& position : _positions)
-		position.chosen = position.pinned >= 0 ? position.pinned : 0;
-}
-
-std::wstring CSentenceBuffer::Text() const
-{
-	std::wstring text;
-	for (const CSentencePosition& position : _positions)
-		text += position.candidates[position.chosen];
-	return text;
-}
-
-size_t CSentenceBuffer::TextLength(size_t n) const
-{
-	size_t length = 0;
-	for (size_t i = 0; i < n && i < _positions.size(); i++)
-		length += _positions[i].candidates[_positions[i].chosen].length();
-	return length;
-}
-
-std::wstring CSentenceBuffer::Display(const std::wstring& reading) const
-{
-	std::wstring text = Text();
-	text.insert(TextLength(_cursor), reading);
-	return text;
 }

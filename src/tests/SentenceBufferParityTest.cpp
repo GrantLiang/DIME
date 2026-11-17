@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "../SentenceBuffer.h"
+#include "RustSentenceBuffer.h"
 #include "dime_ffi.h"
 
 #include "Golden.h"
@@ -196,11 +196,11 @@ namespace DIMEUnitTests
                     }
                     else if (op < 98)
                     {
-                        bool lc = userCpp.Learn(cpp);
+                        bool lc = cpp.LearnInto(userCpp);
                         int lr = dime_sentence_buffer_learn(rust.get(), userRust.Handle());
                         Assert::AreEqual(lc ? 1 : 0, lr, L"Learn result");
                         Assert::IsTrue(userCpp.Export() == userRust.Export(), L"learned user models differ");
-                        userConvert.Learn(cpp);
+                        cpp.LearnInto(userConvert);
                         what = L"learn " + std::to_wstring(lr) + L" [" + userRust.Export() + L"]";
                     }
                     else

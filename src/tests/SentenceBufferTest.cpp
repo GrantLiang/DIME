@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "pch.h"
 #include "CppUnitTest.h"
-#include "../SentenceBuffer.h"
+#include "RustSentenceBuffer.h"
 #include "../TableDictionaryEngine.h"
 #include "../File.h"
 #include "../Config.h"
@@ -223,7 +223,7 @@ namespace DIMEUnitTests
             b.Pin(0, 1);
             b.Convert(&lex);
             CSentenceUserModel user;
-            Assert::IsTrue(user.Learn(b));
+            Assert::IsTrue(b.LearnInto(user));
             Assert::AreEqual((size_t)1, user.ChoiceCount());
             Assert::AreEqual((size_t)1, user.WordCount());
 
@@ -246,14 +246,14 @@ namespace DIMEUnitTests
                 CSentenceBuffer pinned;
                 pinned.Insert(L"k", C({ L"\u4E4B", L"\u7ACB", L"\u4EA0" }), 1);
                 pinned.Convert(&lex, &user);
-                user.Learn(pinned);
+                pinned.LearnInto(user);
             }
             lone.Convert(&lex, &user);
             Assert::AreEqual(std::wstring(L"\u7ACB"), lone.Text());
 
             // Nothing pinned: nothing learned.
             CSentenceUserModel empty;
-            Assert::IsFalse(empty.Learn(again));
+            Assert::IsFalse(again.LearnInto(empty));
         }
 
         TEST_METHOD(UserModelFileRoundTripAndMerge)
@@ -278,8 +278,8 @@ namespace DIMEUnitTests
 
             // Two "processes" learn separately; each save re-reads the file and adds its own data.
             CSentenceUserModel pendingA, pendingB;
-            pendingA.Learn(b);
-            pendingB.Learn(b);
+            b.LearnInto(pendingA);
+            b.LearnInto(pendingB);
 
             CSentenceUserModel freshA;
             freshA.LoadFile(path.c_str());
