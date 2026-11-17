@@ -7,9 +7,7 @@
 #include "..\CompositionProcessorEngine.h"
 #include "SettingsApp.h"
 #include "SettingsMsgBox.h"
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 #include "dime_ffi.h"
-#endif
 
 namespace SettingsApp {
 
@@ -97,7 +95,6 @@ std::wstring ConfigHost::AppDataPath()
 }
 bool ConfigHost::Windows1809OrLater() { return Global::isWindows1809OrLater != FALSE; }
 
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 
 namespace {
 
@@ -188,6 +185,5 @@ const DimeSettingsAppVtbl kVtbl = {
 
 const void* Vtbl() { return &kVtbl; }
 
-#endif
 
 } // namespace SettingsApp

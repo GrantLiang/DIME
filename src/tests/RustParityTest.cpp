@@ -57,6 +57,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <set>
 #include <vector>
 
+#include "Golden.h"
+#include <memory>
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace DIMEUnitTests
@@ -109,8 +112,29 @@ namespace DIMEUnitTests
             return out;
         }
 
+        // The golden record of the running method (phase 6d): every Rust result
+        // AssertSame / CheckConfig sees, checked against
+        // src/tests/golden/DictionaryEngine/<method>.txt in the cleanup.
+        Golden::Log* g_log = nullptr;
+        Golden::Chunks* g_chunks = nullptr;
+
+        void Record(const std::wstring& what, const std::wstring& line)
+        {
+            if (!g_chunks) return;
+            g_chunks->Add(what);
+            g_chunks->Add(line);
+            g_chunks->Next();
+        }
+
         void AssertSame(const Items& cpp, const Items& rust, const std::wstring& what)
         {
+            if (g_chunks)
+            {
+                g_chunks->Add(what + L" " + std::to_wstring(rust.size()));
+                for (const Item& it : rust)
+                    g_chunks->Add(it.key + L"\t" + it.item + L"\t" + std::to_wstring(it.freq));
+                g_chunks->Next();
+            }
             if (cpp == rust) return;
             std::wstring msg = what + L": C++ " + std::to_wstring(cpp.size()) + L" items, Rust " + std::to_wstring(rust.size());
             for (size_t i = 0; i < (std::max)(cpp.size(), rust.size()); i++)
@@ -176,6 +200,18 @@ namespace DIMEUnitTests
                 n = dime_engine_get_endkey(rust, (uint16_t*)end, 63);
                 Assert::AreEqual(std::wstring(cpp->GetEndkey()), std::wstring(end, n), (name + L" endkey").c_str());
 
+                {
+                    std::wstring radicals;
+                    for (size_t k = 0; k < dime_engine_radical_count(rust); k++)
+                    {
+                        uint16_t key = 0; const uint16_t* v = nullptr; size_t vlen = 0;
+                        dime_engine_radical_at(rust, k, &key, &v, &vlen);
+                        radicals += std::to_wstring(key) + L"=" + std::wstring((const wchar_t*)v, vlen) + L";";
+                    }
+                    WCHAR rs[64] = {}, re[64] = {};
+                    size_t rn = dime_engine_get_selkey(rust, (uint16_t*)rs, 63), en = dime_engine_get_endkey(rust, (uint16_t*)re, 63);
+                    Record(name + L" config", std::wstring(rs, rn) + L" | " + std::wstring(re, en) + L" | " + radicals);
+                }
                 _T_RadicalMap* map = cpp->GetRadicalMap();
                 Assert::AreEqual(map->size(), dime_engine_radical_count(rust), (name + L" radical count").c_str());
                 size_t i = 0;
@@ -347,6 +383,11 @@ namespace DIMEUnitTests
                 const uint16_t* r = dime_buffer_data(b, &n);
                 std::wstring rust((const wchar_t*)r, n);
                 dime_buffer_free(b);
+                {
+                    Golden::Hash h;
+                    h.Add(rust.data(), rust.size() * sizeof(wchar_t));
+                    Record(name + L" big5", std::to_wstring(rust.size()) + L" " + h.Hex());
+                }
                 Assert::IsTrue(cpp == rust, (name + L": Big5 filter output differs (C++ " + std::to_wstring(cpp.size()) +
                                              L" units, Rust " + std::to_wstring(rust.size()) + L")").c_str());
             }
@@ -358,9 +399,35 @@ namespace DIMEUnitTests
 
     TEST_CLASS(RustParityTest)
     {
+        std::wstring _goldenMethod;
+        std::unique_ptr<Golden::Log> _golden;
+        std::unique_ptr<Golden::Chunks> _chunks;
+
+        void GoldenMethod(const wchar_t* name)
+        {
+            _goldenMethod = name;
+            _golden.reset(new Golden::Log());
+            _chunks.reset(new Golden::Chunks(*_golden, L"checks", 50));
+            g_log = _golden.get();
+            g_chunks = _chunks.get();
+        }
+
+    public:
+        TEST_METHOD_CLEANUP(GoldenCleanup)
+        {
+            g_log = nullptr;
+            g_chunks = nullptr;
+            if (_goldenMethod.empty()) return;
+            std::wstring name = _goldenMethod;
+            _goldenMethod.clear();
+            _chunks->Finish();
+            Golden::Check(L"DictionaryEngine", name, *_golden);
+        }
+
     public:
         TEST_METHOD(ShippedTables_SearchAndConfig)
         {
+            GoldenMethod(L"ShippedTables_SearchAndConfig");
             std::wstring root = RepoRoot() + L"installer\\";
             Pair freq;
             bool haveFreq = freq.Open(root + L"TCFreq.cin", DICTIONARY_TYPE::CIN_DICTIONARY);
@@ -386,6 +453,7 @@ namespace DIMEUnitTests
 
         TEST_METHOD(ShippedTables_Big5Filter)
         {
+            GoldenMethod(L"ShippedTables_Big5Filter");
             std::wstring root = RepoRoot() + L"installer\\";
             for (const wchar_t* t : { L"Array.cin", L"Array-Ext-B.cin", L"Array-special.cin", L"phone.cin" })
                 CheckBig5(root + t);
@@ -393,6 +461,7 @@ namespace DIMEUnitTests
 
         TEST_METHOD(SyntheticCin_EdgeCases)
         {
+            GoldenMethod(L"SyntheticCin_EdgeCases");
             std::wstring src =
                 L"# comment\r\n"
                 L"%gen_inp\r\n"
@@ -424,6 +493,7 @@ namespace DIMEUnitTests
 
         TEST_METHOD(SyntheticCin_Sorted)
         {
+            GoldenMethod(L"SyntheticCin_Sorted");
             std::wstring src =
                 L"%gen_inp\n%sorted\t1\n%selkey\t123\n%chardef begin\n"
                 L"a00\t\u5B57\na01\t\u8A5E\nA02\t\u4E00\nb00\t\u6E2C\nb01\t\u8A66\nc00\t\u9A57\nc00\t\u4E8C\n"
@@ -438,6 +508,7 @@ namespace DIMEUnitTests
 
         TEST_METHOD(SyntheticTts_Sections)
         {
+            GoldenMethod(L"SyntheticTts_Sections");
             std::wstring src =
                 L"[Config]\r\nFontSize=14\r\nAutoCompose=1\r\n"
                 L"[Radical]\r\n\"a\"=\"\u65E5\"\r\n"

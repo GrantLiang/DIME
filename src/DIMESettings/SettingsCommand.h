@@ -82,9 +82,7 @@ public:
 // (Host::Rebuild reads them during the call).
 void Handle(Host& host, SettingsSnapshot& snapshot, int& colorGridExpanded, const CommandEvent& ev);
 
-#ifdef DIME_RUST_AVAILABLE
 // Run the Rust version against any Host (the dispatch above uses it; tests too).
 void HandleRust(Host& host, SettingsSnapshot& snapshot, int& colorGridExpanded, const CommandEvent& ev);
-#endif
 
 } // namespace SettingsCommand

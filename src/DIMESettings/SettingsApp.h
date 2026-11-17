@@ -93,9 +93,7 @@ private:
     CCompositionProcessorEngine* _engine = nullptr;
 };
 
-#if defined(DIME_RUST_AVAILABLE) || defined(DIME_USE_RUST_CONFIG)
 // The C vtable over a Host (ctx is the Host*).
 const void* Vtbl();
-#endif
 
 } // namespace SettingsApp

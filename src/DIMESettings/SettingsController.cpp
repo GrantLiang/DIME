@@ -138,7 +138,6 @@ IME_MODE SettingsModel::StringToImeMode(const wchar_t* str)
 
 SettingsSnapshot SettingsModel::LoadFromConfig()
 {
-#ifdef DIME_USE_RUST_CONFIG
     uint32_t colors[6] = {};
     const ColorInfo* clrs = CConfig::GetColors();
     if (clrs != nullptr)
@@ -151,105 +150,11 @@ SettingsSnapshot SettingsModel::LoadFromConfig()
     SettingsSnapshot snap = {};
     dime_settings_load_snapshot(&snap, colors);
     return snap;
-#else
-    SettingsSnapshot snap = {};
-
-    snap.fontSize      = CConfig::GetFontSize();
-    snap.fontWeight     = CConfig::GetFontWeight();
-    snap.fontItalic     = CConfig::GetFontItalic();
-    StringCchCopyW(snap.fontFaceName, LF_FACESIZE, CConfig::GetFontFaceName());
-    snap.colorMode      = (int)CConfig::GetColorMode();
-
-    // Load effective palette colors (respects system dark/light mode).
-    // Caller must call CConfig::LoadColorsForMode() before this if needed.
-    {
-        const ColorInfo* clrs = CConfig::GetColors();
-        snap.itemColor       = clrs[0].color;
-        snap.selectedColor   = clrs[1].color;
-        snap.itemBGColor     = clrs[2].color;
-        snap.phraseColor     = clrs[3].color;
-        snap.numberColor     = clrs[4].color;
-        snap.selectedBGColor = clrs[5].color;
-    }
-
-    snap.autoCompose             = CConfig::GetAutoCompose();
-    snap.clearOnBeep             = CConfig::GetClearOnBeep();
-    snap.doBeep                  = CConfig::GetDoBeep();
-    snap.doBeepNotify            = CConfig::GetDoBeepNotify();
-    snap.doBeepOnCandi           = CConfig::GetDoBeepOnCandi();
-    snap.makePhrase              = CConfig::GetMakePhrase();
-    snap.customTablePriority     = CConfig::getCustomTablePriority();
-    snap.arrowKeySWPages         = CConfig::GetArrowKeySWPages();
-    snap.spaceAsPageDown         = CConfig::GetSpaceAsPageDown();
-    snap.spaceAsFirstCandSelkey  = CConfig::GetSpaceAsFirstCaniSelkey();
-    snap.showNotifyDesktop       = CConfig::GetShowNotifyDesktop();
-    snap.arrayNotifySP           = CConfig::GetArrayNotifySP();
-    snap.arrayForceSP            = CConfig::GetArrayForceSP();
-    snap.arraySingleQuoteCustomPhrase = CConfig::GetArraySingleQuoteCustomPhrase();
-    snap.dayiArticleMode         = CConfig::getDayiArticleMode();
-    snap.sentenceMode            = CConfig::GetSentenceMode();
-    snap.doHanConvert            = CConfig::GetDoHanConvert();
-    snap.activatedKeyboardMode   = CConfig::GetActivatedKeyboardMode();
-    snap.big5Filter              = CConfig::GetBig5Filter();
-    snap.maxCodes                = CConfig::GetMaxCodes();
-    snap.arrayScope              = (int)CConfig::GetArrayScope();
-    snap.numericPad              = (int)CConfig::GetNumericPad();
-    snap.phoneticKeyboardLayout  = (int)CConfig::getPhoneticKeyboardLayout();
-    snap.dayiSelkeyMode          = (int)CConfig::GetDayiSelkeyMode();
-    snap.imeShiftMode            = (int)CConfig::GetIMEShiftMode();
-    snap.doubleSingleByteMode    = (int)CConfig::GetDoubleSingleByteMode();
-    snap.shiftEnglishDigitMode   = (int)CConfig::GetShiftEnglishDigitMode();
-
-    snap.reverseConversionIndex  = 0; // default; UI populates from reverse conversion list
-
-    return snap;
-#endif
 }
 
 void SettingsModel::ApplyToConfig(const SettingsSnapshot& snap)
 {
-#ifdef DIME_USE_RUST_CONFIG
     dime_settings_apply_snapshot(&snap);
-#else
-    CConfig::SetFontSize(snap.fontSize);
-    CConfig::SetFontWeight(snap.fontWeight);
-    CConfig::SetFontItalic(snap.fontItalic);
-    CConfig::SetFontFaceName(const_cast<WCHAR*>(snap.fontFaceName));
-    CConfig::SetColorMode((IME_COLOR_MODE)snap.colorMode);
-
-    // Do NOT write palette colors here — snapshot holds effective colors
-    // (may be light/dark/system palette), not custom palette values.
-    // Custom palette is only written via SaveColorsForMode() when the user
-    // explicitly changes a color swatch in CUSTOM mode.
-
-    CConfig::SetAutoCompose(snap.autoCompose);
-    CConfig::SetClearOnBeep(snap.clearOnBeep);
-    CConfig::SetDoBeep(snap.doBeep);
-    CConfig::SetDoBeepNotify(snap.doBeepNotify);
-    CConfig::SetDoBeepOnCandi(snap.doBeepOnCandi);
-    CConfig::SetMakePhrase(snap.makePhrase);
-    CConfig::setCustomTablePriority(snap.customTablePriority);
-    CConfig::SetArrowKeySWPages(snap.arrowKeySWPages);
-    CConfig::SetSpaceAsPageDown(snap.spaceAsPageDown);
-    CConfig::SetSpaceAsFirstCaniSelkey(snap.spaceAsFirstCandSelkey);
-    CConfig::SetShowNotifyDesktop(snap.showNotifyDesktop);
-    CConfig::SetArrayNotifySP(snap.arrayNotifySP);
-    CConfig::SetArrayForceSP(snap.arrayForceSP);
-    CConfig::SetArraySingleQuoteCustomPhrase(snap.arraySingleQuoteCustomPhrase);
-    CConfig::setDayiArticleMode(snap.dayiArticleMode);
-    CConfig::SetSentenceMode(snap.sentenceMode);
-    CConfig::SetDoHanConvert(snap.doHanConvert);
-    CConfig::SetActivatedKeyboardMode(snap.activatedKeyboardMode);
-    CConfig::SetBig5Filter(snap.big5Filter);
-    CConfig::SetMaxCodes(snap.maxCodes);
-    CConfig::SetArrayScope((ARRAY_SCOPE)snap.arrayScope);
-    CConfig::SetNumericPad((NUMERIC_PAD)snap.numericPad);
-    CConfig::setPhoneticKeyboardLayout((PHONETIC_KEYBOARD_LAYOUT)snap.phoneticKeyboardLayout);
-    CConfig::SetDayiSelkeyMode((DAYI_SELKEY_MODE)snap.dayiSelkeyMode);
-    CConfig::SetIMEShiftMode((IME_SHIFT_MODE)snap.imeShiftMode);
-    CConfig::SetDoubleSingleByteMode((DOUBLE_SINGLE_BYTE_MODE)snap.doubleSingleByteMode);
-    CConfig::SetShiftEnglishDigitMode((IME_SHIFT_ENGLISH_DIGIT_MODE)snap.shiftEnglishDigitMode);
-#endif
 }
 
 void SettingsModel::SyncToggleToSnapshot(SettingsSnapshot& s, SettingsControlId id, bool isOn)

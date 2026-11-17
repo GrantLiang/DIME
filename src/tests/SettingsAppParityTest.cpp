@@ -27,7 +27,6 @@
 ********************************************************************************/
 #include "pch.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 #include "CppUnitTest.h"
 #include <Windows.h>
@@ -714,4 +713,3 @@ namespace DIMEUnitTests
     };
 }
 
-#endif

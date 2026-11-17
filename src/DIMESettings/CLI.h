@@ -120,10 +120,8 @@ int  CLI_GetKeyCount();
 const KeyInfo* CLI_GetKeyRegistry();
 bool CLI_GetKeyValue(const KeyInfo* ki, WCHAR* outBuf, int bufLen);       // --get text (config loaded)
 int  CLI_ApplyKeyValue(const KeyInfo* ki, const wchar_t* valueStr, FILE* err); // --set: 0 ok, 1 invalid, 2 alloc
-#ifdef DIME_USE_RUST_CONFIG
 // RunCLI with both streams given, on the C++ host (cppHost) or the Rust one.
 int RunCLIForTest(const wchar_t* cmdLine, FILE* out, FILE* err, bool cppHost);
 // WriteWide: what the C++ host prints through a CRT FILE* (phase 5b-15f parity).
 void WriteWideForTest(FILE* f, const wchar_t* text, size_t len);
-#endif
 #endif

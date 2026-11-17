@@ -38,19 +38,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Forward declare to avoid including CompositionProcessorEngine.h in this header
 class CCompositionProcessorEngine;
-#ifdef DIME_RUST_AVAILABLE
 struct DimeConfigValues; // dime_ffi.h
 struct DimeSettings;
-#endif
 
 // Settings storage. With DIME_USE_RUST_CONFIG the settings live in Rust
 // (dime_settings_global(), rust/crates/dime-config) and these static members
 // are references into that storage, so every accessor keeps working unchanged.
-#ifdef DIME_USE_RUST_CONFIG
 #define DIME_CONFIG_VALUE(type, name) static type& name
-#else
-#define DIME_CONFIG_VALUE(type, name) static type name
-#endif
 typedef WCHAR DimeFontFaceName[LF_FACESIZE];
 
 #ifdef DIME_UNIT_TESTING
@@ -257,14 +251,9 @@ public:
 	static CLSID GetReverseConverstionCLSID() {return _reverseConverstionCLSID;}
 	static void SetReverseConversionGUIDProfile(GUID reverseConversionGUIDProfile) { _reverseConversionGUIDProfile = reverseConversionGUIDProfile;}
 	static GUID GetReverseConversionGUIDProfile() {return _reverseConversionGUIDProfile;}
-#ifdef DIME_USE_RUST_CONFIG
 	// Takes ownership of a new[]-allocated string, as before; the text is copied into Rust.
 	static void SetReverseConversionDescription(WCHAR* reverseConversionDescription) { SetReverseConversionDescriptionText(reverseConversionDescription); delete[] reverseConversionDescription; }
 	static WCHAR* GetReverseConversionDescription();
-#else
-	static void SetReverseConversionDescription(WCHAR* reverseConversionDescription) { _reverseConversionDescription = reverseConversionDescription;}
-	static WCHAR* GetReverseConversionDescription() {return _reverseConversionDescription;}
-#endif
 	// Replace the description with a copy of text (nullptr clears it).
 	static void SetReverseConversionDescriptionText(_In_opt_ const WCHAR* text);
 
@@ -279,13 +268,11 @@ public:
 	// Parse an existing INI into the settings (the "file exists" part of LoadConfig:
 	// mode defaults, [Config] entries, legacy ColorMode migration). FALSE if it cannot be opened.
 	static BOOL LoadConfigFromFile(IME_MODE imeMode, _In_ LPCWSTR pwszINIFileName);
-#ifdef DIME_RUST_AVAILABLE
 	// Bridge to the Rust port (rust/crates/dime-config, see docs/RUST_MIGRATION_PLAN.md).
 	static void ExportValues(_Out_ struct DimeConfigValues* pValues);
 	static void ImportValues(_In_ const struct DimeConfigValues* pValues);
 	static struct DimeSettings* CreateRustSettings();          // independent copy of the current settings (free it)
 	static void ImportRustSettings(_In_ const struct DimeSettings* pSettings); // copy a settings object back
-#endif
 	static struct _stat GetInitTimeStamp() { return _initTimeStamp; }
 	static BOOL parseCINFile(_In_ LPCWSTR pathToLoad, _In_ LPCWSTR pathToWrite, _In_ BOOL customTableMode = FALSE, _In_ BOOL suppressUI = FALSE);
 	static void SetIMEModeDefaults(IME_MODE imeMode);
@@ -388,9 +375,6 @@ private:
 	static CDIMEArray <LanguageProfileInfo> *_reverseConvervsionInfoList;
 	DIME_CONFIG_VALUE(CLSID, _reverseConverstionCLSID);
 	DIME_CONFIG_VALUE(GUID, _reverseConversionGUIDProfile);
-#ifndef DIME_USE_RUST_CONFIG
-	static WCHAR* _reverseConversionDescription; // with DIME_USE_RUST_CONFIG it lives in Rust
-#endif
 
 	static WCHAR _pwszINIFileName[MAX_PATH];
 	static IME_MODE _configIMEMode;
@@ -408,7 +392,6 @@ private:
 
 };
 
-#ifdef DIME_RUST_AVAILABLE
 //---------------------------------------------------------------------
 // CRustConfigScope: the settings object to pass to dime_settings_* calls.
 //   DIME_USE_RUST_CONFIG: the process-wide Rust settings (CConfig's storage);
@@ -429,7 +412,6 @@ private:
 	struct DimeSettings* _pSettings;
 	bool _commit;
 };
-#endif
 
 
 #endif

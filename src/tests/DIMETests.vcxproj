@@ -1138,19 +1138,8 @@
       <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)'=='Debug'">msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
-  <!--
-    /p:DimeTestRustConfig=true runs the whole suite with CConfig's storage in Rust
-    (DIME_USE_RUST_CONFIG, as in DIME.dll / DIMESettings.exe built with DimeUseRustEngine=true).
-  -->
-  <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true' And '$(DimeTestRustConfig)'=='true'">
-    <ClCompile>
-      <PreprocessorDefinitions>DIME_USE_RUST_CONFIG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <!--
-    DimeTestRustEngine (default true) builds the product code as DIME.dll with
-    DimeUseRustEngine=true; /p:DimeTestRustEngine=false as the all-C++ DIME.dll.
-  -->
+  <!-- The product code is built as DIME.dll is: the Rust core and settings storage
+       (the all-C++ test builds, DimeTestRustEngine / DimeTestRustConfig, were removed in 6b / 6d). -->
   <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true' And '$(DimeTestRustEngine)'=='true'">
     <ClCompile>
       <PreprocessorDefinitions>DIME_USE_RUST_ENGINE;DIME_USE_RUST_CONFIG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
