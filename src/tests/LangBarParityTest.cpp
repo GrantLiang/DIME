@@ -1,6 +1,10 @@
-// Phase 4d: language-bar decisions. C++ and Rust run without compartment sinks
-// (a sink would re-enter the public method and mix the two paths). Re-entry is
-// covered by the Rust mock and by ThreadMgrTogglesChineseAndShape.
+// Phase 4d: language-bar decisions, run without compartment sinks (a sink
+// would re-enter the public method). Re-entry is covered by the Rust mock and
+// by ThreadMgrTogglesChineseAndShape. The C++ originals were removed in phase
+// 6c: the "Cpp" calls run the Rust decisions too, so each test's a and b
+// shots both come from Rust; the tests' assertions on a and
+// src/tests/golden/LangBar (every b shot, recorded while C++ still matched)
+// are the reference.
 #include "pch.h"
 #include "TestAppData.h"
 #include "CppUnitTest.h"
@@ -248,32 +252,32 @@ public:
     static void SetFull(CDIME& d, BOOL v) { d._isFullShape = v; }
     static BOOL Full(CDIME& d) { return d._isFullShape; }
 
-    static void ConvCpp(CDIME& d, ITfThreadMgr* t, BOOL* ov) { d._ConversionModeCompartmentUpdatedCpp(t, ov); }
+    static void ConvCpp(CDIME& d, ITfThreadMgr* t, BOOL* ov) { d._ConversionModeCompartmentUpdatedRust(t, ov); }
     static void ConvRust(CDIME& d, ITfThreadMgr* t, BOOL* ov) { d._ConversionModeCompartmentUpdatedRust(t, ov); }
     static void ConvPub(CDIME& d, ITfThreadMgr* t, BOOL* ov) { d.ConversionModeCompartmentUpdated(t, ov); }
-    static void PrivCpp(CDIME& d, ITfThreadMgr* t) { d._PrivateCompartmentsUpdatedCpp(t); }
+    static void PrivCpp(CDIME& d, ITfThreadMgr* t) { d._PrivateCompartmentsUpdatedRust(t); }
     static void PrivRust(CDIME& d, ITfThreadMgr* t) { d._PrivateCompartmentsUpdatedRust(t); }
     static void PrivPub(CDIME& d, ITfThreadMgr* t) { d.PrivateCompartmentsUpdated(t); }
-    static void KeyCpp(CDIME& d, ITfThreadMgr* t, REFGUID g) { d._KeyboardOpenCompartmentUpdatedCpp(t, g); }
+    static void KeyCpp(CDIME& d, ITfThreadMgr* t, REFGUID g) { d._KeyboardOpenCompartmentUpdatedRust(t, g); }
     static void KeyRust(CDIME& d, ITfThreadMgr* t, REFGUID g) { d._KeyboardOpenCompartmentUpdatedRust(t, g); }
-    static void OpenCpp(CDIME& d) { d._OnKeyboardOpenCpp(); }
+    static void OpenCpp(CDIME& d) { d._OnKeyboardOpenRust(); }
     static void OpenRust(CDIME& d) { d._OnKeyboardOpenRust(); }
-    static void ClosedCpp(CDIME& d) { d._OnKeyboardClosedCpp(); }
+    static void ClosedCpp(CDIME& d) { d._OnKeyboardClosedRust(); }
     static void ClosedRust(CDIME& d) { d._OnKeyboardClosedRust(); }
-    static void FullCpp(CDIME& d) { d._OnSwitchedToFullShapeCpp(); }
+    static void FullCpp(CDIME& d) { d._OnSwitchedToFullShapeRust(); }
     static void FullRust(CDIME& d) { d._OnSwitchedToFullShapeRust(); }
-    static void HalfCpp(CDIME& d) { d._OnSwitchedToHalfShapeCpp(); }
+    static void HalfCpp(CDIME& d) { d._OnSwitchedToHalfShapeRust(); }
     static void HalfRust(CDIME& d) { d._OnSwitchedToHalfShapeRust(); }
-    static void ChnCpp(CDIME& d, BOOL on, UINT delay) { d._showChnEngNotifyCpp(on, delay); }
+    static void ChnCpp(CDIME& d, BOOL on, UINT delay) { d._showChnEngNotifyRust(on, delay); }
     static void ChnRust(CDIME& d, BOOL on, UINT delay) { d._showChnEngNotifyRust(on, delay); }
     static void ChnPub(CDIME& d, BOOL on, UINT delay) { d.showChnEngNotify(on, delay); }
-    static void ShapeCpp(CDIME& d, BOOL on, UINT delay) { d._showFullHalfShapeNotifyCpp(on, delay); }
+    static void ShapeCpp(CDIME& d, BOOL on, UINT delay) { d._showFullHalfShapeNotifyRust(on, delay); }
     static void ShapeRust(CDIME& d, BOOL on, UINT delay) { d._showFullHalfShapeNotifyRust(on, delay); }
-    static void HanNCpp(CDIME& d, BOOL on, UINT delay) { d._showHanConvertNotifyCpp(on, delay); }
+    static void HanNCpp(CDIME& d, BOOL on, UINT delay) { d._showHanConvertNotifyRust(on, delay); }
     static void HanNRust(CDIME& d, BOOL on, UINT delay) { d._showHanConvertNotifyRust(on, delay); }
     static void PresCpp(CCompositionProcessorEngine& e, REFGUID g, BOOL* eaten, ITfThreadMgr* t, TfClientId id)
     {
-        e._OnPreservedKeyCpp(g, eaten, t, id);
+        e._OnPreservedKeyRust(g, eaten, t, id);
     }
     static void PresRust(CCompositionProcessorEngine& e, REFGUID g, BOOL* eaten, ITfThreadMgr* t, TfClientId id)
     {
@@ -760,6 +764,9 @@ TEST_CLASS(LangBarParityTest)
     TEST_METHOD(ShowGatesDesktopAndText)
     {
         GoldenMethod(L"ShowGatesDesktopAndText");
+        // The compartments as recorded (all off), not what the previous test left:
+        // the notifications do not change them, but the shots include them.
+        Apply(0, FALSE, FALSE, FALSE, FALSE, FALSE);
         CConfig::SetShowNotifyDesktop(FALSE);
         g_notes.clear();
         LangBarParityAccess::ChnCpp(*dime, TRUE, 4);

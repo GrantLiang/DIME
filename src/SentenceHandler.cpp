@@ -62,9 +62,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CompositionProcessorEngine.h"
 #include "BaseStructure.h"
 #include "File.h"
-#ifdef DIME_USE_RUST_ENGINE
 #include "RustSessionHost.h"
-#endif
 
 namespace
 {
@@ -105,12 +103,10 @@ namespace
 //
 //----------------------------------------------------------------------------
 
-#ifdef DIME_USE_RUST_ENGINE
 BOOL CDIME::_IsSentencePending()
 {
 	return (_pRustSession && dime_session_sentence_pending(_pRustSession)) ? TRUE : FALSE;
 }
-#endif
 
 BOOL CDIME::_IsSentenceMode()
 {
@@ -126,44 +122,6 @@ BOOL CDIME::_IsSentenceMode()
 // the sentence; other keys take the normal path.
 //----------------------------------------------------------------------------
 
-BOOL CDIME::_IsSentenceKeyEaten(UINT code, _Inout_opt_ _KEYSTROKE_STATE *pKeyState)
-{
-	KEYSTROKE_CATEGORY category = KEYSTROKE_CATEGORY::CATEGORY_SENTENCE;
-	KEYSTROKE_FUNCTION function = KEYSTROKE_FUNCTION::FUNCTION_NONE;
-
-	// Modified keys (Ctrl/Alt shortcuts) are not ours.
-	if (Global::ModifiersValue & (TF_MOD_CONTROL | TF_MOD_ALT | TF_MOD_LCONTROL | TF_MOD_RCONTROL | TF_MOD_LALT | TF_MOD_RALT))
-		return FALSE;
-
-	switch (code)
-	{
-	case VK_RETURN:
-	case VK_SPACE:  function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT; break;
-	case VK_BACK:
-	case VK_DELETE: function = KEYSTROKE_FUNCTION::FUNCTION_BACKSPACE; break;
-	case VK_LEFT:   function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_LEFT; break;
-	case VK_RIGHT:  function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_RIGHT; break;
-	case VK_HOME:   function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_TOP; break;
-	case VK_END:    function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_BOTTOM; break;
-	case VK_DOWN:   function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_DOWN; break;
-	case VK_UP:
-	case VK_PRIOR:
-	case VK_NEXT:   function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_UP; break;   // eaten, no effect
-	case VK_ESCAPE:
-		category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;                  // _HandleCancel discards
-		function = KEYSTROKE_FUNCTION::FUNCTION_CANCEL;
-		break;
-	default:
-		return FALSE;
-	}
-
-	if (pKeyState)
-	{
-		pKeyState->Category = category;
-		pKeyState->Function = function;
-	}
-	return TRUE;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -215,11 +173,6 @@ BOOL CDIME::_SentenceUserFilePath(_Out_writes_(MAX_PATH) WCHAR* path)
 	return SUCCEEDED(StringCchPrintf(path, MAX_PATH, L"%s\\DIME\\SentenceUser.txt", appData));
 }
 
-void CDIME::_SentenceConvert()
-{
-	CSentenceLexicon* pLexicon = _GetSentenceLexicon();
-	_sentence.Convert(pLexicon, _pSentenceUser);
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -236,15 +189,9 @@ void CDIME::_SentenceLearn()
 {
 	if (!_IsSentencePending() || _pSentenceUser == nullptr || _pSentencePending == nullptr)
 		return;
-#ifdef DIME_USE_RUST_ENGINE
 	if (!dime_session_sentence_learn(_pRustSession, _pSentenceUser->Handle()))
 		return;
 	dime_session_sentence_learn(_pRustSession, _pSentencePending->Handle());
-#else
-	if (!_pSentenceUser->Learn(_sentence))
-		return;
-	_pSentencePending->Learn(_sentence);
-#endif
 
 	if (_IsStoreAppMode() || isLowIntegrityProcess())
 		return;
@@ -329,10 +276,6 @@ HRESULT CDIME::_SentenceWrite(TfEditCookie ec, _In_ ITfContext *pContext, const 
 	return hr;
 }
 
-HRESULT CDIME::_SentenceRender(TfEditCookie ec, _In_ ITfContext *pContext, const std::wstring& reading)
-{
-	return _SentenceWrite(ec, pContext, _sentence.Display(reading), _sentence.DisplayCaret(reading), TRUE);
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -342,38 +285,6 @@ HRESULT CDIME::_SentenceRender(TfEditCookie ec, _In_ ITfContext *pContext, const
 // show the sentence.  The reading and any candidate window are cleared.
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_SentenceAppend(TfEditCookie ec, _In_ ITfContext *pContext, const std::vector<std::wstring>& candidates, int pinned)
-{
-	std::wstring code = _GetKeystrokeCode();
-
-	if (!_IsComposing())
-		_StartComposition(pContext);
-
-	_DeleteCandidateList(TRUE, pContext);  // purges the reading too
-	_sentenceEditPos = -1;
-
-	if (!_sentence.Insert(code, candidates, pinned))
-		return _SentenceRender(ec, pContext, L"");
-
-	_SentenceConvert();
-
-	if (_sentence.Count() >= CSentenceBuffer::MaxPositions)
-		return _HandleSentenceCommit(ec, pContext);
-
-	return _SentenceRender(ec, pContext, L"");
-}
-
-HRESULT CDIME::_SentenceAppendFromCandidateList(TfEditCookie ec, _In_ ITfContext *pContext, _In_ CDIMEArray<CCandidateListItem> *pCandidateList, int pinned)
-{
-	std::vector<std::wstring> candidates;
-	for (UINT i = 0; i < pCandidateList->Count(); i++)
-	{
-		CCandidateListItem* pItem = pCandidateList->GetAt(i);
-		if (pItem && pItem->_ItemString.GetLength())
-			candidates.emplace_back(pItem->_ItemString.Get(), pItem->_ItemString.GetLength());
-	}
-	return _SentenceAppend(ec, pContext, candidates, pinned);
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -384,52 +295,6 @@ HRESULT CDIME::_SentenceAppendFromCandidateList(TfEditCookie ec, _In_ ITfContext
 // it adds the character for the current reading.  isExplicit pins it.
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_SentenceSelectCandidate(TfEditCookie ec, _In_ ITfContext *pContext, const std::wstring& selected, BOOL isExplicit)
-{
-	if (_sentenceEditPos >= 0)
-	{
-		size_t pos = (size_t)_sentenceEditPos;
-		_sentenceEditPos = -1;
-		if (pos < _sentence.Count())
-		{
-			const std::vector<std::wstring>& candidates = _sentence.At(pos).candidates;
-			for (size_t i = 0; i < candidates.size(); i++)
-			{
-				if (candidates[i] == selected)
-				{
-					_sentence.Pin(pos, (int)i);
-					break;
-				}
-			}
-		}
-		_DeleteCandidateList(TRUE, pContext);
-		_SentenceConvert();
-		return _SentenceRender(ec, pContext, L"");
-	}
-
-	std::vector<std::wstring> candidates;
-	int index = -1;
-	if (!_isCandidateWithWildcard && _pCompositionProcessorEngine && !_pCompositionProcessorEngine->IsEscapeInputLeading())
-	{
-		CDIMEArray<CCandidateListItem> exact;
-		_pCompositionProcessorEngine->GetCandidateList(&exact, FALSE, FALSE);
-		for (UINT i = 0; i < exact.Count(); i++)
-		{
-			CCandidateListItem* pItem = exact.GetAt(i);
-			if (pItem == nullptr || pItem->_ItemString.GetLength() == 0) continue;
-			candidates.emplace_back(pItem->_ItemString.Get(), pItem->_ItemString.GetLength());
-			if (index < 0 && candidates.back() == selected) index = (int)candidates.size() - 1;
-		}
-	}
-	if (index < 0)
-	{
-		// Wildcard, symbol, or incremental (prefix) match: keep exactly what was chosen.
-		candidates.assign(1, selected);
-		index = 0;
-		isExplicit = TRUE;
-	}
-	return _SentenceAppend(ec, pContext, candidates, isExplicit ? index : -1);
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -438,41 +303,6 @@ HRESULT CDIME::_SentenceSelectCandidate(TfEditCookie ec, _In_ ITfContext *pConte
 // Down: show the candidates of the character under the cursor.
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_SentenceOpenCandidates(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-	if (_sentence.IsEmpty() || _pUIPresenter == nullptr || _pCompositionProcessorEngine == nullptr)
-		return S_OK;
-
-	size_t pos = _sentence.EditTarget();
-	const CSentencePosition& position = _sentence.At(pos);
-	if (position.candidates.size() < 2)
-	{
-		DoBeep(BEEP_TYPE::BEEP_WARNING);
-		return S_OK;
-	}
-
-	CDIMEArray<CCandidateListItem> candidateList;
-	for (const std::wstring& c : position.candidates)
-	{
-		CCandidateListItem* pItem = candidateList.Append();
-		if (pItem == nullptr) return E_OUTOFMEMORY;
-		pItem->_ItemString.Set(c.c_str(), c.length());
-		pItem->_FindKeyCode.Set(position.code.c_str(), position.code.length());
-	}
-
-	HRESULT hr = _CreateAndStartCandidate(_pCompositionProcessorEngine, ec, pContext);
-	if (SUCCEEDED(hr))
-	{
-		_pUIPresenter->_ClearCandidateList();
-		_pUIPresenter->_SetCandidateText(&candidateList, _pCompositionProcessorEngine->GetCandidateListIndexRange(),
-			FALSE, _pCompositionProcessorEngine->GetCandidateWindowWidth());
-		_pUIPresenter->_SetCandidateSelection(position.chosen, FALSE);
-		_candidateMode = CANDIDATE_MODE::CANDIDATE_ORIGINAL;
-		_isCandidateWithWildcard = FALSE;
-		_sentenceEditPos = (int)pos;
-	}
-	return hr;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -481,13 +311,6 @@ HRESULT CDIME::_SentenceOpenCandidates(TfEditCookie ec, _In_ ITfContext *pContex
 // Drop the reading / candidate window but keep the sentence.
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_SentenceCloseReading(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-	_DeleteCandidateList(TRUE, pContext);
-	_sentenceEditPos = -1;
-	_sentencePinNext = FALSE;
-	return _SentenceRender(ec, pContext, L"");
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -496,47 +319,6 @@ HRESULT CDIME::_SentenceCloseReading(TfEditCookie ec, _In_ ITfContext *pContext)
 // Write the sentence into the document and end the composition.
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_HandleSentenceCommit(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_sentence_commit(host.Get());
-#else
-	return _HandleSentenceCommitCpp(ec, pContext);
-#endif
-}
-
-HRESULT CDIME::_HandleSentenceCommitCpp(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-	if (_sentence.IsEmpty())
-		return S_OK;
-
-	_SentenceLearn();
-
-	std::wstring text = _sentence.Text();
-	if (CConfig::GetDoHanConvert() && _pCompositionProcessorEngine)
-	{
-		CStringRange source, converted;
-		source.Set(text.c_str(), text.length());
-		if (_pCompositionProcessorEngine->GetSCFromTC(&source, &converted) && converted.Get())
-		{
-			text.assign(converted.Get(), converted.GetLength());
-			delete[] converted.Get();
-		}
-	}
-
-	_SentenceWrite(ec, pContext, text, text.length(), FALSE);
-	_SentenceReset();
-	return _HandleComplete(ec, pContext);
-}
-
-HRESULT CDIME::_SentenceCommitBeforeOutput(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-	if (!_IsSentencePending())
-		return S_OK;
-	_DeleteCandidateList(TRUE, pContext);
-	return _HandleSentenceCommit(ec, pContext);
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -544,30 +326,6 @@ HRESULT CDIME::_SentenceCommitBeforeOutput(TfEditCookie ec, _In_ ITfContext *pCo
 //
 //----------------------------------------------------------------------------
 
-#ifdef DIME_COMPILE_ROUTING_HANDLERS
-HRESULT CDIME::_HandleSentenceBackspace(TfEditCookie ec, _In_ ITfContext *pContext, UINT code)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_sentence_backspace(host.Get(), code);
-#else
-	return _HandleSentenceBackspaceCpp(ec, pContext, code);
-#endif
-}
-#endif
-
-HRESULT CDIME::_HandleSentenceBackspaceCpp(TfEditCookie ec, _In_ ITfContext *pContext, UINT code)
-{
-	BOOL removed = (code == VK_DELETE) ? _sentence.RemoveAtCursor() : _sentence.RemoveBeforeCursor();
-	if (!removed)
-		return S_OK;
-
-	if (_sentence.IsEmpty())
-		return _HandleCancel(ec, pContext);  // nothing left: drop the composition
-
-	_SentenceConvert();
-	return _SentenceRender(ec, pContext, L"");
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -575,31 +333,6 @@ HRESULT CDIME::_HandleSentenceBackspaceCpp(TfEditCookie ec, _In_ ITfContext *pCo
 //
 //----------------------------------------------------------------------------
 
-#ifdef DIME_COMPILE_ROUTING_HANDLERS
-HRESULT CDIME::_HandleSentenceArrowKey(TfEditCookie ec, _In_ ITfContext *pContext, KEYSTROKE_FUNCTION keyFunction)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_sentence_arrow_key(host.Get(), (uint32_t)keyFunction);
-#else
-	return _HandleSentenceArrowKeyCpp(ec, pContext, keyFunction);
-#endif
-}
-#endif
-
-HRESULT CDIME::_HandleSentenceArrowKeyCpp(TfEditCookie ec, _In_ ITfContext *pContext, KEYSTROKE_FUNCTION keyFunction)
-{
-	switch (keyFunction)
-	{
-	case KEYSTROKE_FUNCTION::FUNCTION_MOVE_LEFT:        _sentence.MoveLeft(); break;
-	case KEYSTROKE_FUNCTION::FUNCTION_MOVE_RIGHT:       _sentence.MoveRight(); break;
-	case KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_TOP:    _sentence.Home(); break;
-	case KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_BOTTOM: _sentence.End(); break;
-	case KEYSTROKE_FUNCTION::FUNCTION_MOVE_DOWN:        return _SentenceOpenCandidates(ec, pContext);
-	default:                                            return S_OK;
-	}
-	return _SentenceRender(ec, pContext, L"");
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -620,7 +353,6 @@ void CDIME::_SentenceFinalizeInComposition(TfEditCookie ec)
 	ITfRange* pRange = nullptr;
 	if (SUCCEEDED(_pComposition->GetRange(&pRange)) && pRange)
 	{
-#ifdef DIME_USE_RUST_ENGINE
 		std::wstring text;
 		if (DimeBuffer* pText = dime_session_sentence_text(_pRustSession))
 		{
@@ -629,9 +361,6 @@ void CDIME::_SentenceFinalizeInComposition(TfEditCookie ec)
 			if (p) text.assign((const WCHAR*)p, len);
 			dime_buffer_free(pText);
 		}
-#else
-		std::wstring text = _sentence.Text();
-#endif
 		pRange->SetText(ec, 0, text.c_str(), (LONG)text.length());
 		pRange->Release();
 	}
@@ -640,12 +369,7 @@ void CDIME::_SentenceFinalizeInComposition(TfEditCookie ec)
 
 void CDIME::_SentenceReset()
 {
-#ifdef DIME_USE_RUST_ENGINE
 	dime_session_sentence_reset(_pRustSession);
-#endif
-	_sentence.Clear();
-	_sentenceEditPos = -1;
-	_sentencePinNext = FALSE;
 	_sentenceDisplay.clear();
 	lastReadingString.Set(nullptr, 0);
 }

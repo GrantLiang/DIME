@@ -33,13 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SentenceBuffer.h"
 
-#ifdef DIME_RUST_AVAILABLE
 #include "dime_ffi.h"
-#endif
 
 namespace
 {
-#ifdef DIME_RUST_AVAILABLE
 	static_assert(sizeof(WCHAR) == sizeof(uint16_t), "WCHAR must be UTF-16");
 	inline const uint16_t* U16(const WCHAR* p) { return reinterpret_cast<const uint16_t*>(p); }
 
@@ -73,7 +70,6 @@ namespace
 			}
 		}
 	};
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -82,74 +78,46 @@ namespace
 
 CSentenceLexicon::CSentenceLexicon() : _pLexicon(nullptr)
 {
-#ifdef DIME_RUST_AVAILABLE
 	_pLexicon = dime_lexicon_new();
-#endif
 }
 
 CSentenceLexicon::~CSentenceLexicon()
 {
-#ifdef DIME_RUST_AVAILABLE
 	dime_lexicon_free(_pLexicon);
-#endif
 	_pLexicon = nullptr;
 }
 
 bool CSentenceLexicon::IsSupported()
 {
-#ifdef DIME_RUST_AVAILABLE
 	return true;
-#else
-	return false;
-#endif
 }
 
 size_t CSentenceLexicon::LoadCinValues(_In_reads_(len) const WCHAR* buf, size_t len)
 {
-#ifdef DIME_RUST_AVAILABLE
 	if (_pLexicon && buf) return dime_lexicon_load_cin_values(_pLexicon, U16(buf), len);
-#else
-	buf; len;
-#endif
 	return 0;
 }
 
 size_t CSentenceLexicon::LoadFreqTable(_In_reads_(len) const WCHAR* buf, size_t len)
 {
-#ifdef DIME_RUST_AVAILABLE
 	if (_pLexicon && buf) return dime_lexicon_load_freq_table(_pLexicon, U16(buf), len);
-#else
-	buf; len;
-#endif
 	return 0;
 }
 
 bool CSentenceLexicon::AddWord(const std::wstring& word, UINT freq)
 {
-#ifdef DIME_RUST_AVAILABLE
 	if (_pLexicon) return dime_lexicon_add_word(_pLexicon, U16(word.c_str()), word.length(), freq) != 0;
-#else
-	word; freq;
-#endif
 	return false;
 }
 
 size_t CSentenceLexicon::WordCount() const
 {
-#ifdef DIME_RUST_AVAILABLE
 	return dime_lexicon_word_count(_pLexicon);
-#else
-	return 0;
-#endif
 }
 
 size_t CSentenceLexicon::CharCount() const
 {
-#ifdef DIME_RUST_AVAILABLE
 	return dime_lexicon_char_count(_pLexicon);
-#else
-	return 0;
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -158,33 +126,24 @@ size_t CSentenceLexicon::CharCount() const
 
 CSentenceUserModel::CSentenceUserModel() : _pModel(nullptr)
 {
-#ifdef DIME_RUST_AVAILABLE
 	_pModel = dime_user_model_new();
-#endif
 }
 
 CSentenceUserModel::~CSentenceUserModel()
 {
-#ifdef DIME_RUST_AVAILABLE
 	dime_user_model_free(_pModel);
-#endif
 	_pModel = nullptr;
 }
 
 size_t CSentenceUserModel::Import(_In_reads_(len) const WCHAR* buf, size_t len)
 {
-#ifdef DIME_RUST_AVAILABLE
 	if (_pModel && buf) return dime_user_model_import(_pModel, U16(buf), len);
-#else
-	buf; len;
-#endif
 	return 0;
 }
 
 std::wstring CSentenceUserModel::Export() const
 {
 	std::wstring text;
-#ifdef DIME_RUST_AVAILABLE
 	DimeBuffer* pBuffer = dime_user_model_export(_pModel);
 	if (pBuffer)
 	{
@@ -193,55 +152,35 @@ std::wstring CSentenceUserModel::Export() const
 		if (p) text.assign(reinterpret_cast<const WCHAR*>(p), len);
 		dime_buffer_free(pBuffer);
 	}
-#endif
 	return text;
 }
 
 void CSentenceUserModel::Merge(const CSentenceUserModel& other)
 {
-#ifdef DIME_RUST_AVAILABLE
 	dime_user_model_merge(_pModel, other._pModel);
-#else
-	other;
-#endif
 }
 
 void CSentenceUserModel::Clear()
 {
-#ifdef DIME_RUST_AVAILABLE
 	dime_user_model_clear(_pModel);
-#endif
 }
 
 size_t CSentenceUserModel::WordCount() const
 {
-#ifdef DIME_RUST_AVAILABLE
 	return dime_user_model_word_count(_pModel);
-#else
-	return 0;
-#endif
 }
 
 size_t CSentenceUserModel::ChoiceCount() const
 {
-#ifdef DIME_RUST_AVAILABLE
 	return dime_user_model_choice_count(_pModel);
-#else
-	return 0;
-#endif
 }
 
 bool CSentenceUserModel::Learn(const CSentenceBuffer& sentence)
 {
-#ifdef DIME_RUST_AVAILABLE
 	if (_pModel == nullptr || sentence.IsEmpty()) return false;
 	SentenceArrays a(sentence);
 	return dime_user_model_learn(_pModel, sentence.Count(), a.codes.data(), a.codeLens.data(), a.starts.data(),
 		a.cands.data(), a.candLens.data(), a.pinned.data(), a.chosen.data()) != 0;
-#else
-	sentence;
-	return false;
-#endif
 }
 
 size_t CSentenceUserModel::LoadFile(_In_z_ LPCWSTR path)
@@ -345,7 +284,6 @@ void CSentenceBuffer::Convert(_In_opt_ const CSentenceLexicon* pLexicon, _In_opt
 {
 	if (_positions.empty()) return;
 
-#ifdef DIME_RUST_AVAILABLE
 	SentenceArrays a(*this);
 	if (dime_sentence_convert(pLexicon ? pLexicon->Handle() : nullptr, pUser ? pUser->Handle() : nullptr,
 		_positions.size(), a.codes.data(), a.codeLens.data(), a.starts.data(),
@@ -358,9 +296,6 @@ void CSentenceBuffer::Convert(_In_opt_ const CSentenceLexicon* pLexicon, _In_opt
 		}
 		return;
 	}
-#else
-	pLexicon; pUser;
-#endif
 
 	for (CSentencePosition& position : _positions)
 		position.chosen = position.pinned >= 0 ? position.pinned : 0;

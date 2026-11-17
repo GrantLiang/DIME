@@ -3,11 +3,9 @@
 #include "Private.h"
 #include "RustCandidateListModel.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 #include "dime_ffi.h"
 
-#ifdef DIME_USE_RUST_ENGINE
 CCandidateListModel* CCandidateListModel::Create()
 {
     CRustCandidateListModel* p = new (std::nothrow) CRustCandidateListModel();
@@ -18,7 +16,6 @@ CCandidateListModel* CCandidateListModel::Create()
     }
     return p;
 }
-#endif
 
 CRustCandidateListModel::CRustCandidateListModel() : _pRust(dime_candidates_new())
 {
@@ -150,4 +147,3 @@ HRESULT CRustCandidateListModel::AdjustPageIndex(_Inout_ UINT& currentPage, _Ino
     return hr;
 }
 
-#endif // DIME_RUST_AVAILABLE

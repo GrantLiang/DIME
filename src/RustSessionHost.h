@@ -7,7 +7,6 @@
 
 #pragma once
 
-#ifdef DIME_RUST_AVAILABLE
 
 #include <msctf.h>
 #include <string>
@@ -123,4 +122,3 @@ private:
     static void NotifyEndLayout(void* ctx);
 };
 
-#endif // DIME_RUST_AVAILABLE

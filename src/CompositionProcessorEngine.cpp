@@ -37,10 +37,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Globals.h"
 #include "Compartment.h"
 #include "LanguageBar.h"
-#ifdef DIME_RUST_AVAILABLE
 #include <vector>
 #include "dime_ffi.h"
-#endif
 
 #define MAX_READINGSTRING 64
 
@@ -120,16 +118,9 @@ CCompositionProcessorEngine::CCompositionProcessorEngine(_In_ CDIME *pTextServic
 	_pEndkey = nullptr;
 
 
-
-
 	_isKeystrokeSort = FALSE;
 
 	_isWildCardWordFreqSort = TRUE;
-
-
-
-
-
 
 
 }
@@ -176,14 +167,9 @@ BOOL CCompositionProcessorEngine::ValidateCompositionKeyCharFull(WCHAR ch)
 
 void CCompositionProcessorEngine::GetReadingString(_Inout_ CStringRange *pReadingString, _Inout_opt_ BOOL *pIsWildcardIncluded, _In_opt_ CStringRange *pKeyCode)
 {
-#ifdef DIME_USE_RUST_ENGINE
 	_GetReadingStringRust(pReadingString, pIsWildcardIncluded, pKeyCode);
-#else
-	_GetReadingStringCpp(pReadingString, pIsWildcardIncluded, pKeyCode);
-#endif
 }
 
-#ifdef DIME_RUST_AVAILABLE
 // GetReadingString via dime_reading_string. The result buffer is a C++
 // allocation that is never freed, exactly like the C++ version (callers keep
 // pointers into it, e.g. a candidate item's _ItemString).
@@ -218,76 +204,7 @@ void CCompositionProcessorEngine::_GetReadingStringRust(_Inout_ CStringRange *pR
 	if (pIsWildcardIncluded)
 		*pIsWildcardIncluded = _hasWildcardIncludedInKeystrokeBuffer;
 }
-#endif
 
-void CCompositionProcessorEngine::_GetReadingStringCpp(_Inout_ CStringRange *pReadingString, _Inout_opt_ BOOL *pIsWildcardIncluded, _In_opt_ CStringRange *pKeyCode)
-{
-	debugPrint(L"CCompositionProcessorEngine::GetReadingStrings() ");
-	if (!IsDictionaryAvailable(Global::imeMode))
-	{
-		debugPrint(L"CCompositionProcessorEngine::GetReadingStrings() dictionary is not available.");
-		return;
-	}
-
-	CStringRange* pKeyStrokeBuffer = nullptr;
-	pKeyStrokeBuffer = (pKeyCode == nullptr) ? &_keystrokeBuffer : pKeyCode;
-	*pReadingString = *pKeyStrokeBuffer;
-
-	CStringRange oneKeystroke;
-
-	_hasWildcardIncludedInKeystrokeBuffer = FALSE;
-
-	if (pKeyStrokeBuffer->GetLength())
-	{
-
-		PWCHAR pwchRadical;
-		pwchRadical = new (std::nothrow) WCHAR[MAX_READINGSTRING];
-		if (pwchRadical == NULL) return; // should not happen
-		*pwchRadical = L'\0';
-
-		if (_pTableDictionaryEngine[(UINT)Global::imeMode]->GetRadicalMap() &&
-			_pTableDictionaryEngine[(UINT)Global::imeMode]->GetRadicalMap()->size() && !IsEscapeInput())
-		{
-
-			for (DWORD index = 0; index < pKeyStrokeBuffer->GetLength(); index++)
-			{
-				if (_pTableDictionaryEngine[(UINT)Global::imeMode]->GetRadicalMap() &&
-					_pTableDictionaryEngine[(UINT)Global::imeMode]->GetRadicalMap()->size() && !IsEscapeInput()) // if radicalMap is valid (size()>0), then convert the keystroke buffer 
-				{
-					_T_RadicalMap::iterator item =
-						_pTableDictionaryEngine[(UINT)Global::imeMode]->GetRadicalMap()->find(towupper(*(pKeyStrokeBuffer->Get() + index)));
-					if (_pTableDictionaryEngine[(UINT)Global::imeMode]->GetRadicalMap() &&
-						item != _pTableDictionaryEngine[(UINT)Global::imeMode]->GetRadicalMap()->end())
-					{
-						assert(wcslen(pwchRadical) + wcslen(item->second) < MAX_READINGSTRING - 1);
-						StringCchCat(pwchRadical, MAX_READINGSTRING, item->second);
-					}
-					else
-					{
-						assert(wcslen(pwchRadical) + 1 < MAX_READINGSTRING - 1);
-						StringCchCatN(pwchRadical, MAX_READINGSTRING, (pKeyStrokeBuffer->Get() + index), 1);
-					}
-				}
-
-				oneKeystroke.Set(pKeyStrokeBuffer->Get() + index, 1);
-				
-				if (IsWildcardChar(*oneKeystroke.Get()))
-					_hasWildcardIncludedInKeystrokeBuffer = TRUE;
-				
-			}
-			pReadingString->Set(pwchRadical, wcslen(pwchRadical));
-		}
-		else if (pKeyStrokeBuffer->GetLength())
-		{
-			assert(wcslen(pwchRadical) + pKeyStrokeBuffer->GetLength() < MAX_READINGSTRING - 1);
-			StringCchCatN(pwchRadical, MAX_READINGSTRING, (pKeyStrokeBuffer->Get()), pKeyStrokeBuffer->GetLength());
-			pReadingString->Set(pwchRadical, wcslen(pwchRadical));
-		}
-
-	}
-	if (pIsWildcardIncluded)
-		*pIsWildcardIncluded = _hasWildcardIncludedInKeystrokeBuffer;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -297,14 +214,9 @@ void CCompositionProcessorEngine::_GetReadingStringCpp(_Inout_ CStringRange *pRe
 
 void CCompositionProcessorEngine::GetCandidateList(_Inout_ CDIMEArray<CCandidateListItem> *pCandidateList, BOOL isIncrementalWordSearch, BOOL isWildcardSearch, BOOL isArrayPhraseEnding)
 {
-#ifdef DIME_USE_RUST_ENGINE
 	_GetCandidateListRust(pCandidateList, isIncrementalWordSearch, isWildcardSearch, isArrayPhraseEnding);
-#else
-	_GetCandidateListCpp(pCandidateList, isIncrementalWordSearch, isWildcardSearch, isArrayPhraseEnding);
-#endif
 }
 
-#ifdef DIME_RUST_AVAILABLE
 //+---------------------------------------------------------------------------
 //
 // _GetCandidateListRust
@@ -517,371 +429,7 @@ void CCompositionProcessorEngine::_GetCandidateListRust(_Inout_ CDIMEArray<CCand
 	if (noToneBuilt && noToneKey.Get())
 		delete[] noToneKey.Get();
 }
-#endif // DIME_RUST_AVAILABLE
 
-void CCompositionProcessorEngine::_GetCandidateListCpp(_Inout_ CDIMEArray<CCandidateListItem> *pCandidateList, BOOL isIncrementalWordSearch, BOOL isWildcardSearch, BOOL isArrayPhraseEnding)
-{
-	debugPrint(L"CCompositionProcessorEngine::GetCandidateList(), isIncrementalWordSearch = %d, isWildcardSearch = %d, isArrayPhraseEnding =%d ", isIncrementalWordSearch, isWildcardSearch, isArrayPhraseEnding);
-	if (!IsDictionaryAvailable(Global::imeMode) || pCandidateList == nullptr || _keystrokeBuffer.Get() == nullptr)
-	{
-		return;
-	}
-
-	// Select between the Big5-filtered engine and the normal engine.
-	bool needBig5 =
-		(Global::imeMode == IME_MODE::IME_MODE_ARRAY &&
-		 CConfig::GetArrayScope() == ARRAY_SCOPE::ARRAY30_BIG5) ||
-		(Global::imeMode != IME_MODE::IME_MODE_ARRAY &&
-		 CConfig::GetBig5Filter());
-
-	CTableDictionaryEngine* pMainEngine =
-		(needBig5 && _pBig5TableDictionaryEngine[(UINT)Global::imeMode])
-		? _pBig5TableDictionaryEngine[(UINT)Global::imeMode]
-		: _pTableDictionaryEngine[(UINT)Global::imeMode];
-
-	//Check if only *, ? in _keystrokebuffer
-	UINT virtualKeyLen = (UINT)GetVirtualKeyLength();
-
-	if (virtualKeyLen > 0)
-	{
-		if (virtualKeyLen == 1 && IsWildcardChar(*_keystrokeBuffer.Get()))
-		{
-			CCandidateListItem* pLI = nullptr;
-			CStringRange readingString;
-			GetReadingString(&readingString, FALSE);
-
-			pLI = pCandidateList->Append();
-			pLI->_FindKeyCode = _keystrokeBuffer;
-			// Convert wildcard to full-width if in full-shape mode
-			if (_pTextService && _pTextService->_GetFullShape())
-			{
-				PWCHAR pwch = new (std::nothrow) WCHAR[2];
-				if (pwch)
-				{
-					pwch[0] = IsWildcardAllChar(*_keystrokeBuffer.Get())
-						? L'＊'   // fullwidth asterisk U+FF0A
-						: L'？';  // fullwidth question mark U+FF1F
-					pwch[1] = L'\0';
-					pLI->_ItemString.Set(pwch, 1);
-				}
-				else
-					pLI->_ItemString = readingString;
-			}
-			else
-				pLI->_ItemString = readingString;
-			_hasWildcardIncludedInKeystrokeBuffer = FALSE;
-			return;
-		}
-
-		//Check if all wildcard
-		BOOL allWildCard = TRUE;
-		for (UINT i = 0; i < virtualKeyLen; i++)
-		{
-			allWildCard = IsWildcardChar(*(_keystrokeBuffer.Get() + i));
-			if (!allWildCard) break;
-		}
-		if (allWildCard)
-		{
-			_hasWildcardIncludedInKeystrokeBuffer = FALSE;
-			return;
-		}
-
-
-	}
-
-	_pActiveCandidateListIndexRange = &_candidateListIndexRange;  // Reset the active cand list range
-
-	// check keystroke buffer already has wildcard char which end user want wildcard search
-	DWORD wildcardIndex = 0;
-	BOOL isFindWildcard = FALSE;
-
-	for (wildcardIndex = 0; wildcardIndex < _keystrokeBuffer.GetLength(); wildcardIndex++)
-	{
-		if (IsWildcardChar(*(_keystrokeBuffer.Get() + wildcardIndex)))
-		{
-			isFindWildcard = TRUE;
-			break;
-		}
-	}
-	
-
-	if (isIncrementalWordSearch && IsArrayShortCode() && !isFindWildcard) //array short code mode
-	{
-		if (_pArrayShortCodeTableDictionaryEngine == nullptr)
-		{
-			pMainEngine->SetSearchSection(SEARCH_SECTION::SEARCH_SECTION_PRHASE_FROM_KEYSTROKE);
-			pMainEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-		}
-		else
-		{
-			_pArrayShortCodeTableDictionaryEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-		}
-	}
-	else if (isIncrementalWordSearch && 
-		!(Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope()!= ARRAY_SCOPE::ARRAY40_BIG5))
-	{
-		CStringRange wildcardSearch;
-		DWORD_PTR keystrokeBufLen = _keystrokeBuffer.GetLength() + 3;
-
-
-		PWCHAR pwch = new (std::nothrow) WCHAR[keystrokeBufLen];
-		if (!pwch)  return;
-
-		StringCchCopyN(pwch, keystrokeBufLen, _keystrokeBuffer.Get(), _keystrokeBuffer.GetLength());
-		if (!isFindWildcard)
-		{
-			StringCchCat(pwch, keystrokeBufLen, L"*");
-		}
-
-		size_t len = 0;
-		if (StringCchLength(pwch, STRSAFE_MAX_CCH, &len) == S_OK)
-		{
-			wildcardSearch.Set(pwch, len);
-		}
-		else
-		{
-			delete[] pwch;
-			return;
-		}
-		BOOL customTablePriority = CConfig::getCustomTablePriority();
-		//search custom table with priority
-		if (_pCustomTableDictionaryEngine[(UINT)Global::imeMode] && customTablePriority)
-			_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWordForWildcard(&wildcardSearch, pCandidateList);
-		pMainEngine->SetSearchSection(SEARCH_SECTION::SEARCH_SECTION_TEXT);
-		pMainEngine->CollectWordForWildcard(&wildcardSearch, pCandidateList);
-		//search custom table without priority
-		if (_pCustomTableDictionaryEngine[(UINT)Global::imeMode] && !customTablePriority)
-			_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWordForWildcard(&wildcardSearch, pCandidateList);
-
-
-		if (pCandidateList && 0 >= pCandidateList->Count())
-		{
-			delete[] pwch;
-			return;
-		}
-
-		if (IsKeystrokeSort())
-		{
-			pMainEngine->SortListItemByFindKeyCode(pCandidateList);
-		}
-
-		// Incremental search would show keystroke data from all candidate list items
-		// but wont show identical keystroke data for user inputted.
-		for (UINT index = 0; index < pCandidateList->Count(); index++)
-		{
-			CCandidateListItem *pLI = pCandidateList->GetAt(index);
-			DWORD_PTR keystrokeBufferLen = 0;
-
-			keystrokeBufferLen = _keystrokeBuffer.GetLength();
-			
-
-			if (pLI)
-			{
-				// With a wildcard in the buffer ('*' matches nothing) a candidate's key code can be
-				// shorter than what was typed; it then has no remaining keys. (The unsigned
-				// subtraction used to underflow and crash in CCandidateWindow::_AddString.)
-				CStringRange newFindKeyCode;
-				DWORD_PTR findKeyCodeLen = pLI->_FindKeyCode.GetLength();
-				if (findKeyCodeLen > keystrokeBufferLen)
-					newFindKeyCode.Set(pLI->_FindKeyCode.Get() + keystrokeBufferLen, findKeyCodeLen - keystrokeBufferLen);
-				else
-					newFindKeyCode.Set(pLI->_FindKeyCode.Get() + findKeyCodeLen, 0);
-				pLI->_FindKeyCode.Set(newFindKeyCode);
-			}
-		}
-
-		delete[] pwch;
-	}
-	else if (IsEscapeInput() && (Global::imeMode == IME_MODE::IME_MODE_DAYI || Global::imeMode == IME_MODE::IME_MODE_ARRAY))
-	{
-		if (pMainEngine->GetDictionaryType() == DICTIONARY_TYPE::TTS_DICTIONARY)
-			pMainEngine->SetSearchSection(SEARCH_SECTION::SEARCH_SECTION_SYMBOL);
-		pMainEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-	}
-	else if (IsEscapeInput() && Global::imeMode == IME_MODE::IME_MODE_PHONETIC)
-	{
-		// Phonetic custom phrase: strip '\' prefix, search custom phrase table with wildcard
-		DWORD_PTR keyLen = _keystrokeBuffer.GetLength() - 1;
-		PWCHAR pwchCustom = new (std::nothrow) WCHAR[keyLen + 2];
-		if (pwchCustom)
-		{
-			StringCchCopyN(pwchCustom, keyLen + 2, _keystrokeBuffer.Get() + 1, keyLen);
-			StringCchCat(pwchCustom, keyLen + 2, L"*");
-			CStringRange customPhraseKey;
-			customPhraseKey.Set(pwchCustom, keyLen + 1);
-
-			if (_pCustomTableDictionaryEngine[(UINT)Global::imeMode])
-				_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWordForWildcard(
-					&customPhraseKey, pCandidateList);
-
-			delete[] pwchCustom;
-		}
-	}
-	else if (isWildcardSearch)
-	{
-
-		//Prepare for sorting candidate list with TC frequency table
-		if (_isWildCardWordFreqSort && _pTCFreqTableDictionaryEngine == nullptr) SetupTCFreqTable();
-
-		//Phonetic anytone
-		BOOL phoneticAnyTone = FALSE;
-		CStringRange noToneKeyStroke;
-		if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC && ((phoneticSyllable&vpToneMask) == vpAnyTone))
-		{
-			phoneticAnyTone = TRUE;
-			noToneKeyStroke = buildKeyStrokesFromPhoneticSyllable(phoneticSyllable&(~vpToneMask));
-		}
-
-		// search custom table with priority
-		BOOL customPhrasePriority = CConfig::getCustomTablePriority();
-		if (_pCustomTableDictionaryEngine[(UINT)Global::imeMode] && customPhrasePriority)
-		{
-			if (phoneticAnyTone)
-				_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWordForWildcard(&noToneKeyStroke, pCandidateList);
-			if (Global::imeMode != IME_MODE::IME_MODE_ARRAY || ( Global::imeMode == IME_MODE::IME_MODE_ARRAY && (CConfig::GetArraySingleQuoteCustomPhrase() == isArrayPhraseEnding) ) )
-				_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-		}
-
-		//Search IM table
-		if (pMainEngine && phoneticAnyTone)
-			pMainEngine->CollectWordForWildcard(&noToneKeyStroke, pCandidateList, _pTCFreqTableDictionaryEngine);
-
-		//Search Main table
-		pMainEngine->SetSearchSection(SEARCH_SECTION::SEARCH_SECTION_TEXT);
-		if (Global::imeMode != IME_MODE::IME_MODE_ARRAY || (Global::imeMode == IME_MODE::IME_MODE_ARRAY && !isArrayPhraseEnding))
-			pMainEngine->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList, _pTCFreqTableDictionaryEngine);
-		else if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5
-				&& _pArrayPhraseTableDictionaryEngine && isArrayPhraseEnding)
-			_pArrayPhraseTableDictionaryEngine->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-
-		//Sort candidate list with TC frequency table
-		if (pMainEngine &&
-			_isWildCardWordFreqSort && _pTCFreqTableDictionaryEngine && !isArrayPhraseEnding)
-			pMainEngine->SortListItemByWordFrequency(pCandidateList);
-		
-
-
-		//Search cutom table without priority
-		if (_pCustomTableDictionaryEngine[(UINT)Global::imeMode] && !customPhrasePriority)
-		{
-			if (phoneticAnyTone)
-				_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWordForWildcard(&noToneKeyStroke, pCandidateList);
-			else if (Global::imeMode != IME_MODE::IME_MODE_ARRAY || (Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5
-				&& (CConfig::GetArraySingleQuoteCustomPhrase() == isArrayPhraseEnding)))
-				_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-		}
-
-		// Cleanup noToneKeyStroke buffer after last use
-		if (phoneticAnyTone && noToneKeyStroke.Get())
-		{
-			delete[] noToneKeyStroke.Get();
-		}
-
-		//Search Array unicode extensions
-		if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && !isArrayPhraseEnding
-			&& CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5
-			&& CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY30_UNICODE_EXT_A )
-		{
-			switch (CConfig::GetArrayScope())
-			{
-
-			case ARRAY_SCOPE::ARRAY30_UNICODE_EXT_AB:
-				if (_pArrayExtBTableDictionaryEngine)	_pArrayExtBTableDictionaryEngine->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-				break;
-			case ARRAY_SCOPE::ARRAY30_UNICODE_EXT_ABCD:
-				if (_pArrayExtBTableDictionaryEngine)	_pArrayExtBTableDictionaryEngine->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-				if (_pArrayExtCDTableDictionaryEngine)	_pArrayExtCDTableDictionaryEngine->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-				break;
-			case ARRAY_SCOPE::ARRAY30_UNICODE_EXT_A_TO_J:
-				if (_pArrayExtBTableDictionaryEngine)	_pArrayExtBTableDictionaryEngine->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-				if (_pArrayExtCDTableDictionaryEngine)	_pArrayExtCDTableDictionaryEngine->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-				if (_pArrayExtETableDictionaryEngine)	_pArrayExtETableDictionaryEngine->CollectWordForWildcard(&_keystrokeBuffer, pCandidateList);
-				break;
-			default:
-				break;
-			}
-
-		}
-
-
-	}
-	else
-	{
-		
-		// search custom table with priority
-		BOOL customPhrasePriority = CConfig::getCustomTablePriority();
-		if (_pCustomTableDictionaryEngine[(UINT)Global::imeMode] && customPhrasePriority \
-			&& (Global::imeMode != IME_MODE::IME_MODE_ARRAY || 
-				(Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5 &&
-					(CConfig::GetArraySingleQuoteCustomPhrase() == isArrayPhraseEnding))) )
-			_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWord(&_keystrokeBuffer, pCandidateList);
-
-		pMainEngine->SetSearchSection(SEARCH_SECTION::SEARCH_SECTION_TEXT);
-
-		if (pMainEngine &&
-			(Global::imeMode != IME_MODE::IME_MODE_ARRAY || (Global::imeMode == IME_MODE::IME_MODE_ARRAY && !isArrayPhraseEnding)) )
-			pMainEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-		else if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5 &&
-					_pArrayPhraseTableDictionaryEngine && isArrayPhraseEnding)  // Array Phrase 
-			_pArrayPhraseTableDictionaryEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-
-		// search custom table without priority
-		debugPrint(L"CCompositionProcessorEngine::GetCandidateList(), CConfig::GetArraySingleQuoteCustomPhrase() = %d, isArrayPhraseEnding = %d ", 
-			CConfig::GetArraySingleQuoteCustomPhrase(), isArrayPhraseEnding);
-		if (_pCustomTableDictionaryEngine[(UINT)Global::imeMode] && !customPhrasePriority \
-			&& (Global::imeMode != IME_MODE::IME_MODE_ARRAY || (Global::imeMode == IME_MODE::IME_MODE_ARRAY 
-				&& (CConfig::GetArraySingleQuoteCustomPhrase() == isArrayPhraseEnding))))
-			_pCustomTableDictionaryEngine[(UINT)Global::imeMode]->CollectWord(&_keystrokeBuffer, pCandidateList);
-
-
-		//Search Array unicode extensions
-		if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && !isArrayPhraseEnding
-			&& CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5
-			&& CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY30_UNICODE_EXT_A)
-		{
-			switch (CConfig::GetArrayScope())
-			{
-
-			case ARRAY_SCOPE::ARRAY30_UNICODE_EXT_AB:
-				if (_pArrayExtBTableDictionaryEngine)	_pArrayExtBTableDictionaryEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-				break;
-			case ARRAY_SCOPE::ARRAY30_UNICODE_EXT_ABCD:
-				if (_pArrayExtBTableDictionaryEngine)	_pArrayExtBTableDictionaryEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-				if (_pArrayExtCDTableDictionaryEngine)	_pArrayExtCDTableDictionaryEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-				break;
-			case ARRAY_SCOPE::ARRAY30_UNICODE_EXT_A_TO_J:
-				if (_pArrayExtBTableDictionaryEngine)	_pArrayExtBTableDictionaryEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-				if (_pArrayExtCDTableDictionaryEngine)	_pArrayExtCDTableDictionaryEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-				if (_pArrayExtETableDictionaryEngine)	_pArrayExtETableDictionaryEngine->CollectWord(&_keystrokeBuffer, pCandidateList);
-				break;
-			default:
-				break;
-			}
-		}
-
-	}
-
-
-	_candidateWndWidth = DEFAULT_CAND_ITEM_LENGTH + TRAILING_SPACE;
-	for (UINT index = 0; index < pCandidateList->Count();)
-	{
-		CCandidateListItem *pLI = pCandidateList->GetAt(index);
-
-		if (pLI)
-		{
-			UINT len = (UINT)pLI->_ItemString.GetLength();
-			if (len > MAX_CAND_ITEM_LENGTH) len = MAX_CAND_ITEM_LENGTH;
-			if (len > _candidateWndWidth - TRAILING_SPACE)
-			{
-				_candidateWndWidth = len + TRAILING_SPACE;
-			}
-			index++;
-		}
-	}
-
-	if(!isIncrementalWordSearch)
-		_hasWildcardIncludedInKeystrokeBuffer = FALSE; //remove has wildcard flag anyway
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -915,14 +463,8 @@ void CCompositionProcessorEngine::GetCandidateStringInConverted(CStringRange &se
 	// treat '*' as a wildcard.)
 	BOOL phraseTableIsTts = _pPhraseTableDictionaryEngine &&
 		_pPhraseTableDictionaryEngine->GetDictionaryType() == DICTIONARY_TYPE::TTS_DICTIONARY;
-#ifdef DIME_USE_RUST_ENGINE
 	dime_associated_phrase_key((const uint16_t*)searchString.Get(), searchString.GetLength(), phraseTableIsTts ? 1 : 0,
 		Global::hasPhraseSection ? 1 : 0, Global::hasCINPhraseSection ? 1 : 0, (uint16_t*)pwch);
-#else
-	StringCchCopyN(pwch, srgKeystrokeBufLen, searchString.Get(), searchString.GetLength());
-	if (phraseTableIsTts && !(Global::hasPhraseSection || Global::hasCINPhraseSection))
-		StringCchCat(pwch, srgKeystrokeBufLen, L"*");
-#endif
 
 	// add wildcard char
 	size_t len = 0;
@@ -963,7 +505,6 @@ void CCompositionProcessorEngine::GetCandidateStringInConverted(CStringRange &se
 	searchText.Clear();
 	delete[] pwch;
 }
-
 
 
 //+---------------------------------------------------------------------------
@@ -1025,7 +566,6 @@ DWORD_PTR CCompositionProcessorEngine::CollectWordFromArraySpeicalCode(_Inout_op
 	}
 	else
 		return 0;
-
 
 
 }
@@ -1132,21 +672,11 @@ HRESULT CCompositionProcessorEngine::GetReverseConversionResults(IME_MODE imeMod
 }
 
 
-
-
-
-
-
 CStringRange CCompositionProcessorEngine::buildKeyStrokesFromPhoneticSyllable(UINT syllable)
 {
-#ifdef DIME_USE_RUST_ENGINE
 	return _BuildKeyStrokesFromPhoneticSyllableRust(syllable);
-#else
-	return _BuildKeyStrokesFromPhoneticSyllableCpp(syllable);
-#endif
 }
 
-#ifdef DIME_RUST_AVAILABLE
 CStringRange CCompositionProcessorEngine::_BuildKeyStrokesFromPhoneticSyllableRust(UINT syllable)
 {
 	CStringRange csr;
@@ -1158,26 +688,5 @@ CStringRange CCompositionProcessorEngine::_BuildKeyStrokesFromPhoneticSyllableRu
 	}
 	return csr;
 }
-#endif
 
-CStringRange CCompositionProcessorEngine::_BuildKeyStrokesFromPhoneticSyllableCpp(UINT syllable)
-{
-	CStringRange csr;
-	PWCHAR buf = new (std::nothrow) WCHAR[5];
-	if (buf)
-	{
-		WCHAR *b = buf;
-		if (syllable & vpConsonantMask)
-			*b++ = VPSymbolToStandardLayoutChar(syllable&vpConsonantMask);
-		if (syllable & vpMiddleVowelMask)
-			*b++ = VPSymbolToStandardLayoutChar(syllable&vpMiddleVowelMask);
-		if (syllable & vpVowelMask)
-			*b++ = VPSymbolToStandardLayoutChar(syllable&vpVowelMask);
-		if (syllable & vpToneMask)
-			*b++ = VPSymbolToStandardLayoutChar(syllable&vpToneMask);
-		*b = 0;
-		csr.Set(buf, wcslen(buf));
-	}
-	return csr;
-}
 #endif

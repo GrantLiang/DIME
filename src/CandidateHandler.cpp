@@ -45,11 +45,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_HandleCandidateFinalize(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-	debugPrint(L"CDIME::_HandleCandidateFinalize()");
-	return _HandleCandidateWorker(ec, pContext);
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -57,12 +52,6 @@ HRESULT CDIME::_HandleCandidateFinalize(TfEditCookie ec, _In_ ITfContext *pConte
 //
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_HandleCandidateConvert(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-	debugPrint(L"CDIME::_HandleCandidateFinalize()");
-    return _HandleCandidateWorker(ec, pContext);
-	
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -70,211 +59,6 @@ HRESULT CDIME::_HandleCandidateConvert(TfEditCookie ec, _In_ ITfContext *pContex
 //
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_HandleCandidateWorker(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_candidate_finalize(host.Get());
-#else
-	return _HandleCandidateWorkerCpp(ec, pContext);
-#endif
-}
-
-HRESULT CDIME::_HandleCandidateWorkerCpp(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-
-	debugPrint(L"CDIME::_HandleCandidateWorker() _IsComposing()= %d", _IsComposing());
-    HRESULT hr = S_OK;
-	CStringRange commitString, convertedString;
-	CDIMEArray<CCandidateListItem> candidatePhraseList;	
-	CStringRange lastChar;
-	CStringRange notify;
-	
-    if (nullptr == _pUIPresenter)
-    {
-        goto Exit; //should not happen
-    }
-	
-	const WCHAR* pCandidateString = nullptr;
-	DWORD_PTR candidateLen = 0;
-	BOOL arrayUsingSPCode =FALSE;
-
-	if (!_IsComposing())
-		_StartComposition(pContext);
-
-	candidateLen = _pUIPresenter->_GetSelectedCandidateString(&pCandidateString);
-
-	if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5)
-		// check if the _strokebuffer is array special code
-	{
-		
-		if(_pCompositionProcessorEngine->CollectWordFromArraySpeicalCode(&pCandidateString)) 
-			arrayUsingSPCode = TRUE;
-	}
-	
-	if (candidateLen == 0)
-    {
-		//if(_candidateMode == CANDIDATE_WITH_NEXT_COMPOSITION || _candidateMode == CANDIDATE_PHRASE)
-		if(_candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE)
-		{
-			_HandleCancel(ec, pContext);
-			goto Exit;
-		}
-		else
-		{
-			hr = S_FALSE;
-			_HandleCancel(ec, pContext);
-			DoBeep(BEEP_TYPE::BEEP_COMPOSITION_ERROR); //beep for no valid mapping found
-			goto Exit;
-		}
-    }
-	// Sentence mode: the chosen candidate joins (or edits) the pending sentence instead of
-	// being committed.  It is pinned when the user picked it explicitly.
-	if (_IsSentenceMode() && _candidateMode != CANDIDATE_MODE::CANDIDATE_PHRASE)
-	{
-		std::wstring selected(pCandidateString, candidateLen);
-		BOOL isExplicit = _sentencePinNext || _isCandidateWithWildcard ||
-			_pUIPresenter->_GetCandidateSelection() > 0 ||
-			_pCompositionProcessorEngine->IsEscapeInputLeading();
-		_sentencePinNext = FALSE;
-		return _SentenceSelectCandidate(ec, pContext, selected, isExplicit);
-	}
-
-	if (_pCompositionProcessorEngine->IsArrayShortCode() && candidateLen == 1 && *pCandidateString == 0x2394) // empty position in arry short code table.
-	{
-		hr = S_FALSE;
-		if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC)
-			DoBeep(BEEP_TYPE::BEEP_WARNING);
-		else
-		{
-			if (CConfig::GetClearOnBeep()) _HandleCancel(ec, pContext);
-			DoBeep(BEEP_TYPE::BEEP_COMPOSITION_ERROR); //beep for no valid mapping found
-		}
-		goto Exit;
-	}
-	
-	
-	StringCchCopy(_commitString, 1, L"\0");
-	StringCchCatN(_commitString, MAX_COMMIT_LENGTH, pCandidateString, candidateLen);
-	commitString.Set(_commitString, candidateLen);
-	//_commitString = commitString;
-	
-	PWCHAR pwch = new (std::nothrow) WCHAR[2];  // pCandidateString will be destroyed after _detelteCanddiateList was called.
-	if (pwch == NULL) //should not happen.
-		goto Exit;
-	if(candidateLen > 1)
-	{	
-		StringCchCopyN(pwch, 2, pCandidateString + candidateLen -1, 1); 
-	}else // cnadidateLen ==1
-	{
-		StringCchCopyN(pwch, 2, pCandidateString, 1); 	
-	}
-	lastChar.Set(pwch, 1 );
-	//-----------------do reverse conversion notify. We should not show notify in UI-less mode, thus cancel reverse conversion notify in UILess Mode
-	if (!_IsUILessMode())
-	{
-		// Defense in depth: also check CLSID/GUIDProfile, not just the cached pointer.
-		// If reload flag was ever missed (e.g. legacy stale .ini state), the cached
-		// provider could disagree with the user's actual selection. Aligning the
-		// gate with _LoadConfig's lifecycle gate prevents stale notify popups.
-		if (_pITfReverseConversion[(UINT)Global::imeMode]
-		    && !IsEqualCLSID(CConfig::GetReverseConverstionCLSID(), CLSID_NULL)
-		    && !IsEqualCLSID(CConfig::GetReverseConversionGUIDProfile(), CLSID_NULL))
-		{
-			_AsyncReverseConversion(pContext); //asynchronized the reverse conversion with editsession for better perfomance
-		}
-		//-----------------or complete real key code when input with wildcard
-		else if (_isCandidateWithWildcard)
-		{
-			const WCHAR* pCandidateKeyCode = nullptr;
-			DWORD_PTR keyCodeLen = _pUIPresenter->_GetSelectedCandidateKeyCode(&pCandidateKeyCode);
-			StringCchCopy(_commitKeyCode, 1, L"\0");
-			if(pCandidateKeyCode)
-				StringCchCatN(_commitKeyCode, MAX_KEY_LENGTH, pCandidateKeyCode, keyCodeLen);
-			CStringRange commitKeyCode, convertedKeyCode;
-			_pCompositionProcessorEngine->GetReadingString(&convertedKeyCode, NULL, &commitKeyCode.Set(_commitKeyCode, wcslen(_commitKeyCode)));
-			_pUIPresenter->ShowNotifyText(&convertedKeyCode, 0, 0, NOTIFY_TYPE::NOTIFY_REVERSE_LOOKUP);
-		}
-
-	}
-	//-----------------do  array spcial code notify. We should not show notify in UI-less mode, thus cancel forceSP mode in UILess Mode---
-	BOOL ArraySPFound = FALSE;            
-	if(Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5 &&
-		!_IsUILessMode()  && !arrayUsingSPCode && (CConfig::GetArrayForceSP() || CConfig::GetArrayNotifySP()))
-	{
-		CStringRange specialCode;
-		CStringRange notifyText;
-		ArraySPFound = _pCompositionProcessorEngine->GetArraySpeicalCodeFromConvertedText(&commitString, &specialCode); 
-		if(specialCode.Get())
-			_pUIPresenter->ShowNotifyText(&specialCode, 0, 0, NOTIFY_TYPE::NOTIFY_SPECIAL_CODE);
-	}
-	convertedString = commitString;
-	//----------------- do TC to SC covert if required----------------------------------------------------------------------------------
-	if(CConfig::GetDoHanConvert())
-	{
-		_pCompositionProcessorEngine->GetSCFromTC(&commitString, &convertedString);
-	}
-	//----------------- commit the selected string  ------------------------------------------------------------------------------------ 
-	if(Global::imeMode == IME_MODE::IME_MODE_ARRAY && !_IsUILessMode()  && !arrayUsingSPCode && CConfig::GetArrayForceSP() &&  ArraySPFound )
-	{
-		_HandleCancel(ec, pContext);
-		DoBeep(BEEP_TYPE::BEEP_WARNING);
-		return hr;
-	}
-	else
-	{
-		hr = _AddComposingAndChar(ec, pContext, &convertedString);
-		if (FAILED(hr))	return hr;
-		// Do not send _endcandidatelist (or handleComplete) here to avoid cand dissapear in win8 metro
-		_HandleComplete(ec,pContext);
-	}
-	//-----------------do accociated phrase (make phrase)--------------------------------------------------------------------------------
-	// Issue #27.  Turn off associated phrase to avoid cursor gone in command shell.
-	if (CConfig::GetMakePhrase() && !isCMDShell())
-	{
-		_pCompositionProcessorEngine->GetCandidateStringInConverted(lastChar, &candidatePhraseList);
-
-
-		// We have a candidate list if candidatePhraseList.Cnt is not 0
-		// If we are showing reverse conversion, use UIPresenter
-
-		if (candidatePhraseList.Count())
-		{
-
-			_pUIPresenter->_ClearCandidateList();
-			_pUIPresenter->_SetCandidateText(&candidatePhraseList, _pCompositionProcessorEngine->GetCandidateListIndexRange(),
-				FALSE, _pCompositionProcessorEngine->GetCandidateWindowWidth(), true);
-			_pUIPresenter->_SetCandidateSelection(-1, FALSE); // set selected index to -1 if showing phrase candidates
-			_candidateMode = CANDIDATE_MODE::CANDIDATE_PHRASE;
-			_isCandidateWithWildcard = FALSE;	
-			
-			// Show phrase candidate window using the last saved composition rect for positioning.
-			// _StartLayout now updates the null range even for the same context,
-			// so _GetTextExt fails cleanly and the fallback uses _rectCompRange.
-			if (_pUIPresenter)
-			{
-				ITfDocumentMgr* pDocMgr = nullptr;
-				if (SUCCEEDED(pContext->GetDocumentMgr(&pDocMgr)))
-				{
-					_pUIPresenter->_StartCandidateList(_tfClientId, pDocMgr, pContext, ec, nullptr, _pCompositionProcessorEngine->GetCandidateWindowWidth());
-					pDocMgr->Release();
-				}
-			}
-			
-		}
-		else
-		{   //cancel the composition if the phrase lookup return 0 results
-			_HandleCancel(ec,pContext);
-		}
-
-
-	}
-	else
-		_DeleteCandidateList(TRUE, pContext); // endCanddiateUI if not doing associated phrase.
-		
-Exit:
-    return hr;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -282,28 +66,6 @@ Exit:
 //
 //----------------------------------------------------------------------------
 
-#ifdef DIME_COMPILE_ROUTING_HANDLERS
-HRESULT CDIME::_HandleCandidateArrowKey(TfEditCookie ec, _In_ ITfContext *pContext, _In_ KEYSTROKE_FUNCTION keyFunction)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_candidate_arrow_key(host.Get(), (uint32_t)keyFunction);
-#else
-	return _HandleCandidateArrowKeyCpp(ec, pContext, keyFunction);
-#endif
-}
-#endif
-
-HRESULT CDIME::_HandleCandidateArrowKeyCpp(TfEditCookie ec, _In_ ITfContext *pContext, _In_ KEYSTROKE_FUNCTION keyFunction)
-{
-	debugPrint(L"CDIME::_HandleCandidateArrowKey()");
-    ec;
-    pContext;
-
-    _pUIPresenter->AdviseUIChangedByArrowKey(keyFunction);
-
-    return S_OK;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -311,43 +73,6 @@ HRESULT CDIME::_HandleCandidateArrowKeyCpp(TfEditCookie ec, _In_ ITfContext *pCo
 //
 //----------------------------------------------------------------------------
 
-#ifdef DIME_COMPILE_ROUTING_HANDLERS
-HRESULT CDIME::_HandleCandidateSelectByNumber(TfEditCookie ec, _In_ ITfContext *pContext, _In_ UINT uCode,_In_ WCHAR wch)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_candidate_select_by_number(host.Get(), uCode, wch);
-#else
-	return _HandleCandidateSelectByNumberCpp(ec, pContext, uCode, wch);
-#endif
-}
-#endif
-
-HRESULT CDIME::_HandleCandidateSelectByNumberCpp(TfEditCookie ec, _In_ ITfContext *pContext, _In_ UINT uCode,_In_ WCHAR wch)
-{
-	debugPrint(L"CDIME::_HandleCandidateSelectByNumber() \n");
-
-	int iSelectAsNumber = _pCompositionProcessorEngine->GetCandidateListIndexRange()->GetIndex(uCode, wch, Global::ModifiersValue, _candidateMode);
-	debugPrint(L"CDIME::_HandleCandidateSelectByNumber() iSelectAsNumber = %d", iSelectAsNumber);
-
-	if (iSelectAsNumber == -1)
-    {
-        return S_FALSE;
-    }
-
-    if (_pUIPresenter)
-    {
-        if (_pUIPresenter->_SetCandidateSelectionInPage(iSelectAsNumber))
-        {
-            _sentencePinNext = TRUE;  // sentence mode: a select key pins the character
-            HRESULT hr = _HandleCandidateConvert(ec, pContext);
-            _sentencePinNext = FALSE;
-            return hr;
-        }
-    }
-
-    return S_FALSE;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -355,42 +80,6 @@ HRESULT CDIME::_HandleCandidateSelectByNumberCpp(TfEditCookie ec, _In_ ITfContex
 //
 //----------------------------------------------------------------------------
 
-HRESULT CDIME::_HandlePhraseFinalize(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_phrase_finalize(host.Get());
-#else
-	return _HandlePhraseFinalizeCpp(ec, pContext);
-#endif
-}
-
-HRESULT CDIME::_HandlePhraseFinalizeCpp(TfEditCookie ec, _In_ ITfContext *pContext)
-{
-	debugPrint(L"CDIME::_HandlePhraseFinalize() ");
-    HRESULT hr = S_OK;
-
-    DWORD phraseLen = 0;
-    const WCHAR* pPhraseString = nullptr;
-
-    phraseLen = (DWORD)_pUIPresenter->_GetSelectedCandidateString(&pPhraseString);
-
-    CStringRange phraseString, clearString;
-    phraseString.Set(pPhraseString, phraseLen);
-
-    if (phraseLen)
-    {
-
-        if ((hr = _AddComposingAndChar(ec, pContext, &phraseString)) != S_OK)
-        {
-            return hr;
-        }
-    }
-
-    _HandleComplete(ec, pContext);
-
-    return S_OK;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -398,28 +87,6 @@ HRESULT CDIME::_HandlePhraseFinalizeCpp(TfEditCookie ec, _In_ ITfContext *pConte
 //
 //----------------------------------------------------------------------------
 
-#ifdef DIME_COMPILE_ROUTING_HANDLERS
-HRESULT CDIME::_HandlePhraseArrowKey(TfEditCookie ec, _In_ ITfContext *pContext, _In_ KEYSTROKE_FUNCTION keyFunction)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_candidate_arrow_key(host.Get(), (uint32_t)keyFunction);
-#else
-	return _HandlePhraseArrowKeyCpp(ec, pContext, keyFunction);
-#endif
-}
-#endif
-
-HRESULT CDIME::_HandlePhraseArrowKeyCpp(TfEditCookie ec, _In_ ITfContext *pContext, _In_ KEYSTROKE_FUNCTION keyFunction)
-{
-	debugPrint(L"CDIME::_HandlePhraseArrowKey() ");
-    ec;
-    pContext;
-
-    _pUIPresenter->AdviseUIChangedByArrowKey(keyFunction);
-
-    return S_OK;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -427,37 +94,6 @@ HRESULT CDIME::_HandlePhraseArrowKeyCpp(TfEditCookie ec, _In_ ITfContext *pConte
 //
 //----------------------------------------------------------------------------
 
-#ifdef DIME_COMPILE_ROUTING_HANDLERS
-HRESULT CDIME::_HandlePhraseSelectByNumber(TfEditCookie ec, _In_ ITfContext *pContext, _In_ UINT uCode, _In_ WCHAR wch)
-{
-#ifdef DIME_USE_RUST_ENGINE
-	CRustSessionHost host(this, ec, pContext);
-	return dime_session_handle_phrase_select_by_number(host.Get(), uCode, wch);
-#else
-	return _HandlePhraseSelectByNumberCpp(ec, pContext, uCode, wch);
-#endif
-}
-#endif
-
-HRESULT CDIME::_HandlePhraseSelectByNumberCpp(TfEditCookie ec, _In_ ITfContext *pContext, _In_ UINT uCode, _In_ WCHAR wch)
-{
-	debugPrint(L"CDIME::_HandlePhraseSelectByNumber() ");
-	int iSelectAsNumber = _pCompositionProcessorEngine->GetCandidateListIndexRange()->GetIndex(uCode, wch, Global::ModifiersValue, _candidateMode);
-    if (iSelectAsNumber == -1)
-    {
-        return S_FALSE;
-    }
-
-    if (_pUIPresenter)
-    {
-        if (_pUIPresenter->_SetCandidateSelectionInPage(iSelectAsNumber))
-        {
-            return _HandlePhraseFinalize(ec, pContext);
-        }
-    }
-
-    return S_FALSE;
-}
 
 //+---------------------------------------------------------------------------
 //

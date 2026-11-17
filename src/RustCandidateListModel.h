@@ -8,7 +8,6 @@
 
 #pragma once
 
-#ifdef DIME_RUST_AVAILABLE
 
 #include "CandidateListModel.h"
 
@@ -46,4 +45,3 @@ private:
     DimeCandidates* _pRust;
 };
 
-#endif // DIME_RUST_AVAILABLE

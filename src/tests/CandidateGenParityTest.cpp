@@ -170,12 +170,9 @@ public:
             e._keystrokeBuffer.Set(buffer.c_str(), buffer.size());
     }
 
-    void Run(bool rust, BOOL incremental, BOOL wildcard, BOOL phraseEnding, CDIMEArray<CCandidateListItem>* list)
+    void Run(BOOL incremental, BOOL wildcard, BOOL phraseEnding, CDIMEArray<CCandidateListItem>* list)
     {
-        if (rust)
-            engine._GetCandidateListRust(list, incremental, wildcard, phraseEnding);
-        else
-            engine._GetCandidateListCpp(list, incremental, wildcard, phraseEnding);
+        engine._GetCandidateListRust(list, incremental, wildcard, phraseEnding);
     }
 
     // Everything observable after the call.
@@ -292,26 +289,14 @@ namespace DIMEUnitTests
                 CConfig::SetArraySingleQuoteCustomPhrase(Chance(rng, 50));
                 BOOL incremental = Chance(rng, 40), wildcard = Chance(rng, 40), phraseEnding = Chance(rng, 30);
 
-                CandidateGenParityAccess cpp, rust;
-                cpp.Setup(s);
+                CandidateGenParityAccess rust;
                 rust.Setup(s);
-                CDIMEArray<CCandidateListItem> listCpp, listRust;
-                cpp.Run(false, incremental, wildcard, phraseEnding, &listCpp);
-                rust.Run(true, incremental, wildcard, phraseEnding, &listRust);
-
-                std::wstring oc = cpp.Outcome(listCpp), orr = rust.Outcome(listRust);
-                if (oc != orr)
-                {
-                    wchar_t head[160];
-                    swprintf_s(head, L"seed %d mode=%d buf=\"%s\"%s inc=%d wild=%d ending=%d scope=%d\n", seed, (int)s.mode,
-                               s.buffer.c_str(), s.bufferNull ? L"(null)" : L"", incremental, wildcard, phraseEnding,
-                               (int)CConfig::GetArrayScope());
-                    Logger::WriteMessage((std::wstring(head) + L"--- C++\n" + oc + L"\n--- Rust\n" + orr).c_str());
-                    Assert::Fail(head);
-                }
+                CDIMEArray<CCandidateListItem> listRust;
+                rust.Run(incremental, wildcard, phraseEnding, &listRust);
+                std::wstring orr = rust.Outcome(listRust);
                 ch.Add(orr);
                 ch.Next();
-                if (listCpp.Count())
+                if (listRust.Count())
                     nonEmpty++;
             }
             ch.Finish();

@@ -1,5 +1,9 @@
-// Phase 4c: C++ and Rust dictionary setup, keystroke table, candidate range,
+// Phase 4c: dictionary setup, keystroke table, candidate range,
 // traditional/simplified and frequency tables, and the preserved-key list.
+// The C++ originals were removed in phase 6c: both engines of each test (the
+// "cpp" and "rust" ones) run the Rust setup now. The tests' file, type and key
+// assertions and src/tests/golden/EngineSetup (the keystroke tables and the
+// candidate ranges, recorded while C++ still matched) are the reference.
 #include "pch.h"
 #include "TestAppData.h"
 #include "CppUnitTest.h"
@@ -212,17 +216,17 @@ void SeedPhrase(const Tree& t)
 class EngineSetupParityAccess
 {
 public:
-    static BOOL DictCpp(CCompositionProcessorEngine& e, IME_MODE m) { return e._SetupDictionaryFileCpp(m, kLocale); }
+    static BOOL DictCpp(CCompositionProcessorEngine& e, IME_MODE m) { return e._SetupDictionaryFileRust(m, kLocale); }
     static BOOL DictRust(CCompositionProcessorEngine& e, IME_MODE m) { return e._SetupDictionaryFileRust(m, kLocale); }
-    static void KeyCpp(CCompositionProcessorEngine& e, IME_MODE m) { e._SetupKeystrokeCpp(m); }
+    static void KeyCpp(CCompositionProcessorEngine& e, IME_MODE m) { e._SetupKeystrokeRust(m); }
     static void KeyRust(CCompositionProcessorEngine& e, IME_MODE m) { e._SetupKeystrokeRust(m); }
-    static void RangeCpp(CCompositionProcessorEngine& e, IME_MODE m) { e._SetupCandidateListRangeCpp(m); }
+    static void RangeCpp(CCompositionProcessorEngine& e, IME_MODE m) { e._SetupCandidateListRangeRust(m); }
     static void RangeRust(CCompositionProcessorEngine& e, IME_MODE m) { e._SetupCandidateListRangeRust(m); }
-    static BOOL HanCpp(CCompositionProcessorEngine& e) { return e._SetupHanCovertTableCpp(); }
+    static BOOL HanCpp(CCompositionProcessorEngine& e) { return e._SetupHanCovertTableRust(); }
     static BOOL HanRust(CCompositionProcessorEngine& e) { return e._SetupHanCovertTableRust(); }
-    static BOOL FreqCpp(CCompositionProcessorEngine& e) { return e._SetupTCFreqTableCpp(); }
+    static BOOL FreqCpp(CCompositionProcessorEngine& e) { return e._SetupTCFreqTableRust(); }
     static BOOL FreqRust(CCompositionProcessorEngine& e) { return e._SetupTCFreqTableRust(); }
-    static void PreservedCpp(CCompositionProcessorEngine& e) { e._SetupPreservedCpp(nullptr, 0); }
+    static void PreservedCpp(CCompositionProcessorEngine& e) { e._SetupPreservedRust(nullptr, 0); }
     static void PreservedRust(CCompositionProcessorEngine& e) { e._SetupPreservedRust(nullptr, 0); }
 
     static CFile* MainFile(CCompositionProcessorEngine& e, IME_MODE m) { return e._pTableDictionaryFile[(UINT)m]; }

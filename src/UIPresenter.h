@@ -189,7 +189,6 @@ private:
 	// The placement decisions (dime-ui::presenter in the Rust build, phase 4b-1): the facts are
 	// read by the callers; _XxxCpp are the C++ originals.
 	void _LayoutChangeApply(const PresenterLayoutFacts& facts);
-	void _LayoutChangeApplyCpp(const PresenterLayoutFacts& facts);
 	void _ReadLayoutFacts(const RECT& comp, BOOL firstCall, PresenterLayoutFacts& facts);
 #ifdef DIME_UNIT_TESTING
 public:
@@ -201,9 +200,7 @@ public:
 private:
 #endif
 	BOOL _NotifyLocationForShow(const PresenterShowFacts& facts);      // caretUpdated
-	BOOL _NotifyLocationForShowCpp(const PresenterShowFacts& facts);
 	void _RestackForShow(BOOL caretUpdated);
-	void _RestackForShowCpp(BOOL caretUpdated);
 	// The presenter state and notify stack owned by Rust (phase 4b-2a) when _useRustPresenter;
 	// else the C++ placement and windows (DIME_CPP_PRESENTER).
 	BOOL _RustPresenter() const;

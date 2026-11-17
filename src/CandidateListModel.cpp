@@ -16,12 +16,6 @@ CCandidateListModel::~CCandidateListModel()
     Clear();
 }
 
-#ifndef DIME_USE_RUST_ENGINE
-CCandidateListModel* CCandidateListModel::Create()
-{
-    return new (std::nothrow) CCandidateListModel();
-}
-#endif // with DIME_USE_RUST_ENGINE: RustCandidateListModel.cpp
 
 //+---------------------------------------------------------------------------
 // AddItem (former CCandidateWindow::_AddString)

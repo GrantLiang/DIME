@@ -33,7 +33,6 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 class CompositionBufferParityAccess
 {
 public:
-    CCompositionProcessorEngine cpp{ nullptr };
     CCompositionProcessorEngine rust{ nullptr };
     std::unique_ptr<CTableDictionaryEngine> dict;
     std::vector<std::wstring> values;   // radical strings (stable storage)
@@ -46,12 +45,9 @@ public:
 
     ~CompositionBufferParityAccess()
     {
-        for (CCompositionProcessorEngine* e : { &cpp, &rust })
-        {
-            for (UINT i = 0; i < IM_SLOTS; i++)
-                e->_pTableDictionaryEngine[i] = nullptr;
-            e->PurgeVirtualKey();
-        }
+        for (UINT i = 0; i < IM_SLOTS; i++)
+            rust._pTableDictionaryEngine[i] = nullptr;
+        rust.PurgeVirtualKey();
     }
 
     void SetRadicals(const std::vector<std::pair<WCHAR, std::wstring>>& radicals, IME_MODE mode)
@@ -63,16 +59,13 @@ public:
             values.push_back(r.second);
             (*dict->GetRadicalMap())[r.first] = const_cast<WCHAR*>(values.back().c_str());
         }
-        for (CCompositionProcessorEngine* e : { &cpp, &rust })
-        {
-            for (UINT i = 0; i < IM_SLOTS; i++)
-                e->_pTableDictionaryEngine[i] = nullptr;
-            e->_pTableDictionaryEngine[(UINT)mode] = dict.get();
-            e->_imeMode = mode;
-        }
+        for (UINT i = 0; i < IM_SLOTS; i++)
+            rust._pTableDictionaryEngine[i] = nullptr;
+        rust._pTableDictionaryEngine[(UINT)mode] = dict.get();
+        rust._imeMode = mode;
     }
 
-    // The state both implementations must agree on.
+    // The buffer's state.
     static std::wstring State(CCompositionProcessorEngine& e)
     {
         const WCHAR* p = e._keystrokeBuffer.Get();
@@ -88,83 +81,53 @@ public:
         return s + rest;
     }
 
-    std::wstring Compare() { return State(cpp) == State(rust) ? L"" : L"C++ " + State(cpp) + L" | Rust " + State(rust); }
-
-    // The Rust side's result of the last operation (the golden record, phase 6c).
+    // The result of the last operation (the golden record).
     std::wstring last;
 
-    std::wstring Add(WCHAR wch)
+    void Add(WCHAR wch)
     {
-        int bc = -2, br = -2;
-        BOOL rc = cpp._AddVirtualKeyCpp(wch, &bc);
+        int br = -2;
         BOOL rr = rust._AddVirtualKeyRust(wch, &br);
         last = L"add " + std::to_wstring((UINT)wch) + L" " + std::to_wstring(rr) + L" " + std::to_wstring(br) + L" " + State(rust);
-        if (rc != rr || bc != br)
-        {
-            wchar_t m[128];
-            swprintf_s(m, L"AddVirtualKey(%04X): C++ %d beep %d, Rust %d beep %d", (UINT)wch, rc, bc, rr, br);
-            return m;
-        }
-        return Compare();
     }
 
-    DWORD_PTR Length() { return cpp._keystrokeBuffer.GetLength(); }
+    DWORD_PTR Length() { return rust._keystrokeBuffer.GetLength(); }
 
-    std::wstring Remove(DWORD_PTR index)
+    void Remove(DWORD_PTR index)
     {
-        cpp._RemoveVirtualKeyCpp(index);
         rust._RemoveVirtualKeyRust(index);
         last = L"remove " + std::to_wstring(index) + L" " + State(rust);
-        return Compare();
     }
 
-    std::wstring Purge()
+    void Purge()
     {
-        cpp.PurgeVirtualKey();
         rust.PurgeVirtualKey();
         last = L"purge " + State(rust);
-        return Compare();
     }
 
-    std::wstring EscapeInput()
+    void EscapeInput()
     {
-        BOOL c = cpp._IsEscapeInputCpp(), r = rust._IsEscapeInputRust();
-        last = L"escape " + std::to_wstring(r);
-        return c == r ? L"" : L"IsEscapeInput differs";
+        last = L"escape " + std::to_wstring(rust._IsEscapeInputRust());
     }
 
-    std::wstring Reading(const std::wstring* keyCode, bool withWildcardOut)
+    void Reading(const std::wstring* keyCode, bool withWildcardOut)
     {
-        CStringRange kc, rc, rr;
+        CStringRange kc, rr;
         if (keyCode)
             kc.Set(keyCode->c_str(), keyCode->size());
-        BOOL wc = 7, wr = 7;
-        cpp._GetReadingStringCpp(&rc, withWildcardOut ? &wc : nullptr, keyCode ? &kc : nullptr);
+        BOOL wr = 7;
         rust._GetReadingStringRust(&rr, withWildcardOut ? &wr : nullptr, keyCode ? &kc : nullptr);
-        std::wstring sc = rc.Get() ? std::wstring(rc.Get(), rc.GetLength()) : L"<null>";
         std::wstring sr = rr.Get() ? std::wstring(rr.Get(), rr.GetLength()) : L"<null>";
         last = L"reading " + (keyCode ? L"\"" + *keyCode + L"\"" : std::wstring(L"-")) + L" " + std::to_wstring(withWildcardOut) +
             L" \"" + sr + L"\" " + std::to_wstring(wr) + L" " + State(rust);
-        if (sc != sr || wc != wr)
-            return L"GetReadingString: C++ \"" + sc + L"\" (" + std::to_wstring(wc) + L") Rust \"" + sr + L"\" (" + std::to_wstring(wr) + L")";
-        return Compare();
     }
 
-    std::wstring KeyStrokes(UINT syllable)
+    void KeyStrokes(UINT syllable)
     {
-        CStringRange c = cpp._BuildKeyStrokesFromPhoneticSyllableCpp(syllable);
         CStringRange r = rust._BuildKeyStrokesFromPhoneticSyllableRust(syllable);
-        std::wstring sc(c.Get(), c.GetLength()), sr(r.Get(), r.GetLength());
-        last = L"keystrokes " + std::to_wstring(syllable) + L" \"" + sr + L"\"";
-        delete[] c.Get();
+        std::wstring sr(r.Get(), r.GetLength());
         delete[] r.Get();
-        if (sc != sr)
-        {
-            wchar_t m[128];
-            swprintf_s(m, L"buildKeyStrokes(%04X): C++ \"%s\" Rust \"%s\"", syllable, sc.c_str(), sr.c_str());
-            return m;
-        }
-        return L"";
+        last = L"keystrokes " + std::to_wstring(syllable) + L" \"" + sr + L"\"";
     }
 };
 
@@ -256,7 +219,6 @@ namespace DIMEUnitTests
 
                 for (int k = 0; k < kOps; k++, ops++)
                 {
-                    std::wstring err;
                     a.last = L"-";
                     int op = Rand(rng, 0, 99);
                     if (op < 50)
@@ -264,17 +226,17 @@ namespace DIMEUnitTests
                         // Keep reading strings within MAX_READINGSTRING: the C++
                         // version asserts (Debug) instead of truncating.
                         if (a.Length() < 15)
-                            err = a.Add(RandomKey(rng));
+                            a.Add(RandomKey(rng));
                     }
                     else if (op < 65)
                     {
                         if (a.Length() > 0)
-                            err = a.Remove((DWORD_PTR)Rand(rng, 0, (int)a.Length() + 1));
+                            a.Remove((DWORD_PTR)Rand(rng, 0, (int)a.Length() + 1));
                     }
                     else if (op < 70)
-                        err = a.Purge();
+                        a.Purge();
                     else if (op < 85)
-                        err = a.Reading(nullptr, Chance(rng, 70));
+                        a.Reading(nullptr, Chance(rng, 70));
                     else if (op < 90)
                     {
                         std::wstring code;
@@ -283,21 +245,14 @@ namespace DIMEUnitTests
                             WCHAR c = RandomKey(rng);
                             if (c) code += c;
                         }
-                        err = a.Reading(&code, Chance(rng, 70));
+                        a.Reading(&code, Chance(rng, 70));
                     }
                     else if (op < 95)
-                        err = a.EscapeInput();
+                        a.EscapeInput();
                     else
                     {
                         UINT syl = (UINT)Rand(rng, 0, 0xFFFF) & (Chance(rng, 50) ? 0x7FFF : 0x16E0 | 0x0F00 | 0x5000);
-                        err = a.KeyStrokes(syl);
-                    }
-
-                    if (!err.empty())
-                    {
-                        wchar_t head[96];
-                        swprintf_s(head, L"seed %d op %d (kind %d, mode %d): ", seed, k, op, (int)mode);
-                        Assert::Fail((head + err).c_str());
+                        a.KeyStrokes(syl);
                     }
                     ch.Add(a.last);
                 }

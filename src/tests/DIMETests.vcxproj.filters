@@ -137,9 +137,6 @@
     <ClCompile Include="..\\KeyProcesser.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\\KeyStateCategory.cpp">
-      <Filter>Source Files\DIME Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\\LanguageBar.cpp">
       <Filter>Source Files\DIME Source</Filter>
     </ClCompile>

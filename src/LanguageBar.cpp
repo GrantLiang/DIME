@@ -932,80 +932,9 @@ void CDIME::HideAllLanguageBarIcons()
 
 void CDIME::ConversionModeCompartmentUpdated(_In_ ITfThreadMgr *pThreadMgr, BOOL *setKeyboardOpenClose)
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_ConversionModeCompartmentUpdatedRust(pThreadMgr, setKeyboardOpenClose);
-#else
-	_ConversionModeCompartmentUpdatedCpp(pThreadMgr, setKeyboardOpenClose);
-#endif
 }
 
-void CDIME::_ConversionModeCompartmentUpdatedCpp(_In_ ITfThreadMgr *pThreadMgr, BOOL *setKeyboardOpenClose)
-{
-	debugPrint(L"CDIME::ConversionModeCompartmentUpdated()\n");
-    if (_pCompartmentConversion == nullptr)
-    {
-        return;
-    }
-
-    DWORD conversionMode = 0;
-    if (FAILED(_pCompartmentConversion->_GetCompartmentDWORD(conversionMode)))
-    {
-        return;
-    }
-
-    BOOL isDouble = FALSE;
-    CCompartment CompartmentDoubleSingleByte(pThreadMgr, _tfClientId, Global::DIMEGuidCompartmentDoubleSingleByte);
-    if (SUCCEEDED(CompartmentDoubleSingleByte._GetCompartmentBOOL(isDouble)))
-    {
-        if (!isDouble && (conversionMode & TF_CONVERSIONMODE_FULLSHAPE))
-        {
-            CompartmentDoubleSingleByte._SetCompartmentBOOL(TRUE);
-        }
-        else if (isDouble && !(conversionMode & TF_CONVERSIONMODE_FULLSHAPE))
-        {
-            CompartmentDoubleSingleByte._SetCompartmentBOOL(FALSE);
-        }
-		
-    }
-  
-   
-	BOOL fOpen = FALSE;
-	if(Global::isWindows8){
-		CCompartment CompartmentKeyboardOpen(pThreadMgr, _tfClientId, GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
-		if (setKeyboardOpenClose != nullptr )
-		{
-			CompartmentKeyboardOpen._SetCompartmentBOOL(*setKeyboardOpenClose);
-		}
-		else if(SUCCEEDED(CompartmentKeyboardOpen._GetCompartmentBOOL(fOpen)))
-		{
-			if (fOpen && !(conversionMode & TF_CONVERSIONMODE_NATIVE))
-			{
-				CompartmentKeyboardOpen._SetCompartmentBOOL(FALSE);
-			}
-			else if (!fOpen && (conversionMode & TF_CONVERSIONMODE_NATIVE))
-			{
-				CompartmentKeyboardOpen._SetCompartmentBOOL(TRUE);
-			}
-		}
-	}
-	fOpen = FALSE;
-	CCompartment CompartmentIMEMode(pThreadMgr, _tfClientId, Global::DIMEGuidCompartmentIMEMode);
-	if (setKeyboardOpenClose != nullptr )
-	{
-		CompartmentIMEMode._SetCompartmentBOOL(*setKeyboardOpenClose);
-	}
-	else if(SUCCEEDED(CompartmentIMEMode._GetCompartmentBOOL(fOpen)))
-	{
-		if (fOpen && !(conversionMode & TF_CONVERSIONMODE_NATIVE))
-		{
-			CompartmentIMEMode._SetCompartmentBOOL(FALSE);
-		}
-		else if (!fOpen && (conversionMode & TF_CONVERSIONMODE_NATIVE))
-		{
-			CompartmentIMEMode._SetCompartmentBOOL(TRUE);
-		}
-	}
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -1015,51 +944,9 @@ void CDIME::_ConversionModeCompartmentUpdatedCpp(_In_ ITfThreadMgr *pThreadMgr, 
 
 void CDIME::PrivateCompartmentsUpdated(_In_ ITfThreadMgr *pThreadMgr)
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_PrivateCompartmentsUpdatedRust(pThreadMgr);
-#else
-	_PrivateCompartmentsUpdatedCpp(pThreadMgr);
-#endif
 }
 
-void CDIME::_PrivateCompartmentsUpdatedCpp(_In_ ITfThreadMgr *pThreadMgr)
-{
-	debugPrint(L"CDIME::PrivateCompartmentsUpdated()");
-    if (_pCompartmentConversion == nullptr)
-    {
-        return;
-    }
-
-    DWORD conversionMode = 0;
-    DWORD conversionModePrev = 0;
-    if (FAILED(_pCompartmentConversion->_GetCompartmentDWORD(conversionMode)))
-    {
-        return;
-    }
-
-    conversionModePrev = conversionMode;
-
-    BOOL isDouble = FALSE;
-    CCompartment CompartmentDoubleSingleByte(pThreadMgr, _tfClientId, Global::DIMEGuidCompartmentDoubleSingleByte);
-    if (SUCCEEDED(CompartmentDoubleSingleByte._GetCompartmentBOOL(isDouble)))
-    {
-        if (!isDouble && (conversionMode & TF_CONVERSIONMODE_FULLSHAPE))
-        {
-            conversionMode &= ~TF_CONVERSIONMODE_FULLSHAPE;
-        }
-        else if (isDouble && !(conversionMode & TF_CONVERSIONMODE_FULLSHAPE))
-        {
-            conversionMode |= TF_CONVERSIONMODE_FULLSHAPE;
-        }
-    }
-	
-    if (conversionMode != conversionModePrev)
-    {
-        _pCompartmentConversion->_SetCompartmentDWORD(conversionMode);
-		if(isDouble) _OnSwitchedToFullShapeCpp();
-		else _OnSwitchedToHalfShapeCpp();
-    }
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -1069,210 +956,47 @@ void CDIME::_PrivateCompartmentsUpdatedCpp(_In_ ITfThreadMgr *pThreadMgr)
 
 void CDIME::KeyboardOpenCompartmentUpdated(_In_ ITfThreadMgr *pThreadMgr, _In_ REFGUID guidCompartment)
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_KeyboardOpenCompartmentUpdatedRust(pThreadMgr, guidCompartment);
-#else
-	_KeyboardOpenCompartmentUpdatedCpp(pThreadMgr, guidCompartment);
-#endif
-}
-
-void CDIME::_KeyboardOpenCompartmentUpdatedCpp(_In_ ITfThreadMgr *pThreadMgr, _In_ REFGUID guidCompartment)
-{
-	debugPrint(L"CDIME::KeyboardOpenCompartmentUpdated()");
-    if (_pCompartmentConversion == nullptr)
-    {
-        return;
-    }
-
-    DWORD conversionMode = 0;
-    DWORD conversionModePrev = 0;
-    if (FAILED(_pCompartmentConversion->_GetCompartmentDWORD(conversionMode)))
-    {
-        return;
-    }
-
-    conversionModePrev = conversionMode;
-
-    BOOL isOpen = FALSE;  
-    CCompartment CompartmentIMEMode(pThreadMgr, _tfClientId, Global::DIMEGuidCompartmentIMEMode);
-	if(IsEqualGUID(guidCompartment, GUID_COMPARTMENT_KEYBOARD_OPENCLOSE ))// Global::isWindows8 && check GUID_COMPARTMENT_KEYBOARD_OPENCLOSE in Windows 8.
-	{
-		
-		CCompartment CompartmentKeyboardOpen(pThreadMgr, _tfClientId, GUID_COMPARTMENT_KEYBOARD_OPENCLOSE);
-		if (SUCCEEDED(CompartmentKeyboardOpen._GetCompartmentBOOL(isOpen)))
-		{
-			debugPrint(L"CDIME::KeyboardOpenCompartmentUpdated() GUID_COMPARTMENT_KEYBOARD_OPENCLOSE, keyboard isOpen = %d", isOpen);
-			if (isOpen && !(conversionMode & TF_CONVERSIONMODE_NATIVE))
-			{
-				conversionMode |= TF_CONVERSIONMODE_NATIVE;
-			}
-			else if (!isOpen && (conversionMode & TF_CONVERSIONMODE_NATIVE))
-			{
-				conversionMode &= ~TF_CONVERSIONMODE_NATIVE;
-			}
-		}
-		if (conversionMode != conversionModePrev)
-		{
-		     _pCompartmentConversion->_SetCompartmentDWORD(conversionMode);
-   			if(isOpen) _OnKeyboardOpenCpp();
-			else _OnKeyboardClosedCpp();
-			_showChnEngNotifyCpp(isOpen);
-		}
-	}
-	isOpen = FALSE;
-	if (IsEqualGUID(guidCompartment, Global::DIMEGuidCompartmentIMEMode) && SUCCEEDED(CompartmentIMEMode._GetCompartmentBOOL(isOpen)))
-	{
-		debugPrint(L"CDIME::_KeyboardOpenCompartmentUpdated() DIMEGuidCompartmentIMEMode, keyboard isOpen = %d", isOpen);
-		if (isOpen && !(conversionMode & TF_CONVERSIONMODE_NATIVE))
-		{
-			conversionMode |= TF_CONVERSIONMODE_NATIVE;
-			
-		}
-		else if (!isOpen && (conversionMode & TF_CONVERSIONMODE_NATIVE))
-		{
-			conversionMode &= ~TF_CONVERSIONMODE_NATIVE;
-			
-		}
-		if (conversionMode != conversionModePrev)
-		{
-			_pCompartmentConversion->_SetCompartmentDWORD(conversionMode);
-			if(isOpen) _OnKeyboardOpenCpp();
-			else _OnKeyboardClosedCpp();
-			_showChnEngNotifyCpp(isOpen);
-		}
-	
-	}
-	
-
-
-
-   
 }
 
 
 void CDIME::OnKeyboardClosed()
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_OnKeyboardClosedRust();
-#else
-	_OnKeyboardClosedCpp();
-#endif
 }
 
-void CDIME::_OnKeyboardClosedCpp()
-{
-	debugPrint(L"CDIME::OnKeyboardClosed()\n");
-	// switching to English (native) mode delete the phrase candidate window before exiting.
-	_isChinese = FALSE;
-	if(_IsComposing()) 
-	{
-		_EndComposition(_pContext);
-	}
-	_DeleteCandidateList(TRUE,_pContext);
-}
 
 void CDIME::OnKeyboardOpen()
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_OnKeyboardOpenRust();
-#else
-	_OnKeyboardOpenCpp();
-#endif
 }
 
-void CDIME::_OnKeyboardOpenCpp()
-{
-	debugPrint(L"CDIME::OnKeyboardOpen()\n");
-	_isChinese = TRUE;
-	// switching to Chinese mode
-}
 
 void CDIME::OnSwitchedToFullShape()
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_OnSwitchedToFullShapeRust();
-#else
-	_OnSwitchedToFullShapeCpp();
-#endif
 }
 
-void CDIME::_OnSwitchedToFullShapeCpp()
-{
-	debugPrint(L"CDIME::OnSwitchedToFullShape()\n");
-	_isFullShape = TRUE;
-	if(_IsComposing()) 
-	{
-		_EndComposition(_pContext);
-	}
-	_DeleteCandidateList(FALSE,_pContext);
-	if (CConfig::GetDoubleSingleByteMode() != DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_SHIFT_SPACE)
-		CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_DOUBLE);
-}
 
 void CDIME::OnSwitchedToHalfShape()
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_OnSwitchedToHalfShapeRust();
-#else
-	_OnSwitchedToHalfShapeCpp();
-#endif
 }
 
-void CDIME::_OnSwitchedToHalfShapeCpp()
-{
-	debugPrint(L"CDIME::OnSwitchedToHalfShape()\n");
-	_isFullShape = FALSE;
-	if(_IsComposing()) 
-	{
-		_EndComposition(_pContext);
-	}
-	_DeleteCandidateList(TRUE,_pContext);
-	if (CConfig::GetDoubleSingleByteMode() != DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_SHIFT_SPACE)
-		CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_SINGLE);
-}
 
 void CDIME::showChnEngNotify(BOOL isChinese, UINT delayShow)
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_showChnEngNotifyRust(isChinese, delayShow);
-#else
-	_showChnEngNotifyCpp(isChinese, delayShow);
-#endif
-}
-void CDIME::_showChnEngNotifyCpp(BOOL isChinese, UINT delayShow)
-{
-    // Remove _IsStoreAppMode for Win 11 explorer, notepad and paint using XAML inputs.
-    if (CConfig::GetShowNotifyDesktop())
-        _LangShowText(isChinese ? L"中文" : L"英數", 2, delayShow);
 }
 void CDIME::showFullHalfShapeNotify(BOOL isFullShape, UINT delayShow)
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_showFullHalfShapeNotifyRust(isFullShape, delayShow);
-#else
-	_showFullHalfShapeNotifyCpp(isFullShape, delayShow);
-#endif
-}
-void CDIME::_showFullHalfShapeNotifyCpp(BOOL isFullShape, UINT delayShow)
-{
-    // Always show — no compartment for full/half shape, notify is the only visual feedback
-    _LangShowText(isFullShape ? L"全形" : L"半形", 2, delayShow);
 }
 void CDIME::showHanConvertNotify(BOOL isSimplified, UINT delayShow)
 {
-#if defined(DIME_USE_RUST_ENGINE)
 	_showHanConvertNotifyRust(isSimplified, delayShow);
-#else
-	_showHanConvertNotifyCpp(isSimplified, delayShow);
-#endif
-}
-void CDIME::_showHanConvertNotifyCpp(BOOL isSimplified, UINT delayShow)
-{
-    // Always show — no compartment for han convert, notify is the only visual feedback
-    _LangShowText(isSimplified ? L"簡" : L"繁", 1, delayShow);
 }
 
-#if defined(DIME_USE_RUST_ENGINE) || (defined(DIME_UNIT_TESTING) && defined(DIME_RUST_AVAILABLE))
 #include "dime_ffi.h"
 
 static_assert(TF_CONVERSIONMODE_NATIVE == 0x0001, "TF_CONVERSIONMODE_NATIVE");
@@ -1658,4 +1382,3 @@ void CCompositionProcessorEngine::_OnPreservedKeyRust(REFGUID rguid, _Out_ BOOL*
 	if (pIsEaten)
 		*pIsEaten = dime_langbar_preserved(&host, id) ? TRUE : FALSE;
 }
-#endif

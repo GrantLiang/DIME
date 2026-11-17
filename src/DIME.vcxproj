@@ -59,7 +59,6 @@
     <ClInclude Include="define.h" />
     <ClInclude Include="DisplayString.h" />
     <ClInclude Include="EnumTfCandidates.h" />
-    <ClInclude Include="KeyStateCategory.h" />
     <ClInclude Include="BaseStructure.h" />
     <ClInclude Include="PhoneticComposition.h" />
     <ClInclude Include="PhoneticSymbols.h" />
@@ -113,7 +112,6 @@
     <ClCompile Include="EnumTfCandidates.cpp" />
     <ClCompile Include="KeyProcesser.cpp" />
     <!-- The key state routing is in Rust in the Rust build (dime-core::session::handle_key, phase 4a). -->
-    <ClCompile Include="KeyStateCategory.cpp" Condition="'$(DimeRustEnabled)'!='true'" />
     <ClCompile Include="BaseStructure.cpp" />
     <ClCompile Include="ReverseConversion.cpp" />
     <ClCompile Include="ReverseConversionProvider.cpp" />

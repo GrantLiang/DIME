@@ -39,9 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CompositionProcessorEngine.h"
 #include "KeyHandlerEditSession.h"
 #include "Compartment.h"
-#ifdef DIME_USE_RUST_ENGINE
 #include "dime_ffi.h"
-#endif
 
 // 0xF003, 0xF004 are the keys that the touch keyboard sends for next/previous
 #define THIRDPARTY_NEXTPAGE  static_cast<WORD>(0xF003)
@@ -143,14 +141,9 @@ CDIME::_KEY_FACTS CDIME::_GatherKeyFacts(UINT codeIn)
 
 BOOL CDIME::_DecideKeyEaten(const _KEY_FACTS& facts, UINT codeIn, _Out_ UINT *pCodeOut, _Out_writes_(1) WCHAR *pwch, _Inout_opt_ _KEYSTROKE_STATE *pKeyState)
 {
-#ifdef DIME_USE_RUST_ENGINE
     return _DecideKeyEatenRust(facts, codeIn, pCodeOut, pwch, pKeyState);
-#else
-    return _DecideKeyEatenCpp(facts, codeIn, pCodeOut, pwch, pKeyState);
-#endif
 }
 
-#ifdef DIME_USE_RUST_ENGINE
 //+---------------------------------------------------------------------------
 //
 // _DecideKeyEatenRust
@@ -207,175 +200,7 @@ BOOL CDIME::_DecideKeyEatenRust(const _KEY_FACTS& facts, UINT codeIn, _Out_ UINT
     }
     return out.eaten ? TRUE : FALSE;
 }
-#endif
 
-BOOL CDIME::_DecideKeyEatenCpp(const _KEY_FACTS& facts, UINT codeIn, _Out_ UINT *pCodeOut, _Out_writes_(1) WCHAR *pwch, _Inout_opt_ _KEYSTROKE_STATE *pKeyState)
-{
-    *pCodeOut = codeIn;
-
-    BOOL isOpen = facts.isOpen;
-    BOOL isDoubleSingleByte = facts.isDoubleSingleByte;
-
-    if (pKeyState)
-    {
-        pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_NONE;
-        pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_NONE;
-    }
-    if (pwch)
-    {
-        *pwch = L'\0';
-    }
-
-    // if the keyboard is disabled, we don't eat keys.
-    if (facts.isKeyboardDisabled)
-    {
-        return FALSE;
-    }
-
-    //
-    // Map virtual key to character code
-    //
-    BOOL isTouchKeyboardSpecialKeys = FALSE;
-    WCHAR wch = facts.wch;
-    *pCodeOut = VKeyFromVKPacketAndWchar(codeIn, wch);
-    if ((wch == THIRDPARTY_NEXTPAGE) || (wch == THIRDPARTY_PREVPAGE))
-    {
-        // We always eat the above soft keyboard special keys
-        isTouchKeyboardSpecialKeys = TRUE;
-        if (pwch)
-        {
-            *pwch = wch;
-        }
-    }
-
-    // if the keyboard is closed, we don't eat keys, with the exception of the touch keyboard specials keys
-    if (!isOpen && !isDoubleSingleByte )
-    {
-        return isTouchKeyboardSpecialKeys;
-    }
-
-    if (pwch)
-    {
-        *pwch = wch;
-    }
-
-    //
-    // Get composition engine
-    //
-    CCompositionProcessorEngine *pCompositionProcessorEngine;
-    pCompositionProcessorEngine = _pCompositionProcessorEngine;
-
-	//
-	// check if the normal composition  need the key
-	//
-	if (isOpen && pCompositionProcessorEngine)
-	{
-		//
-		// The candidate or phrase list handles the keys through ITfKeyEventSink.
-		//
-		// eat only keys that CKeyHandlerEditSession can handles.
-		//
-		UINT candiCount = facts.candiCount;
-		INT candiSelection = facts.candiSelection;
-
-		// Issue #126: stale _candidateMode without an actual candidate window.
-		// Make-phrase sets _candidateMode = PHRASE before _StartCandidateList
-		// completes, leaving a window where candidate UI is not yet alive but
-		// _candidateMode says PHRASE. A numpad key that hits IsKeystrokeRange
-		// would then be eaten as SELECT_BY_NUMBER and crash on null _pCandidateWnd.
-		// If the candidate UI is not actually present, treat as no candidate mode.
-		// Do NOT reset CANDIDATE_INCREMENTAL: zero incremental candidates is a normal
-		// composing state (phrase-code suffix has no short-code match). Resetting it
-		// drops the VK_OEM_7 phrase handler that lives only in the INCREMENTAL branch
-		// of IsVirtualKeyNeed (#132).
-		if (_candidateMode != CANDIDATE_MODE::CANDIDATE_NONE &&
-			_candidateMode != CANDIDATE_MODE::CANDIDATE_INCREMENTAL &&
-			candiCount == 0)
-		{
-			debugPrint(L"_IsKeyEaten: stale _candidateMode=%d with candiCount=0, resetting to NONE",
-				(int)_candidateMode);
-			_candidateMode = CANDIDATE_MODE::CANDIDATE_NONE;
-			_isCandidateWithWildcard = FALSE;
-		}
-	
-		// If already in shifted english mode and wildcard char is typed, continue as shifted english
-		if (_isShiftedEnglish && !facts.isComposing && pwch && (*pwch == L'*' || *pwch == L'?') &&
-			(Global::ModifiersValue & (TF_MOD_LSHIFT | TF_MOD_RSHIFT | TF_MOD_SHIFT)) != 0)
-		{
-			debugPrint(L"_IsKeyEaten: wildcard 0x%04X blocked by _isShiftedEnglish=TRUE -> ShiftEnglish output", (UINT)*pwch);
-			if (pKeyState)
-			{
-				pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_SHIFT_ENGLISH_INPUT;
-			}
-			return TRUE;
-		}
-
-		// If pending wildcard composition and Shift still held:
-		// Only allow wildcard chars through to composition; block everything else.
-		// Shifted keys are not radicals — user must release Shift to type radicals.
-		// Flag is cleared only when Shift is released (in OnKeyDown).
-		if (_pendingWildcardInput &&
-			(Global::ModifiersValue & (TF_MOD_LSHIFT | TF_MOD_RSHIFT | TF_MOD_SHIFT)) != 0)
-		{
-			BOOL isValidWildcard = pwch && pCompositionProcessorEngine->IsWildcardChar(*pwch) &&
-				!(Global::imeMode == IME_MODE::IME_MODE_PHONETIC && *pwch == L'*');
-			if (!isValidWildcard)
-				return TRUE;  // eat and ignore non-wildcard keys
-		}
-
-		// Associated phrase showing + Shift held with non-digit printable char:
-		// Dismiss phrase and handle as Shift English (with CapsLock conversion).
-		// Must be before IsVirtualKeyNeed, which would misroute radical keys as composition input.
-		if (_candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE &&
-			(Global::ModifiersValue & (TF_MOD_LSHIFT | TF_MOD_RSHIFT | TF_MOD_SHIFT)) != 0 &&
-			pwch && *pwch && iswprint(*pwch) && *pwch != L' ' &&
-			!(*pCodeOut >= '0' && *pCodeOut <= '9'))  // digits are selkeys
-		{
-			if (pKeyState)
-			{
-				pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_SHIFT_ENGLISH_INPUT;
-			}
-			return TRUE;
-		}
-
-		// Sentence mode: with a pending sentence and nothing being typed, Enter/Space/
-		// Backspace/arrows act on the sentence (see SentenceHandler.cpp).
-		if (_IsSentencePending() && facts.isComposing &&
-			_candidateMode == CANDIDATE_MODE::CANDIDATE_NONE &&
-			pCompositionProcessorEngine->GetVirtualKeyLength() == 0 &&
-			_IsSentenceKeyEaten(*pCodeOut, pKeyState))
-		{
-			return TRUE;
-		}
-
-		if (pCompositionProcessorEngine->IsVirtualKeyNeed(*pCodeOut, pwch, facts.isComposing, _candidateMode, _isCandidateWithWildcard, candiCount, candiSelection, pKeyState))
-        {
-            return TRUE;
-		}
-    }
-
-    
-
-    //
-    // Double/Single byte
-    //
-    if (isDoubleSingleByte && pCompositionProcessorEngine && pCompositionProcessorEngine->IsDoubleSingleByte(wch))
-    {
-        if (_candidateMode == CANDIDATE_MODE::CANDIDATE_NONE)
-        {
-            if (pKeyState)
-            {
-                pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-                pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_DOUBLE_SINGLE_BYTE;
-            }
-            return TRUE;
-        }
-    }
-
-    return isTouchKeyboardSpecialKeys;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -492,16 +317,7 @@ STDAPI CDIME::OnTestKeyDown(ITfContext *pContext, WPARAM wParam, LPARAM lParam, 
     // lParam bit 30 (previous key-state: 0 = key was up, 1 = was already down / auto-repeat).
     // A fresh press means the user released and re-pressed Shift, ending the Shift gesture;
     // clear _isShiftedEnglish so that the subsequent Shift+wildcard enters composition.
-#ifdef DIME_USE_RUST_ENGINE
     dime_session_on_test_key_down(_pRustSession, (uint32_t)wParam, (intptr_t)lParam);
-#else
-    if (wParam == VK_SHIFT && _isShiftedEnglish && !(lParam & 0x40000000))
-    {
-        debugPrint(L"OnTestKeyDown: fresh VK_SHIFT press detected, clearing _isShiftedEnglish and _pendingWildcardInput");
-        _isShiftedEnglish = FALSE;
-        _pendingWildcardInput = FALSE;
-    }
-#endif
 
 	_KEYSTROKE_STATE KeystrokeState = { KEYSTROKE_CATEGORY::CATEGORY_NONE, KEYSTROKE_FUNCTION::FUNCTION_NONE };
     WCHAR wch = '\0';
@@ -517,7 +333,6 @@ STDAPI CDIME::OnTestKeyDown(ITfContext *pContext, WPARAM wParam, LPARAM lParam, 
 
     *pIsEaten = _IsKeyEaten(pContext, (UINT)wParam, &code, &wch, &KeystrokeState);
 
-#ifdef DIME_USE_RUST_ENGINE
     uint32_t category = (uint32_t)KeystrokeState.Category, function = (uint32_t)KeystrokeState.Function;
     if (dime_test_key_down_invoke(*pIsEaten, &category, &function))
     {
@@ -526,23 +341,6 @@ STDAPI CDIME::OnTestKeyDown(ITfContext *pContext, WPARAM wParam, LPARAM lParam, 
         _InvokeKeyHandler(pContext, code, wch, (DWORD)lParam, KeystrokeState);
     }
     return S_OK;
-#else
-    if (KeystrokeState.Category == KEYSTROKE_CATEGORY::CATEGORY_INVOKE_COMPOSITION_EDIT_SESSION)
-    {
-        //
-        // Invoke key handler edit session
-        //
-        KeystrokeState.Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-        _InvokeKeyHandler(pContext, code, wch, (DWORD)lParam, KeystrokeState);
-    }
-	else if (!*pIsEaten
-        && KeystrokeState.Category == KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE
-        && KeystrokeState.Function == KEYSTROKE_FUNCTION::FUNCTION_CANCEL) //cancel associated phrase with anykey.
-	{
-		_InvokeKeyHandler(pContext, code, wch, (DWORD)lParam, KeystrokeState);
-	}
-    return S_OK;
-#endif
 }
 
 //+---------------------------------------------------------------------------
@@ -570,7 +368,6 @@ STDAPI CDIME::OnKeyDown(ITfContext *pContext, WPARAM wParam, LPARAM lParam, BOOL
 
     *pIsEaten = _IsKeyEaten(pContext, (UINT)wParam, &code, &wch, &KeystrokeState);
 
-#ifdef DIME_USE_RUST_ENGINE
     uint32_t category = (uint32_t)KeystrokeState.Category, function = (uint32_t)KeystrokeState.Function;
     if (dime_key_down_invoke(*pIsEaten, &category, &function, code, wch, (uint32_t)_candidateMode))
     {
@@ -579,67 +376,6 @@ STDAPI CDIME::OnKeyDown(ITfContext *pContext, WPARAM wParam, LPARAM lParam, BOOL
         _InvokeKeyHandler(pContext, code, wch, (DWORD)lParam, KeystrokeState);
     }
     dime_session_after_key_down(_pRustSession, (uint32_t)KeystrokeState.Function, code, wch, Global::ModifiersValue);
-#else
-
-    if (*pIsEaten)
-    {
-		debugPrint(L" CDIME::OnKeyDown() eating the key");
-	
-        bool needInvokeKeyHandler = true;
-        //
-        // Invoke key handler edit session
-        //
-        if (code == VK_ESCAPE &&
-            !(_candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE &&
-              KeystrokeState.Category == KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE &&
-              KeystrokeState.Function == KEYSTROKE_FUNCTION::FUNCTION_CANCEL))
-        {
-            KeystrokeState.Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-        }
-
-        // Always eat THIRDPARTY_NEXTPAGE and THIRDPARTY_PREVPAGE keys, but don't always process them.
-        if ((wch == THIRDPARTY_NEXTPAGE) || (wch == THIRDPARTY_PREVPAGE))
-        {
-            needInvokeKeyHandler = !((KeystrokeState.Category == KEYSTROKE_CATEGORY::CATEGORY_NONE) 
-                && (KeystrokeState.Function == KEYSTROKE_FUNCTION::FUNCTION_NONE));
-        }
-
-        if (needInvokeKeyHandler)
-        {
-            _InvokeKeyHandler(pContext, code, wch, (DWORD)lParam, KeystrokeState);
-        }
-    }
-    else if (KeystrokeState.Category == KEYSTROKE_CATEGORY::CATEGORY_INVOKE_COMPOSITION_EDIT_SESSION)
-    {
-        // Invoke key handler edit session
-        KeystrokeState.Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-        _InvokeKeyHandler(pContext, code, wch, (DWORD)lParam, KeystrokeState);
-    }
-
-    // Track shifted english mode for wildcard key handling
-    // §5 fix: preserve _isShiftedEnglish across Shift+Backspace (VK_BACK with Shift held)
-    // so that Shift+A, Shift+Backspace, Shift+* still treats * as Shift English.
-    // VK_SHIFT key-down (Shift re-press after release) correctly clears the flag
-    // because code == VK_SHIFT != VK_BACK.
-    if (KeystrokeState.Function == KEYSTROKE_FUNCTION::FUNCTION_SHIFT_ENGLISH_INPUT)
-        _isShiftedEnglish = TRUE;
-    else if (code != VK_BACK ||
-             !(Global::ModifiersValue & (TF_MOD_LSHIFT | TF_MOD_RSHIFT | TF_MOD_SHIFT)))
-        _isShiftedEnglish = FALSE;
-    debugPrint(L"OnKeyDown end: vk=0x%02X eaten=%d func=%d _isShiftedEnglish=%d _pendingWildcard=%d", (UINT)wParam, *pIsEaten, (int)KeystrokeState.Function, _isShiftedEnglish, _pendingWildcardInput);
-
-    // Track pending wildcard: set when wildcard FUNCTION_INPUT queued with Shift held,
-    // persist while Shift is held (non-radical keys are ignored, not Shift English),
-    // clear when Shift is released or composition actually starts (_IsKeyEaten clears it)
-    if (KeystrokeState.Function == KEYSTROKE_FUNCTION::FUNCTION_INPUT &&
-        !_isShiftedEnglish &&
-        (Global::ModifiersValue & (TF_MOD_LSHIFT | TF_MOD_RSHIFT | TF_MOD_SHIFT)) != 0 &&
-        wch && (wch == L'*' || wch == L'?'))
-        _pendingWildcardInput = TRUE;
-    else if (!(Global::ModifiersValue & (TF_MOD_LSHIFT | TF_MOD_RSHIFT | TF_MOD_SHIFT)))
-        _pendingWildcardInput = FALSE;
-
-#endif
     return S_OK;
 }
 
@@ -686,16 +422,7 @@ STDAPI CDIME::OnKeyUp(ITfContext *pContext, WPARAM wParam, LPARAM lParam, BOOL *
     // OnKeyDown and OnKeyUp for non-eaten keys).  The primary fix is in OnTestKeyDown
     // via the lParam bit-30 fresh-press detection.  This block handles any platform
     // where OnKeyUp(VK_SHIFT) does fire (e.g., future TSF changes or other edge cases).
-#ifdef DIME_USE_RUST_ENGINE
     dime_session_on_key_up(_pRustSession, (uint32_t)wParam);
-#else
-    if (wParam == VK_SHIFT && _isShiftedEnglish)
-    {
-        debugPrint(L"OnKeyUp: VK_SHIFT released, clearing _isShiftedEnglish and _pendingWildcardInput");
-        _isShiftedEnglish = FALSE;
-        _pendingWildcardInput = FALSE;
-    }
-#endif
 
     WCHAR wch = '\0';
     UINT code = 0;

@@ -111,10 +111,6 @@ public:
         engine._hasWildcardIncludedInKeystrokeBuffer = hasWildcard;
     }
 
-    BOOL Cpp(UINT code, WCHAR* pwch, BOOL composing, CANDIDATE_MODE mode, BOOL wildcard, UINT count, INT sel, _KEYSTROKE_STATE* ks)
-    {
-        return engine._IsVirtualKeyNeedCpp(code, pwch, composing, mode, wildcard, count, sel, ks);
-    }
     BOOL Rust(UINT code, WCHAR* pwch, BOOL composing, CANDIDATE_MODE mode, UINT count, INT sel, _KEYSTROKE_STATE* ks)
     {
         return engine._IsVirtualKeyNeedRust(code, pwch, composing, mode, count, sel, ks);
@@ -319,21 +315,10 @@ namespace DIMEUnitTests
                     bool withState = Chance(rng, 90);
 
                     _KEYSTROKE_STATE garbage = { (KEYSTROKE_CATEGORY)Rand(rng, 0, 6), (KEYSTROKE_FUNCTION)Rand(rng, 0, 25) };
-                    _KEYSTROKE_STATE sc = garbage, sr = garbage;
-                    WCHAR wc = wch, wr = wch;
-                    BOOL ec = a.Cpp(vk, &wc, composing, cmode, Chance(rng, 50), count, sel, withState ? &sc : nullptr);
+                    _KEYSTROKE_STATE sr = garbage;
+                    WCHAR wr = wch;
+                    (void)Chance(rng, 50);   // the C++ original's wildcard argument: drawn as when recorded
                     BOOL er = a.Rust(vk, &wr, composing, cmode, count, sel, withState ? &sr : nullptr);
-
-                    if (ec != er || sc.Category != sr.Category || sc.Function != sr.Function || wc != wr)
-                    {
-                        wchar_t msg[512];
-                        swprintf_s(msg, L"seed %d key %d: mode=%d vk=0x%02X wch=0x%04X mods=0x%X composing=%d cand=%d count=%u sel=%d "
-                                        L"state=%d buf=\"%s\"(null=%d) -> C++ %d/%d/%d, Rust %d/%d/%d",
-                            seed, k, (int)mode, vk, (UINT)wch, (UINT)Global::ModifiersValue, composing, (int)cmode, count, sel,
-                            withState ? 1 : 0, a.buffer.c_str(), a.bufferNull ? 1 : 0,
-                            ec, (int)sc.Category, (int)sc.Function, er, (int)sr.Category, (int)sr.Function);
-                        Assert::Fail(msg);
-                    }
                     {
                         wchar_t line[192];
                         swprintf_s(line, L"%d %02X %04X %X %d %d %u %d %d \"%s\"%d -> %d %d %d %04X",
@@ -343,8 +328,8 @@ namespace DIMEUnitTests
                         ch.Add(line);
                     }
                     if (withState)
-                        outcomes[{ (int)sc.Category, (int)sc.Function }]++;
-                    eatenCount += ec ? 1 : 0;
+                        outcomes[{ (int)sr.Category, (int)sr.Function }]++;
+                    eatenCount += er ? 1 : 0;
                     total++;
                 }
                 ch.Next();

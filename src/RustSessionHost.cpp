@@ -7,7 +7,6 @@
 #include "UIPresenter.h"
 #include "RustSessionHost.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 // Must follow the field order of DimeHostVtbl (dime_ffi.h / dime-ffi lib.rs).
 const DimeHostVtbl CRustSessionHost::s_vtbl = {
@@ -99,11 +98,7 @@ CRustSessionHost::CRustSessionHost(_In_ CDIME* pDime, TfEditCookie ec, _In_ ITfC
 {
     _host.vtbl = &s_vtbl;
     _host.ctx = this;
-#ifdef DIME_USE_RUST_ENGINE
     _host.session = pDime->_pRustSession;
-#else
-    _host.session = nullptr;
-#endif
     _host.presenter = nullptr;
     if (pDime->_pUIPresenter)
         _host.presenter = pDime->_pUIPresenter->HostPresenter();
@@ -866,4 +861,3 @@ void CRustSessionHost::NotifyEndLayout(void* ctx)
         ui->_EndLayout();
 }
 
-#endif // DIME_RUST_AVAILABLE

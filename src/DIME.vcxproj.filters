@@ -158,9 +158,6 @@
     <ClInclude Include="TipCandidateString.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="KeyStateCategory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -323,9 +320,6 @@
       <Filter>Source Files\TextService\IMInterface\Handler</Filter>
     </ClCompile>
     <ClCompile Include="KeyHandlerEditSession.cpp">
-      <Filter>Source Files\TextService\IMInterface\Handler</Filter>
-    </ClCompile>
-    <ClCompile Include="KeyStateCategory.cpp">
       <Filter>Source Files\TextService\IMInterface\Handler</Filter>
     </ClCompile>
     <ClCompile Include="CandidateHandler.cpp">

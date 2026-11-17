@@ -37,10 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "EditSession.h"
 #include "DIME.h"
 #include "CompositionProcessorEngine.h"
-#include "KeyStateCategory.h"
-#ifdef DIME_USE_RUST_ENGINE
 #include "RustSessionHost.h"
-#endif
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -56,25 +53,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 STDAPI CKeyHandlerEditSession::DoEditSession(TfEditCookie ec)
 {
-#ifdef DIME_USE_RUST_ENGINE
-    // The key state routing (CKeyStateCategory) is in Rust: dime-core::session::handle_key.
+    // The key state routing is in Rust: dime-core::session::handle_key (the C++
+    // routing table, KeyStateCategory, was removed in phase 6c).
     CRustSessionHost host(_pTextService, ec, _pContext);
     return dime_session_handle_key(host.Get(), (uint32_t)_KeyState.Category, (uint32_t)_KeyState.Function, _uCode, _wch);
-#else
-    HRESULT hResult = S_OK;
-
-    CKeyStateCategoryFactory* pKeyStateCategoryFactory = CKeyStateCategoryFactory::Instance();
-    CKeyStateCategory* pKeyStateCategory = pKeyStateCategoryFactory->MakeKeyStateCategory(_KeyState.Category, _pTextService);
-
-    if (pKeyStateCategory)
-    {
-        KeyHandlerEditSessionDTO keyHandlerEditSessioDTO(ec, _pContext, _uCode, _wch, _KeyState.Function);
-        hResult = pKeyStateCategory->KeyStateHandler(_KeyState.Function, keyHandlerEditSessioDTO);
-
-        pKeyStateCategory->Release();
-        pKeyStateCategoryFactory->Release();
-    }
-
-    return hResult;
-#endif
 }

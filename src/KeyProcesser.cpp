@@ -48,17 +48,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 BOOL CCompositionProcessorEngine::AddVirtualKey(WCHAR wch)
 {
 	int beep = -1;
-#ifdef DIME_USE_RUST_ENGINE
 	BOOL ret = _AddVirtualKeyRust(wch, &beep);
-#else
-	BOOL ret = _AddVirtualKeyCpp(wch, &beep);
-#endif
 	if (beep >= 0 && _pTextService)
 		_pTextService->DoBeep((BEEP_TYPE)beep);
 	return ret;
 }
 
-#ifdef DIME_RUST_AVAILABLE
 // AddVirtualKey via dime_add_key (rust/crates/dime-core/src/composition.rs).
 // The buffer stays a C++ allocation, replaced on every change as before.
 BOOL CCompositionProcessorEngine::_AddVirtualKeyRust(WCHAR wch, _Out_ int* pBeep)
@@ -102,78 +97,7 @@ BOOL CCompositionProcessorEngine::_AddVirtualKeyRust(WCHAR wch, _Out_ int* pBeep
 	}
 	return r.accepted ? TRUE : FALSE;
 }
-#endif
 
-BOOL CCompositionProcessorEngine::_AddVirtualKeyCpp(WCHAR wch, _Out_ int* pBeep)
-{
-	//debugPrint(L"CCompositionProcessorEngine::AddVirtualKey()");
-	*pBeep = -1;
-	if (!wch)
-	{
-		return FALSE;
-	}
-	if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC
-		&& wch != L'\\' && !IsEscapeInputLeading())
-	{
-		// Normal phonetic syllable processing
-		UINT oldSyllable = phoneticSyllable;
-		//DWORD_PTR len = _keystrokeBuffer.GetLength();
-
-		if (oldSyllable != addPhoneticKey(&wch))
-		{
-			CStringRange csr = buildKeyStrokesFromPhoneticSyllable(phoneticSyllable);
-			if (csr.GetLength()) {
-				if (_keystrokeBuffer.Get())
-				{
-					delete[] _keystrokeBuffer.Get();
-				}
-
-				_keystrokeBuffer = csr;
-			}
-			return TRUE;
-		}
-		else
-		{
-			*pBeep = (int)BEEP_TYPE::BEEP_COMPOSITION_ERROR;
-			return FALSE;
-		}
-
-	}
-	else
-	{
-
-		// In escape input mode (e.g. '\' for phonetic custom phrase, '=' for Dayi symbol),
-		// use MAX_KEY_LENGTH instead of the IM-specific max codes limit,
-		// since custom phrase/symbol codes can be longer than normal composition codes.
-		UINT maxLen = IsEscapeInputLeading() ? MAX_KEY_LENGTH : CConfig::GetMaxCodes();
-		if ((UINT)_keystrokeBuffer.GetLength() >= maxLen)
-		{
-			*pBeep = (int)BEEP_TYPE::BEEP_WARNING; // do not eat the key if keystroke buffer length >= _maxcodes
-			return FALSE;
-		}
-		//
-		// append one keystroke in buffer.
-		//
-		DWORD_PTR srgKeystrokeBufLen = _keystrokeBuffer.GetLength();
-		PWCHAR pwch = new (std::nothrow) WCHAR[srgKeystrokeBufLen + 1];
-		if (!pwch)
-		{
-			return FALSE;
-		}
-
-		memcpy(pwch, _keystrokeBuffer.Get(), srgKeystrokeBufLen * sizeof(WCHAR));
-		pwch[srgKeystrokeBufLen] = wch;
-
-		if (_keystrokeBuffer.Get())
-		{
-			delete[] _keystrokeBuffer.Get();
-		}
-
-		_keystrokeBuffer.Set(pwch, srgKeystrokeBufLen + 1);
-
-		return TRUE;
-	}
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -187,14 +111,9 @@ BOOL CCompositionProcessorEngine::_AddVirtualKeyCpp(WCHAR wch, _Out_ int* pBeep)
 
 void CCompositionProcessorEngine::RemoveVirtualKey(DWORD_PTR dwIndex)
 {
-#ifdef DIME_USE_RUST_ENGINE
 	_RemoveVirtualKeyRust(dwIndex);
-#else
-	_RemoveVirtualKeyCpp(dwIndex);
-#endif
 }
 
-#ifdef DIME_RUST_AVAILABLE
 void CCompositionProcessorEngine::_RemoveVirtualKeyRust(DWORD_PTR dwIndex)
 {
 	DWORD_PTR srgKeystrokeBufLen = _keystrokeBuffer.GetLength();
@@ -205,34 +124,7 @@ void CCompositionProcessorEngine::_RemoveVirtualKeyRust(DWORD_PTR dwIndex)
 	if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC)
 		phoneticSyllable = dime_phonetic_remove_last(phoneticSyllable);
 }
-#endif
 
-void CCompositionProcessorEngine::_RemoveVirtualKeyCpp(DWORD_PTR dwIndex)
-{
-	//debugPrint(L"CCompositionProcessorEngine::RemoveVirtualKey()");
-	DWORD_PTR srgKeystrokeBufLen = _keystrokeBuffer.GetLength();
-
-	if (dwIndex + 1 < srgKeystrokeBufLen)
-	{
-		// shift following eles left
-		memmove((BYTE*)_keystrokeBuffer.Get() + (dwIndex * sizeof(WCHAR)),
-			(BYTE*)_keystrokeBuffer.Get() + ((dwIndex + 1) * sizeof(WCHAR)),
-			(srgKeystrokeBufLen - dwIndex - 1) * sizeof(WCHAR));
-	}
-
-	_keystrokeBuffer.Set(_keystrokeBuffer.Get(), srgKeystrokeBufLen - 1);	
-	
-	if (srgKeystrokeBufLen == 1) // no more virtual keys in buffer after backspace
-	{
-		_hasWildcardIncludedInKeystrokeBuffer = FALSE;
-	}
-
-
-	if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC)
-	{
-		phoneticSyllable = removeLastPhoneticSymbol();
-	}
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -400,60 +292,16 @@ BOOL CCompositionProcessorEngine::IsEscapeInputLeading()
 //----------------------------------------------------------------------------
 BOOL CCompositionProcessorEngine::IsEscapeInput()
 {
-#ifdef DIME_USE_RUST_ENGINE
 	return _IsEscapeInputRust();
-#else
-	return _IsEscapeInputCpp();
-#endif
 }
 
-#ifdef DIME_RUST_AVAILABLE
 BOOL CCompositionProcessorEngine::_IsEscapeInputRust()
 {
 	const WCHAR* p = _keystrokeBuffer.Get();
 	return dime_is_escape_input((const uint16_t*)p, _keystrokeBuffer.GetLength(), p ? 1 : 0, p ? *p : 0,
 		(uint32_t)Global::imeMode, (uint32_t)CConfig::GetArrayScope()) ? TRUE : FALSE;
 }
-#endif
 
-BOOL CCompositionProcessorEngine::_IsEscapeInputCpp()
-{
-	//debugPrint(L"CCompositionProcessorEngine::IsEscapeInput()");
-
-	if (_keystrokeBuffer.Get() == nullptr) 
-		return FALSE;
-	
-	WCHAR c = *_keystrokeBuffer.Get();
-	UINT len = (UINT) _keystrokeBuffer.GetLength();
-
-	if (Global::imeMode == IME_MODE::IME_MODE_DAYI && (len < 3 && c == L'='))
-		return TRUE;
-	
-	if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && len==2)
-	{
-		WCHAR c2 = *(_keystrokeBuffer.Get() + 1);
-		if (CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5 && towupper(c) == L'W' && c2 <= L'9' && c2 >= L'0')
-			return TRUE;
-		if (CConfig::GetArrayScope() == ARRAY_SCOPE::ARRAY40_BIG5
-			&& (towupper(c) == L'H' || c == L'8') && (c2 == L'\'' || c2 == L'[' || c2 == L']' || c2 == L'-' || c2 == L'='))
-			return TRUE;
-	}
-
-	// Array non-BIG5: HG + digit (hg0, hg1, ... hg9) — 3-char escape for CJK Radicals
-	if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && len==3 &&
-		CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5) {
-		WCHAR c2 = *(_keystrokeBuffer.Get() + 1);
-		WCHAR c3 = *(_keystrokeBuffer.Get() + 2);
-		if (towupper(c) == L'H' && towupper(c2) == L'G' && c3 >= L'0' && c3 <= L'9')
-			return TRUE;
-	}
-
-	if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC && c == L'\\' && len >= 2)
-		return TRUE;
-
-	//debugPrint(L"CCompositionProcessorEngine::IsEscapeInput() return FALSE");
-	return FALSE;
-}
 
 //+---------------------------------------------------------------------------
 //
@@ -576,7 +424,6 @@ BOOL CCompositionProcessorEngine::IsDoubleSingleByte(WCHAR wch)
 }
 
 
-
 //////////////////////////////////////////////////////////////////////
 //
 //    CCompositionProcessorEngine
@@ -601,15 +448,10 @@ BOOL CCompositionProcessorEngine::IsDoubleSingleByte(WCHAR wch)
 
 BOOL CCompositionProcessorEngine::IsVirtualKeyNeed(UINT uCode, _In_reads_(1) WCHAR* pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, BOOL hasCandidateWithWildcard, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE* pKeyState)
 {
-#ifdef DIME_USE_RUST_ENGINE
 	hasCandidateWithWildcard;
 	return _IsVirtualKeyNeedRust(uCode, pwch, fComposing, candidateMode, candiCount, candiSelection, pKeyState);
-#else
-	return _IsVirtualKeyNeedCpp(uCode, pwch, fComposing, candidateMode, hasCandidateWithWildcard, candiCount, candiSelection, pKeyState);
-#endif
 }
 
-#ifdef DIME_RUST_AVAILABLE
 //+---------------------------------------------------------------------------
 //
 // _IsVirtualKeyNeedRust
@@ -685,7 +527,6 @@ BOOL CCompositionProcessorEngine::_IsVirtualKeyNeedRust(UINT uCode, _In_reads_(1
 	}
 	return eaten;
 }
-#endif // DIME_RUST_AVAILABLE
 
 //+---------------------------------------------------------------------------
 //
@@ -693,388 +534,6 @@ BOOL CCompositionProcessorEngine::_IsVirtualKeyNeedRust(UINT uCode, _In_reads_(1
 //
 //----------------------------------------------------------------------------
 
-BOOL CCompositionProcessorEngine::_IsVirtualKeyNeedCpp(UINT uCode, _In_reads_(1) WCHAR* pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, BOOL hasCandidateWithWildcard, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE* pKeyState)
-{
-	hasCandidateWithWildcard;
-	//debugPrint(L"CCompositionProcessorEngine::IsVirtualKeyNeed() uCode = %d, pwch = %c, pKeyState = %d, fComposing = %d, candidateMode = %d, hasCandidateWithWildcard = %d, candiCount = %d", uCode, *pwch, pKeyState, fComposing, candidateMode, hasCandidateWithWildcard, candiCount);
-	if (pKeyState)
-	{
-		pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_NONE;
-		pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_NONE;
-	}
-
-	if (candidateMode == CANDIDATE_MODE::CANDIDATE_ORIGINAL || candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE)
-	{
-		fComposing = FALSE;
-	}
-	// Processing dayi address input ---------------------------------------------------------
-	// // Symbol mode start with L'=' for dayi, L'w' for array30; L'H' and L'8' for array40 and \for Phonetic custom phrase input
-	if (IsEscapeInputChar(*pwch) && uCode != VK_SHIFT && candidateMode != CANDIDATE_MODE::CANDIDATE_ORIGINAL &&
-		!(CConfig::GetNumericPad() == NUMERIC_PAD::NUMERIC_PAD_NUMERIC && uCode >= VK_NUMPAD0 && uCode <= VK_DIVIDE))
-	{
-		if (pKeyState)
-		{
-			pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-			// Phonetic custom phrase: just accumulate input, don't convert on each keystroke
-			if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC)
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_INPUT;
-			else
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_INPUT_AND_CONVERT;
-
-		}
-		return TRUE;
-	}
-	// Phonetic custom phrase: space/enter triggers convert
-	if (Global::imeMode == IME_MODE::IME_MODE_PHONETIC && IsEscapeInputLeading() &&
-		candidateMode != CANDIDATE_MODE::CANDIDATE_ORIGINAL &&
-		(uCode == VK_SPACE || uCode == VK_RETURN))
-	{
-		if (pKeyState)
-		{
-			pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-			pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-		}
-		return TRUE;
-	}
-
-	// Address characters direct input mode  "'[]-\"
-	if (IsDayiAddressChar(*pwch) && 
-		(candidateMode == CANDIDATE_MODE::CANDIDATE_NONE || candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE) &&
-		!(CConfig::GetNumericPad() == NUMERIC_PAD::NUMERIC_PAD_NUMERIC && uCode >= VK_NUMPAD0 && uCode <= VK_DIVIDE))
-	{
-		if (pKeyState)
-		{
-			pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-			pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_ADDRESS_DIRECT_INPUT;
-		}
-		return TRUE;
-	}
-	
-	//Processing cand keys ------------------------------------------------------------------------------
-	if (candidateMode == CANDIDATE_MODE::CANDIDATE_ORIGINAL || candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE)
-	{
-		switch (uCode)
-		{
-			case VK_UP:     if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_UP; } return TRUE;
-			case VK_DOWN:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_DOWN; } return TRUE;
-			case VK_PRIOR:  if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_UP; } return TRUE;
-			case VK_NEXT:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_DOWN; } return TRUE;
-			case VK_HOME:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_TOP; } return TRUE;
-			case VK_END:    if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_BOTTOM; } return TRUE;
-			case VK_LEFT:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_LEFT; } return TRUE;
-			case VK_RIGHT:  if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_RIGHT; } return TRUE;
-			case VK_RETURN: if (pKeyState)
-			{
-				if (candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE && candiSelection == -1)
-				{
-					pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_INVOKE_COMPOSITION_EDIT_SESSION;
-					pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CANCEL;
-					return FALSE;
-				}
-				else
-				{
-					pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE;
-					pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-					return TRUE;
-				}
-			}
-			case VK_SPACE:  if (pKeyState)
-			{
-				if (candidateMode != CANDIDATE_MODE::CANDIDATE_PHRASE   
-					&& CConfig::GetSpaceAsPageDown() && (candiCount > _candidatePageSize))
-				{//Do page down with space key when the option is on and candiCoutn > cand page size in original candi.
-					pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE;
-					pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_DOWN;
-				}
-				else if (candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE && candiSelection == -1)
-				{//Space key will terminate phrase candi
-					pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_INVOKE_COMPOSITION_EDIT_SESSION;
-					pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CANCEL;
-					return FALSE;
-				}
-				else
-				{//Select first item
-					pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE;
-					pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-				}
-				return TRUE;
-			}
-			case VK_BACK:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CANCEL; } return TRUE;
-			case VK_INSERT:
-			case VK_DELETE:
-			case VK_ESCAPE: if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CANCEL; } return TRUE;
-		}
-		// Check if the key is valid cand selkeys and set corersponding pKeystate category&function.
-		if (IsKeystrokeRange(uCode, pwch, pKeyState, candidateMode))
-		{
-			return TRUE;
-		}
-		// User send next valid keystroke without select cand.  Select the first item and start new composition
-		if (IsVirtualKeyKeystrokeComposition(uCode, pwch, pKeyState, KEYSTROKE_FUNCTION::FUNCTION_NONE))
-		{
-			if (pKeyState && candidateMode == CANDIDATE_MODE::CANDIDATE_ORIGINAL)
-			{ 
-				pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE;
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_FINALIZE_CANDIDATELIST_AND_INPUT;
-			}
-			return TRUE;
-		}
-		
-	}
-    // cancel associated phrase with anykey except shift
-	if (candidateMode == CANDIDATE_MODE::CANDIDATE_PHRASE
-	&& uCode != VK_SHIFT)
-	{
-	if (pKeyState)
-	{
-	pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE;
-	pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CANCEL;
-	}
-	return FALSE;
-	}
-	
-	// Handle Shift+printable ASCII for English input mode-----------------------------------------------------
-	// Only when not composing (empty buffer)
-	// Note: Shift+Space is handled by the preserved key system (OnPreservedKey)
-	if (!(Global::imeMode == IME_MODE::IME_MODE_PHONETIC && IsEscapeInputLeading()) &&
-		!fComposing && pwch && *pwch && (Global::ModifiersValue & (TF_MOD_LSHIFT | TF_MOD_RSHIFT | TF_MOD_SHIFT)) != 0 )
-	{
-		WCHAR c = *pwch;
-
-		// Resolve the digit-row Shift English preference for current CapsLock.
-		// When it resolves to "digit output" (e.g. Shift+8 should produce '8'),
-		// allow wildcards into the Shift English block so the digit branch in
-		// _HandleCompositionShiftEnglishInput can output the base digit instead
-		// of letting the wildcard bypass send '*' into composition.
-		bool digitRowWantsDigit = false;
-		if (uCode >= '0' && uCode <= '9')
-		{
-			bool capsOn = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
-			switch (CConfig::GetShiftEnglishDigitMode())
-			{
-			case IME_SHIFT_ENGLISH_DIGIT_MODE::SHIFT_ENGLISH_DIGIT_CAPS_OFF_DIGIT:
-				digitRowWantsDigit = !capsOn;
-				break;
-			case IME_SHIFT_ENGLISH_DIGIT_MODE::SHIFT_ENGLISH_DIGIT_ALWAYS_SYMBOL:
-				digitRowWantsDigit = false;
-				break;
-			default: // SHIFT_ENGLISH_DIGIT_CAPS_OFF_SYMBOL
-				digitRowWantsDigit = capsOn;
-				break;
-			}
-		}
-
-		// Check for printable ASCII characters (iswprint filters control chars)
-		// Exclude valid wildcard chars so they enter composition for wildcard search,
-		// EXCEPT when the digit-row pref wants digit output — then route through here.
-		// In Phonetic mode, only ? is a valid wildcard (* is not mapped)
-		if (iswprint(c) && c != L' ' &&
-			(digitRowWantsDigit ||
-			 !(IsWildcardChar(c) && !(Global::imeMode == IME_MODE::IME_MODE_PHONETIC && c == L'*'))))  // Exclude space as it's handled by preserved key
-		{
-			// ① Check if the shifted char is itself a radical — if so, enter composition immediately
-			if (IsVirtualKeyKeystrokeComposition(uCode, pwch, pKeyState, KEYSTROKE_FUNCTION::FUNCTION_NONE))
-				return TRUE;
-
-			// ② Use base (unshifted) char to decide whether Shift English mode applies at all
-			// e.g. Shift+, sends '<'; check ',' (base) — if base not a radical, bypass to system
-			WCHAR baseChar = (WCHAR)MapVirtualKey(uCode, MAPVK_VK_TO_CHAR);
-			if (Global::imeMode == IME_MODE::IME_MODE_DAYI && IsDayiAddressChar(baseChar))
-			{
-				// Dayi address char (`, ', [, ], -, \) — skip radical map check
-			}
-			else
-			{
-				WCHAR upper = towupper(baseChar);
-				if (upper >= 32 && upper < 32 + MAX_RADICAL && (UINT)(upper - 32) < _KeystrokeComposition.Count())
-				{
-					const _KEYSTROKE& ks = *_KeystrokeComposition.GetAt(upper - 32);
-					if (ks.Function == KEYSTROKE_FUNCTION::FUNCTION_NONE)
-						return FALSE;  // Not a radical key — bypass to system
-				}
-				else
-				{
-					return FALSE;  // Out of range — bypass to system
-				}
-			}
-
-			if (pKeyState)
-			{
-				pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_SHIFT_ENGLISH_INPUT;
-			}
-			return TRUE;
-		}
-	}
-
-	//Processing Composing keys -------------------------------------------------------------------------------------------
-	if (fComposing)
-	{
-		if ((candidateMode == CANDIDATE_MODE::CANDIDATE_NONE))
-		{
-			switch (uCode)
-			{
-				case VK_LEFT:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_LEFT; } return TRUE;
-				case VK_RIGHT:  if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_RIGHT; } return TRUE;
-				case VK_INSERT:
-				case VK_DELETE:
-				case VK_ESCAPE: if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CANCEL; } return TRUE;
-				case VK_BACK:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_BACKSPACE; } return TRUE;
-				case VK_UP:     if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_UP; } return TRUE;
-				case VK_DOWN:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_DOWN; } return TRUE;
-				case VK_PRIOR:  if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_UP; } return TRUE;
-				case VK_NEXT:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_DOWN; } return TRUE;
-
-				case VK_HOME:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_TOP; } return TRUE;
-				case VK_END:    if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_BOTTOM; } return TRUE;
-				case VK_RETURN:
-				case VK_SPACE:  if (pKeyState)
-				{ // End composition with covert or cover_wildcard.
-					pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-					if (_hasWildcardIncludedInKeystrokeBuffer)
-						pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT_WILDCARD;
-					else
-						pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-				}
-				return TRUE;
-
-			}
-		}
-		else if (candidateMode == CANDIDATE_MODE::CANDIDATE_INCREMENTAL)
-		{	
-			switch (uCode)
-			{
-				case VK_LEFT:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_LEFT; } return TRUE;
-				case VK_RIGHT:  if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_RIGHT; } return TRUE;
-				case VK_RETURN: if (pKeyState)
-				{
-					if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5 &&
-						!_hasWildcardIncludedInKeystrokeBuffer)
-					{// Do composing in Array 30 short code candi or no candi
-						pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-						pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-					}
-					else
-					{
-						pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE;
-						pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-					}
-				}
-					return TRUE;
-				case VK_ESCAPE: if (pKeyState) {
-					pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CANCEL; } return TRUE;
-				case VK_BACK:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_BACKSPACE; } return TRUE;
-				case VK_UP:     if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_UP; } return TRUE;
-				case VK_DOWN:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_DOWN; } return TRUE;
-				case VK_PRIOR:  if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_UP; } return TRUE;
-				case VK_NEXT:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_DOWN; } return TRUE;
-				case VK_HOME:   if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_TOP; } return TRUE;
-				case VK_END:    if (pKeyState) { pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE; pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_BOTTOM; } return TRUE;
-				case VK_SPACE:  if (pKeyState)
-				{
-					if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5 &&
-						!_hasWildcardIncludedInKeystrokeBuffer)
-					{// Do composing in Array 30 short code candi or no candi
-						pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-						pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-					}
-					else
-					{
-						pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_CANDIDATE;
-						if (CConfig::GetSpaceAsPageDown() && (candiCount > _candidatePageSize))
-							pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_MOVE_PAGE_DOWN;
-						else
-							pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-					}
-
-				}
-					return TRUE;							
-				case VK_OEM_7:	if (Global::imeMode == IME_MODE::IME_MODE_ARRAY && CConfig::GetArrayScope() != ARRAY_SCOPE::ARRAY40_BIG5) //Array phrase ending key '
-				{
-					if (pKeyState)
-					{
-						pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-						if (_hasWildcardIncludedInKeystrokeBuffer)
-							pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT_ARRAY_PHRASE_WILDCARD;
-						else
-							pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT_ARRAY_PHRASE;
-					}
-					return TRUE;
-				}
-					
-			}
-			// Check if the key is valid cand selkeys and set corersponding pKeystate category&function.
-			if (IsKeystrokeRange(uCode, pwch, pKeyState, candidateMode))
-			{
-				return TRUE;
-			}
-		}
-	}
-	if (fComposing || candidateMode == CANDIDATE_MODE::CANDIDATE_INCREMENTAL || candidateMode == CANDIDATE_MODE::CANDIDATE_NONE)
-	{
-		// Bypassing wildcard keys (in Phonetic mode, only ? is valid, not *)
-		// Numpad NUMERIC pref: numpad keys (incl. VK_MULTIPLY '*' / VK_DIVIDE '/')
-		// output directly to system, even when * / ? would otherwise be a wildcard.
-		if (IsWildcardChar(*pwch) && !(Global::imeMode == IME_MODE::IME_MODE_PHONETIC && *pwch == L'*') &&
-			!(CConfig::GetNumericPad() == NUMERIC_PAD::NUMERIC_PAD_NUMERIC &&
-			  uCode >= VK_NUMPAD0 && uCode <= VK_DIVIDE))
-		{
-			if (pKeyState)
-			{
-				pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_INPUT;
-
-			}
-			return TRUE;
-		}
-		
-		// Check if valid composition
-		if (IsVirtualKeyKeystrokeComposition(uCode, pwch, pKeyState, KEYSTROKE_FUNCTION::FUNCTION_NONE))
-		{
-			if (_hasWildcardIncludedInKeystrokeBuffer && pKeyState->Function == KEYSTROKE_FUNCTION::FUNCTION_INPUT_AND_CONVERT)
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_INPUT_AND_CONVERT_WILDCARD;
-			return TRUE;
-		}
-
-		// Endkey end composition 
-		if (isEndComposingKey(*pwch))
-		{
-			if (pKeyState)
-			{
-				pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-				if (_hasWildcardIncludedInKeystrokeBuffer)
-					pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT_WILDCARD;
-				else
-					pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_CONVERT;
-			}
-			return TRUE;
-		}
-		// Key is not a valid radical, selkey, or wildcard for the current IME mode.
-		// During active composition (buffer non-empty): eat silently — ignore invalid keys.
-		// During pending commit (buffer empty): finalize textstore and pass key to app.
-		if (*pwch && !IsVirtualKeyKeystrokeComposition(uCode, pwch, pKeyState, KEYSTROKE_FUNCTION::FUNCTION_NONE))
-		{
-			if (fComposing && _keystrokeBuffer.GetLength() > 0)
-			{
-				if (pKeyState)
-				{
-					pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_COMPOSING;
-					pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_NONE;
-				}
-				return TRUE;
-			}
-			if (pKeyState)
-			{
-				pKeyState->Category = KEYSTROKE_CATEGORY::CATEGORY_INVOKE_COMPOSITION_EDIT_SESSION;
-				pKeyState->Function = KEYSTROKE_FUNCTION::FUNCTION_FINALIZE_TEXTSTORE;
-			}
-			return FALSE;
-		}
-		
-		
-	}
-	return FALSE;
-}
 //+---------------------------------------------------------------------------
 //
 // CCompositionProcessorEngine::IsVirtualKeyKeystrokeComposition
