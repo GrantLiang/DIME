@@ -1,0 +1,35 @@
+# script: a Space g ' g Shift+' d Down Space a b Space a d \ Left Left Down ] e Back e Esc Home Down Space End c Enter Enter a Space '
+init -> passed text="" sel=0
+a -> eaten text="人" sel=1 comp="人" cand=incremental[*人 入 八 從 信]
+Space -> eaten text="人" sel=1 comp="人"
+g -> eaten text="人王" sel=2 comp="人王" cand=incremental[*王 國 主 玉 全 金 理 現 球 班 珠 琴]
+' -> eaten text="人國" sel=2 comp="人國"
+g -> eaten text="人國王" sel=3 comp="人國王" cand=incremental[*王 國 主 玉 全 金 理 現 球 班 珠 琴]
+Shift+' -> eaten text="人國理" sel=3 comp="人國理"
+d -> eaten text="人國理言" sel=4 comp="人國理言" cand=incremental[*言 詞 這 諸]
+Down -> eaten text="人國理言" sel=4 comp="人國理言" cand=incremental[言 *詞 這 諸]
+Space -> eaten text="人國理詞" sel=4 comp="人國理詞"
+a -> eaten text="人國理詞人" sel=5 comp="人國理詞人" cand=incremental[*人 入 八 從 信]
+b -> eaten text="人國理詞人馬" sel=6 comp="人國理詞人馬" cand=incremental[*從]
+Space -> eaten text="人國理詞從" sel=5 comp="人國理詞從"
+a -> eaten text="人國理詞從人" sel=6 comp="人國理詞從人" cand=incremental[*人 入 八 從 信]
+d -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
+\ -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
+Left -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
+Left -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
+Down -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
+] -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
+e -> eaten text="人國理詞從人言山" sel=8 comp="人國理詞從人言山" cand=incremental[]
+Back -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
+e -> eaten text="人國理詞從人言山" sel=8 comp="人國理詞從人言山" cand=incremental[]
+Esc -> eaten text="人國理詞從" sel=5 comp="人國理詞從"
+Home -> eaten text="人國理詞從" sel=0 comp="人國理詞從"
+Down -> eaten text="人國理詞從" sel=0 comp="人國理詞從" cand=original[*人 入 八]
+Space -> eaten text="人國理詞從" sel=0 comp="人國理詞從"
+End -> eaten text="人國理詞從" sel=5 comp="人國理詞從"
+c -> eaten text="人國理詞從金" sel=6 comp="人國理詞從金" cand=incremental[*金]
+Enter -> eaten text="人國理詞從金" sel=6 comp="人國理詞從金"
+Enter -> eaten text="人國理詞從金" sel=6
+a -> eaten text="人國理詞從金人" sel=7 comp="人" cand=incremental[*人 入 八 從 信]
+Space -> eaten text="人國理詞從金人" sel=7 comp="人"
+' -> eaten text="人國理詞從金人號" sel=8

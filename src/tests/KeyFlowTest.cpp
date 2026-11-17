@@ -296,6 +296,24 @@ namespace DIMEUnitTests
         }
         TEST_METHOD(Dayi_SentenceWildcardSymbol) { CheckGolden(L"dayi_sentence_wildcard_symbol", SentenceOptions({}), L"a Shift+8 Space Down Space = 1 Space Space Enter"); }
         TEST_METHOD(Dayi_SentenceSelectKeyEdit)  { CheckGolden(L"dayi_sentence_select_key_edit", SentenceOptions({ L"DayiSelkeyMode = 1" }), L"a Space a 2 Left Down 3 Home End Down Esc Enter"); }
+        // Sentence mode with AutoCompose: the incremental window shows while typing a
+        // reading; Space adds the highlighted character unpinned, a select key (or
+        // moving the highlight first) adds and pins it.
+        TEST_METHOD(Dayi_SentenceAutoComposeDayiSelkey)
+        {
+            CheckGolden(L"dayi_sentence_auto_compose_dayi_selkey", SentenceOptions({ L"AutoCompose = 1", L"DayiSelkeyMode = 2" }),
+                L"a Space g ' g Shift+' d Down Space a b Space a d \\ Left Left Down ] e Back e Esc Home Down Space End c Enter Enter a Space '");
+        }
+        TEST_METHOD(Dayi_SentenceAutoComposeNumeric)
+        {
+            CheckGolden(L"dayi_sentence_auto_compose_numeric", SentenceOptions({ L"AutoCompose = 1", L"DayiSelkeyMode = 1" }),
+                L"a 3 d Space g 0 Left Down 2 a Esc Esc");
+        }
+        TEST_METHOD(Dayi_SentenceAutoComposeTableSelkey)
+        {
+            CheckGolden(L"dayi_sentence_auto_compose_table_selkey", SentenceOptions({ L"AutoCompose = 1" }),
+                L"a 1 d Space g PgDn Space Left Down 1 Enter");
+        }
         TEST_METHOD(Dayi_SentenceOutputCommits)  { CheckGolden(L"dayi_sentence_output_commits", SentenceOptions({}), L"a Space Shift+b d Space ' g Space Shift+1"); }
         TEST_METHOD(Dayi_SentenceHanConvert)
         {

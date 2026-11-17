@@ -554,7 +554,7 @@ fn build() -> Tables {
             ACT_TOGGLE,
             CTRL_NONE,
             "整句輸入",
-            Some("連續打字不選字，依上下文自動組成句子，按 Enter 送出"),
+            Some("連續打字自動組句，Enter 送出；同步組字時可用選字鍵選字"),
             MODE_DAYI,
             false,
             0xE8D2,
@@ -1024,7 +1024,7 @@ mod tests {
         let sentence = input.iter().find(|r| r.id == CTRL_SENTENCE_MODE).unwrap();
         assert_eq!(
             utf16(sentence.description),
-            "連續打字不選字，依上下文自動組成句子，按 Enter 送出"
+            "連續打字自動組句，Enter 送出；同步組字時可用選字鍵選字"
         );
         let charset = input.iter().find(|r| r.id == CTRL_CHARSET_SCOPE).unwrap();
         assert_eq!(charset.visible_modes, MODE_NON_ARRAY);

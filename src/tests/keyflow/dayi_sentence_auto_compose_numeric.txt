@@ -1,0 +1,14 @@
+# script: a 3 d Space g 0 Left Down 2 a Esc Esc
+init -> passed text="" sel=0
+a -> eaten text="人" sel=1 comp="人" cand=incremental[*人 入 八 從 信]
+3 -> eaten text="八" sel=1 comp="八"
+d -> eaten text="八言" sel=2 comp="八言" cand=incremental[*言 詞 這 諸]
+Space -> eaten text="八言" sel=2 comp="八言"
+g -> eaten text="八言王" sel=3 comp="八言王" cand=incremental[*王 國 主 玉 全 金 理 現 球 班 珠 琴]
+0 -> eaten text="八言班" sel=3 comp="八言班"
+Left -> eaten text="八言班" sel=2 comp="八言班"
+Down -> eaten text="八言班" sel=2 comp="八言班" cand=original[王 國 主 玉 全 金 理 現 球 *班 珠 琴]
+2 -> eaten text="八言珠" sel=2 comp="八言珠"
+a -> eaten text="八言人珠" sel=3 comp="八言人珠" cand=incremental[*人 入 八 從 信]
+Esc -> eaten text="八言珠" sel=2 comp="八言珠"
+Esc -> eaten text="" sel=0

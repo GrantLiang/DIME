@@ -1,3 +1,7 @@
+## v2.0.808 之後
+
+- **整句輸入搭配選字鍵**：說明文件與設定說明補上用法——同時開啟「整句輸入」與「打字時同步組字」，打字根時就會顯示候選字窗，可用選字鍵直接選字（選中的字固定並會被學習）；大易建議搭配「大易選擇鍵」選字鍵模式。
+  `DIMESettings.exe --mode dayi --set SentenceMode 1 --set AutoCompose 1 --set DayiSelkeyMode 2`
 
 ## v2.0.808：移除 C++ 實作
 
