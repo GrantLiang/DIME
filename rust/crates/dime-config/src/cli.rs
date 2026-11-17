@@ -988,9 +988,11 @@ mod tests {
 
     #[test]
     fn run_import_export_load() {
-        let mut h = Rec::default();
-        h.exists = true;
-        h.text = Some("a b\r\nb c\n".encode_utf16().collect());
+        let mut h = Rec {
+            exists: true,
+            text: Some("a b\r\nb c\n".encode_utf16().collect()),
+            ..Default::default()
+        };
         assert_eq!(run_str("--mode generic --import-custom C:\\in.txt", &mut h), 0);
         assert_eq!(h.validated.len(), 3);
         assert_eq!(utf(&h.validated[0]), "a b");

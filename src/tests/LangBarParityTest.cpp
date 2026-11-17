@@ -473,7 +473,15 @@ TEST_CLASS(LangBarParityTest)
         hr = CoCreateInstance(CLSID_TF_ThreadMgr, nullptr, CLSCTX_INPROC_SERVER, IID_ITfThreadMgr, (void**)&tm);
         Assert::IsTrue(SUCCEEDED(hr) && tm);
         client = 0;
-        Assert::IsTrue(SUCCEEDED(tm->Activate(&client)));
+        // TF_TMAE_NOACTIVATETIP: never load the user's installed input methods
+        // (an installed DIME.dll sinks the same compartments and rewrites them).
+        {
+            ITfThreadMgrEx* tmEx = nullptr;
+            Assert::IsTrue(SUCCEEDED(tm->QueryInterface(IID_ITfThreadMgrEx, (void**)&tmEx)) && tmEx);
+            hr = tmEx->ActivateEx(&client, TF_TMAE_NOACTIVATETIP);
+            tmEx->Release();
+            Assert::IsTrue(SUCCEEDED(hr));
+        }
         dime = new CDIME();
         LangBarParityAccess::SetClient(*dime, client);
         store = CreateFakeThreadMgr();
