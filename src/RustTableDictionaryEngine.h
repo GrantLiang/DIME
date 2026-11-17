@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "TableDictionaryEngine.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 #include <string>
 #include <unordered_set>
@@ -88,4 +87,3 @@ private:
 	std::unordered_set<std::wstring> _stringPool;   // node-based: element addresses are stable
 };
 
-#endif // DIME_RUST_AVAILABLE

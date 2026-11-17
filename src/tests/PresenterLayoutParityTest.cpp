@@ -41,7 +41,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#ifdef DIME_RUST_AVAILABLE
 // UIPresenter.h's friend: the private parts the parity drives.
 class PresenterLayoutParityAccess
 {
@@ -463,4 +462,3 @@ namespace DIMEUnitTests
         }
     };
 }
-#endif

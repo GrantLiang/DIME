@@ -22,7 +22,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#if defined(DIME_RUST_AVAILABLE)
 
 namespace {
 
@@ -1010,11 +1009,7 @@ TEST_CLASS(LangBarParityTest)
         Shot pub = Take();
         CConfig::SetDoubleSingleByteMode(DOUBLE_SINGLE_BYTE_MODE::DOUBLE_SINGLE_BYTE_ALWAYS_DOUBLE);
         Apply(mode, FALSE, FALSE, TRUE, TRUE, TRUE);
-#if defined(DIME_USE_RUST_ENGINE)
         LangBarParityAccess::PrivRust(*dime, store);
-#else
-        LangBarParityAccess::PrivCpp(*dime, store);
-#endif
         AssertSame(pub, Take());
 
         CConfig::SetShowNotifyDesktop(TRUE);
@@ -1022,11 +1017,7 @@ TEST_CLASS(LangBarParityTest)
         LangBarParityAccess::ChnPub(*dime, TRUE, 3);
         Shot shown = Take();
         g_notes.clear();
-#if defined(DIME_USE_RUST_ENGINE)
         LangBarParityAccess::ChnRust(*dime, TRUE, 3);
-#else
-        LangBarParityAccess::ChnCpp(*dime, TRUE, 3);
-#endif
         AssertSame(shown, Take());
         AssertText(shown, 0, kChn, 2, 3);
     }
@@ -1159,4 +1150,3 @@ DWORD LangBarParityTest::hadPf = 0;
 
 } // namespace DIMEUnitTests
 
-#endif

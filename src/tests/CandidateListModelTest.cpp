@@ -258,7 +258,6 @@ namespace DIMEUnitTests
         }
     };
 
-#ifdef DIME_RUST_AVAILABLE
     // C++ CCandidateListModel vs CRustCandidateListModel on random operation sequences.
     TEST_CLASS(RustCandidateListModelParityTest)
     {
@@ -355,5 +354,4 @@ namespace DIMEUnitTests
             Logger::WriteMessage((L"candidate model operations compared: " + std::to_wstring(checked) + L"\n").c_str());
         }
     };
-#endif
 }

@@ -39,7 +39,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#ifdef DIME_RUST_AVAILABLE
 namespace
 {
     struct Recorder { std::vector<int> actions; };
@@ -427,4 +426,3 @@ namespace DIMEUnitTests
         HFONT font = nullptr;
     };
 }
-#endif

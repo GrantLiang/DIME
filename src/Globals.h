@@ -93,7 +93,6 @@ extern const GUID DIMEGuidHanConvertPreserveKey;
 // exhaustion attacks while accommodating all legitimate use cases.
 constexpr DWORD MAX_CIN_FILE_SIZE = 100 * 1024 * 1024;  // 100 MB
 
-#ifndef DIMESettings
 //---------------------------------------------------------------------
 // inline
 //---------------------------------------------------------------------
@@ -301,7 +300,6 @@ extern const int DoubleSingleByteOffIcoIndex;
 extern const WCHAR LangbarImeModeDescription[];
 extern const WCHAR LangbarDoubleSingleByteDescription[];
 extern const WCHAR LangbarPunctuationDescription[];
-#endif
 }
 
 

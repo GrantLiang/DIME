@@ -16,15 +16,12 @@
 #include "../Config.h"
 #include "../File.h"
 #include "../TableDictionaryEngine.h"
-#if defined(DIME_RUST_AVAILABLE)
 #include "dime_ffi.h"
-#endif
 
 #include "Golden.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#if defined(DIME_RUST_AVAILABLE)
 
 namespace {
 
@@ -813,11 +810,7 @@ namespace DIMEUnitTests
             g.Use(at);
             BOOL pr = viaPublic.SetupDictionaryFile(IME_MODE::IME_MODE_ARRAY, kLocale);
             g.Use(bt);
-#if defined(DIME_USE_RUST_ENGINE)
             BOOL dr = EngineSetupParityAccess::DictRust(viaDirect, IME_MODE::IME_MODE_ARRAY);
-#else
-            BOOL dr = EngineSetupParityAccess::DictCpp(viaDirect, IME_MODE::IME_MODE_ARRAY);
-#endif
             Assert::AreEqual((int)pr, (int)dr);
             Assert::AreEqual(Selkey(viaPublic, IME_MODE::IME_MODE_ARRAY), Selkey(viaDirect, IME_MODE::IME_MODE_ARRAY));
             Assert::AreEqual(FileName(EngineSetupParityAccess::MainFile(viaPublic, IME_MODE::IME_MODE_ARRAY)), at.Dime() + L"\\Array.cin");
@@ -826,4 +819,3 @@ namespace DIMEUnitTests
     };
 }
 
-#endif

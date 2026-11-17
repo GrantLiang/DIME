@@ -270,8 +270,8 @@ private:
 	CUIACaretTracker _uiaCaretTracker;
 
 	BOOL _inFocus;
-	BOOL _useRustPresenter;   // the presenter state, notify stack and placement decisions in Rust (DIME_USE_RUST_ENGINE) or C++
-	DimePresenter* _rp;       // with DIME_RUST_AVAILABLE (else null)
+	BOOL _useRustPresenter;   // always TRUE since the C++ presenter was removed (phase 6b); kept as _RustPresenter()'s guard
+	DimePresenter* _rp;       // the Rust presenter (null only if its creation failed)
 };
 
 

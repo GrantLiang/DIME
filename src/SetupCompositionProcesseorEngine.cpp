@@ -394,7 +394,6 @@ void CCompositionProcessorEngine::GetVKeyFromPrintable(WCHAR printable, UINT* vK
 
 }
 
-#ifndef DIMESettings
 //+---------------------------------------------------------------------------
 //
 // SetupPreserved
@@ -667,8 +666,6 @@ void CCompositionProcessorEngine::SetupCandidateListRange(IME_MODE imeMode)
 	_SetupCandidateListRangeRust(imeMode);
 }
 
-
-#endif
 
 // Rust owns the load / keystroke / range / preserved-key decisions. This host
 // applies them to the CFile and CTableDictionaryEngine members. Callback order
@@ -1066,7 +1063,6 @@ void CCompositionProcessorEngine::_SetupKeystrokeRust(IME_MODE imeMode)
 		FillKeystroke(_KeystrokeComposition.Append(), rows[i]);
 }
 
-#ifndef DIMESettings
 BOOL CCompositionProcessorEngine::_SetupHanCovertTableRust()
 {
 	WCHAR app[MAX_PATH] = {};
@@ -1177,4 +1173,3 @@ void CCompositionProcessorEngine::_SetupPreservedRust(_In_ ITfThreadMgr* pThread
 	InitPreservedKey(&_PreservedKey_Config, pThreadMgr, tfClientId);
 	InitPreservedKey(&_PreservedKey_HanConvert, pThreadMgr, tfClientId);
 }
-#endif

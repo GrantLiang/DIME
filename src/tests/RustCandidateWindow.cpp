@@ -6,7 +6,6 @@
 #include "Define.h"
 #include "RustCandidateWindow.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 static_assert(sizeof(DimeRect) == sizeof(RECT), "DimeRect layout");
 static_assert(sizeof(DimePoint) == sizeof(POINT), "DimePoint layout");
@@ -212,4 +211,3 @@ BOOL CRustCandidateWindow::_MovePage(_In_ int offSet, _In_ BOOL isNotify)
     return TRUE;
 }
 
-#endif

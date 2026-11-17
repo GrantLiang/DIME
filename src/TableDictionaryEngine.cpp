@@ -35,9 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Private.h"
 #include "TableDictionaryEngine.h"
 #include "DIME.h"
-#ifdef DIME_USE_RUST_ENGINE
 #include "RustTableDictionaryEngine.h"
-#endif
 
 
 CTableDictionaryEngine::CTableDictionaryEngine(LCID locale, _In_ CFile *pDictionaryFile, _In_ DICTIONARY_TYPE dictionaryType )
@@ -61,11 +59,6 @@ CTableDictionaryEngine::CTableDictionaryEngine(LCID locale, _In_ CFile *pDiction
 	else if (dictionaryType == DICTIONARY_TYPE::LIME_DICTIONARY)
 		_keywordDelimiter = '|';
 }
-
-
-
-
-
 
 
 //+---------------------------------------------------------------------------

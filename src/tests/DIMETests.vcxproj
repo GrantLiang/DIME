@@ -1089,9 +1089,9 @@
     Only Win32/x64 have a matching Rust target here; other platforms skip the parity tests.
   -->
   <PropertyGroup Label="DimeRust">
-    <!-- Like DIME.dll, the tests build the product code with the Rust core. The all-C++
-         test build (/p:DimeTestRustEngine=false) went with the all-C++ DIME.dll (phase 6b). -->
-    <DimeTestRustEngine Condition="'$(DimeTestRustEngine)'==''">true</DimeTestRustEngine>
+    <!-- Like DIME.dll, the tests build the product code with the Rust core (the all-C++
+         test builds went with the all-C++ DIME.dll in phase 6; the DIME_RUST_AVAILABLE /
+         DIME_USE_RUST_* macros were removed in 6e). -->
     <DimeRustRoot>$(ProjectDir)..\..\rust\</DimeRustRoot>
     <DimeRustTarget Condition="'$(Platform)'=='Win32'">i686-pc-windows-msvc</DimeRustTarget>
     <DimeRustTarget Condition="'$(Platform)'=='x64'">x86_64-pc-windows-msvc</DimeRustTarget>
@@ -1108,7 +1108,6 @@
   <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(DimeRustRoot)crates\dime-ffi\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DIME_RUST_AVAILABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(DimeRustLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -1117,14 +1116,7 @@
       <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)'=='Debug'">msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
-  <!-- The product code is built as DIME.dll is: the Rust core and settings storage
-       (the all-C++ test builds, DimeTestRustEngine / DimeTestRustConfig, were removed in 6b / 6d). -->
-  <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true' And '$(DimeTestRustEngine)'=='true'">
-    <ClCompile>
-      <PreprocessorDefinitions>DIME_USE_RUST_ENGINE;DIME_USE_RUST_CONFIG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <Target Name="DimeTestRustEngineRequired" BeforeTargets="ClCompile" Condition="'$(DimeRustEnabled)'=='true' And '$(DimeTestRustEngine)'!='true'">
+  <Target Name="DimeTestRustEngineRequired" BeforeTargets="ClCompile" Condition="'$(DimeTestRustEngine)'=='false'">
     <Error Text="DimeTestRustEngine=false (the all-C++ test build) was removed in phase 6b of the Rust migration." />
   </Target>
   <Target Name="BuildDimeRust" BeforeTargets="ClCompile" Condition="'$(DimeRustEnabled)'=='true'">

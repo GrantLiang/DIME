@@ -31,7 +31,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#ifdef DIME_RUST_AVAILABLE
 
 namespace
 {
@@ -341,4 +340,3 @@ namespace DIMEUnitTests
         }
     };
 }
-#endif

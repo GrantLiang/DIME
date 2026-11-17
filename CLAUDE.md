@@ -51,7 +51,7 @@ vstest.console.exe bin\x64\Debug\DIMETests.dll /TestCaseFilter:"FullyQualifiedNa
 
 `rust/` 是逐步改寫成 Rust 的 Cargo workspace（第 1、2 階段完成：設定、字典引擎、組字核心、按鍵處理流程）。**`DIME.dll` 一律使用 Rust 核心**（建置時需要 Rust 工具鏈與對應的 target）。全 C++ 的建置（`/p:DimeUseRustEngine=false`）與全 C++ 的測試組合（`/p:DimeTestRustEngine=false`）在第 6b 階段移除，指定時建置會報錯；要全 C++ 版只能從 tag v2.0.770 建置。C++ 原版還沒刪完的部分只編進 `DIMETests`（`DIME_UNIT_TESTING`），和 Rust 對拍。`DIMESettings.exe` 是 cargo 建置的 Rust 程式。`rust/Cargo.lock` 有進版控（建置用 `cargo --locked`）。
 
-- **建置**：`DIME.vcxproj` 定義 `DIME_RUST_AVAILABLE` + `DIME_USE_RUST_ENGINE` + `DIME_USE_RUST_CONFIG`，建置前自動跑 cargo（Release 用 `+crt-static` 配合 `/MT`，輸出到 `rust/target/crt-static/`）。支援 Win32/x64/ARM64/ARM64EC。下面各項提到的「全 C++ 建置／組合」已不存在（第 6b 階段），條件編譯的 C++ 分支會在第 6b～6e 階段逐步刪除。
+- **建置**：`DIME.vcxproj`／`DIMETests.vcxproj` 建置前自動跑 cargo（`DIME.dll` 的 Release 用 `+crt-static` 配合 `/MT`，輸出到 `rust/target/crt-static/`）並連結 `dime_ffi.lib`。`DIME.dll` 支援 Win32/x64/ARM64/ARM64EC。第 6e 階段起不再有 `DIME_RUST_AVAILABLE`／`DIME_USE_RUST_ENGINE`／`DIME_USE_RUST_CONFIG`／`DIMESettings` 巨集與以它們為條件的程式碼；`/p:DimeUseRustEngine=false`／`/p:DimeTestRustEngine=false` 會報錯。下面各項提到的這些巨集、「全 C++ 建置／組合」、`_XxxCpp` 與 `Cpp::` 原版都已不存在（第 6 階段），保留下來是說明各模組的移植來源。
 - **接線方式**：所有正式程式碼都透過 `CTableDictionaryEngine::Create()` 建立引擎，一律回傳 `CRustTableDictionaryEngine`（`src/RustTableDictionaryEngine.*`，覆寫虛擬的 `CollectWord*` / `ParseConfig`）。基底 `CTableDictionaryEngine` 的搜尋與解析是空的預設實作（只給只放字根表的引擎與測試替身用），直接 `new CTableDictionaryEngine` 不會搜尋任何東西。碼表緩衝區仍由 `CFile`/`CMemoryFile` 提供（含重新載入與 Big5 過濾）；回傳字串在轉接層內 intern，指標在引擎存活期間有效；排序仍是 C++。`[Config]` 套用到 `CConfig` 的對應表是 Rust 的 `dime-config::ini`（C++ 的 `ApplyIniConfigEntry` 已刪除；`RustConfigParityTest` 以 `src/tests/golden/ConfigIni` 為參考）。
 
 - `crates/dime-core`：`DictionaryParser` / `DictionarySearch` / `TableDictionaryEngine` 與 `CMemoryFile` Big5 過濾的逐行移植。刻意保留 C++ 的怪異行為（例如 chardef 中沒有分隔字元的行會中止搜尋、`%selkey` 只認 tab 分隔、排序演算法的平手順序），因為呼叫端依賴這些行為；修改前先確認對拍測試。地區相關比較透過 `TextOps` trait，Windows 上的 `WinTextOps` 呼叫與 C++ 相同的 `CompareStringW` / `GetStringTypeExW`。
@@ -114,7 +114,6 @@ vstest.console.exe bin\x64\Debug\DIMETests.dll /TestCaseFilter:"FullyQualifiedNa
 - 設定 `SentenceMode=1`（INI / CLI / 設定視窗「整句輸入」）後，空白鍵或結束鍵不再跳出候選字窗，而是把該字（連同該字碼的全部候選字）加入組字區的「整句」，由 `rust/crates/dime-core/src/sentence.rs` 的 Viterbi 依字頻（`TCFreq.cin`）與詞庫（`Array-Phrase.cin` 的詞，不用其字碼）重選整句；Enter／空白送出，←→ 移動、↓ 改選游標所在字（選定即釘住），Backspace／Delete 刪字，Esc 放棄。標點、地址鍵、Shift 英數等直接輸出的鍵會先送出整句。
 - TSF 端在 `SentenceHandler.cpp`（`CDIME::_Sentence*`、`CKeyStateSentence`），資料結構在 `SentenceBuffer.*`（不依賴 TSF，`tests/SentenceBufferTest.cpp` 有單元測試與實際大易碼表的整句測試）。攔截點：`_IsKeyEaten`、`_HandleCompositionConvert`、`_HandleCandidateWorker`、`_HandleCancel`、`_HandleCompositionBackspace`、`_TerminateComposition`、`OnCompositionTerminated`。
 - 學習：送出整句時，使用者手動選定（釘住）的字會被 `UserModel`（Rust）記住「該字碼偏好的字」與「它和前後字組成的雙字詞」，之後轉換加分（同一字碼要選約 3 次才會在沒有上下文時取代第一候選字；詞在上下文中一次就生效）。存在 `%APPDATA%\DIME\SentenceUser.txt`（UTF-16，刪除即重置）；多個行程共用此檔，存檔時重新讀檔再加上本行程新增的部分（`_pSentencePending`），不會互相覆蓋。Store app／低完整性行程不寫檔，只留在記憶體。
-- 沒有 Rust（`DIME_RUST_AVAILABLE` 未定義）時仍可用，但只會取第一候選字（沒有上下文判斷、也不學習）。
 
 ```powershell
 cargo test --manifest-path rust/Cargo.toml                 # Rust 單元測試

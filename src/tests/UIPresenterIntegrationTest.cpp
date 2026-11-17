@@ -802,9 +802,7 @@ namespace DIMEIntegratedTests
                 Assert::IsTrue(h[i] == pUIPresenter->_NotifySlotWnd(types[i]), L"the same window");
             }
             pUIPresenter->_SetNotifyTextColor(RGB(0, 0, 0), RGB(255, 255, 255));
-#ifdef DIME_USE_RUST_ENGINE
             Assert::IsTrue(pUIPresenter->_RustPresenter() != FALSE, L"the stack is the Rust presenter's");
-#endif
             Assert::IsFalse(pUIPresenter->IsNotifyShown() != FALSE, L"hidden at first");
 
             for (int i = 0; i < 2; i++) pUIPresenter->ShowNotify(TRUE, 0, 0, types[i]);

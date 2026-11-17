@@ -4,9 +4,7 @@
 #include <algorithm>
 #include <fstream>
 #include "Golden.h"
-#ifdef DIME_RUST_AVAILABLE
 #include "dime_ffi.h"
-#endif
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -206,7 +204,6 @@ void Chunks::Finish()
     first = items;
 }
 
-#ifdef DIME_RUST_AVAILABLE
 GdiRecording::GdiRecording(bool synthetic)
 {
     dime_settings_gdi_record_start(synthetic ? 1 : 0);
@@ -234,7 +231,6 @@ std::vector<std::wstring> GdiRecording::Take()
     }
     return lines;
 }
-#endif
 
 std::wstring Replace(std::wstring s, const std::wstring& from, const std::wstring& to)
 {

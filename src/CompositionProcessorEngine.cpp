@@ -72,7 +72,6 @@ CCompositionProcessorEngine::CCompositionProcessorEngine(_In_ CDIME *pTextServic
 		_pBig5TableDictionaryFile[i] = nullptr;
 	}
 
-#ifndef DIMESettings
 	//phoneticKeyboardLayout = PHONETIC_STANDARD_KEYBOARD_LAYOUT;
 	phoneticSyllable = 0;
 
@@ -84,7 +83,6 @@ CCompositionProcessorEngine::CCompositionProcessorEngine(_In_ CDIME *pTextServic
 	_candidateWndWidth = DEFAULT_CAND_ITEM_LENGTH + TRAILING_SPACE;  //default with =  3 charaters +  trailling space
 	_candidateListPhraseModifier = 0;
 	_candidatePageSize = 0;
-#endif
 
 	//Array
 	_pArrayShortCodeTableDictionaryEngine = nullptr;
@@ -153,7 +151,6 @@ BOOL CCompositionProcessorEngine::ValidateCompositionKeyCharFull(WCHAR ch)
     return ks.Function == KEYSTROKE_FUNCTION::FUNCTION_INPUT ? TRUE : FALSE;
 }
 
-#ifndef DIMESettings
 //+---------------------------------------------------------------------------
 //
 // GetReadingString
@@ -688,5 +685,3 @@ CStringRange CCompositionProcessorEngine::_BuildKeyStrokesFromPhoneticSyllableRu
 	}
 	return csr;
 }
-
-#endif

@@ -35,7 +35,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#ifdef DIME_RUST_AVAILABLE
 #include "dime_ffi.h"
 #include "Golden.h"
 
@@ -238,4 +237,3 @@ namespace DIMEUnitTests
         }
     };
 }
-#endif

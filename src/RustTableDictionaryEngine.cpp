@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "RustTableDictionaryEngine.h"
 #include "Globals.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 #include "Config.h"
 #include "dime_ffi.h"
@@ -281,4 +280,3 @@ VOID CRustTableDictionaryEngine::ParseConfig(IME_MODE imeMode)
 	settings.Commit();
 }
 
-#endif // DIME_RUST_AVAILABLE

@@ -542,13 +542,12 @@
     removed in phase 6b of the Rust migration; v2.0.770 is the last tag that has it.
   -->
   <PropertyGroup Label="DimeRust">
-    <DimeUseRustEngine Condition="'$(DimeUseRustEngine)'==''">true</DimeUseRustEngine>
     <DimeRustRoot>$(ProjectDir)..\rust\</DimeRustRoot>
     <DimeRustTarget Condition="'$(Platform)'=='Win32'">i686-pc-windows-msvc</DimeRustTarget>
     <DimeRustTarget Condition="'$(Platform)'=='x64'">x86_64-pc-windows-msvc</DimeRustTarget>
     <DimeRustTarget Condition="'$(Platform)'=='ARM64'">aarch64-pc-windows-msvc</DimeRustTarget>
     <DimeRustTarget Condition="'$(Platform)'=='ARM64EC'">arm64ec-pc-windows-msvc</DimeRustTarget>
-    <DimeRustEnabled Condition="'$(DimeUseRustEngine)'=='true' And '$(DimeRustTarget)'!=''">true</DimeRustEnabled>
+    <DimeRustEnabled Condition="'$(DimeRustTarget)'!=''">true</DimeRustEnabled>
     <DimeRustTargetDir Condition="'$(Configuration)'=='Release'">$(DimeRustRoot)target\crt-static\</DimeRustTargetDir>
     <DimeRustTargetDir Condition="'$(Configuration)'!='Release'">$(DimeRustRoot)target\</DimeRustTargetDir>
     <DimeRustFlags Condition="'$(Configuration)'=='Release'">-C target-feature=+crt-static</DimeRustFlags>
@@ -563,7 +562,6 @@
   <ItemDefinitionGroup Condition="'$(DimeRustEnabled)'=='true'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(DimeRustRoot)crates\dime-ffi\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DIME_RUST_AVAILABLE;DIME_USE_RUST_ENGINE;DIME_USE_RUST_CONFIG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(DimeRustLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -585,7 +583,7 @@
   <Target Name="DimeRustUnsupportedPlatform" BeforeTargets="ClCompile" Condition="'$(DimeRustTarget)'==''">
     <Error Text="DIME.dll needs the Rust core, which has no target for platform $(Platform)." />
   </Target>
-  <Target Name="DimeRustEngineRequired" BeforeTargets="ClCompile" Condition="'$(DimeUseRustEngine)'!='true'">
+  <Target Name="DimeRustEngineRequired" BeforeTargets="ClCompile" Condition="'$(DimeUseRustEngine)'=='false'">
     <Error Text="DimeUseRustEngine=false (the all-C++ DIME.dll) was removed in phase 6b of the Rust migration; build tag v2.0.770 for it." />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -95,7 +95,6 @@ private:
     std::wstring detail;
 };
 
-#ifdef DIME_RUST_AVAILABLE
 // Records the Rust settings window's GDI / GDI+ calls on this thread from
 // construction to Take() (phase 6a-3, dime-settings gdi.rs). With synthetic
 // metrics the text measurements come from the requested font heights, so
@@ -110,7 +109,6 @@ public:
 private:
     bool taken = false;
 };
-#endif
 
 // `s` with every occurrence of `from` replaced by `to`.
 std::wstring Replace(std::wstring s, const std::wstring& from, const std::wstring& to);

@@ -8,9 +8,7 @@
 
 #include <Windows.h>
 #include "../Globals.h"
-#ifdef DIME_RUST_AVAILABLE
 #include "dime_ffi.h"
-#endif
 
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 
@@ -50,7 +48,6 @@ inline void EnsureWindowClassesRegistered()
     }
 }
 
-#ifdef DIME_RUST_AVAILABLE
 // A test window class with dime-ui's window procedure (popup: the candidate / notify
 // styles; else the child / shadow class styles).
 inline ATOM TestClassAtomKind(const wchar_t* name, bool popup)
@@ -78,4 +75,3 @@ inline DimeCandClasses RustCandidateTestClasses()
              RustScrollBarTestAtom(),
              Global::AtomNotifyWindow, Global::AtomNotifyShadowWindow };
 }
-#endif

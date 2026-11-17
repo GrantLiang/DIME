@@ -5,7 +5,6 @@
 #include "Config.h"
 #include "RustNotifyWindow.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 namespace
 {
@@ -116,4 +115,3 @@ void CRustNotifyWindow::_SetString(_Inout_ const CStringRange* pNotifyText)
     dime_ui_notifywin_set_string(_n, (const uint16_t*)pNotifyText->Get(), pNotifyText->GetLength());
 }
 
-#endif

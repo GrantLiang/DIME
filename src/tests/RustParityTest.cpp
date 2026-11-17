@@ -46,7 +46,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "pch.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 #include "CppUnitTest.h"
 #include "../TableDictionaryEngine.h"
@@ -540,4 +539,3 @@ namespace DIMEUnitTests
     };
 }
 
-#endif // DIME_RUST_AVAILABLE

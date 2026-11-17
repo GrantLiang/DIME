@@ -6,7 +6,6 @@
 
 #include "UIWindowTypes.h"
 
-#ifdef DIME_RUST_AVAILABLE
 #include "dime_ffi.h"
 
 class CRustCandidateWindow
@@ -79,4 +78,3 @@ private:
     BOOL _hasClassesForTest = FALSE;
 #endif
 };
-#endif

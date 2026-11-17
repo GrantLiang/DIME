@@ -42,9 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "BaseStructure.h"
 #include "File.h"
 #include "define.h"
-#if defined(DIME_RUST_AVAILABLE) && !defined(DIMESettings)
 #include "dime_ffi.h"
-#endif
 
 class CCompositionProcessorEngine
 {
@@ -84,7 +82,6 @@ public:
 
   
 
-#ifndef DIMESettings
     // What IsVirtualKeyNeed reads, for dime_classify_key / dime_decide_key_eaten.
     // The input points into the arrays, so keep the snapshot alive while it is used.
     struct CKeyInputSnapshot
@@ -163,7 +160,6 @@ public:
 	IME_MODE GetImeModeFromGuidProfile(REFGUID guidLanguageProfile);
 	void SetImeMode(REFGUID guidLanguageProfile) { _imeMode = GetImeModeFromGuidProfile(guidLanguageProfile);}
 	
-#endif // DIMESettings
 private:
 
     CFile* _pTableDictionaryFile[IM_SLOTS];
@@ -214,8 +210,6 @@ private:
  
 
     //static const int OUT_OF_FILE_INDEX = -1;
-
-#ifndef DIMESettings
 
 
     BOOL _IsVirtualKeyNeedRust(UINT uCode, _In_reads_(1) WCHAR *pwch, BOOL fComposing, CANDIDATE_MODE candidateMode, UINT candiCount, INT candiSelection, _Inout_opt_ _KEYSTROKE_STATE *pKeyState);
@@ -303,7 +297,6 @@ private:
 
 	void _OnPreservedKeyRust(REFGUID rguid, _Out_ BOOL *pIsEaten, _In_ ITfThreadMgr *pThreadMgr, TfClientId tfClientId);
 
-#endif
 };
 
 #endif

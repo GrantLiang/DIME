@@ -43,9 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "TfInputProcessorProfile.h"
 #include "Aclapi.h"
 #include "CompositionProcessorEngine.h"
-#ifndef DIMESettings
 #include "UIPresenter.h"
-#endif
 #include <string>
 #include <vector>
 #include <dwmapi.h>
@@ -532,7 +530,6 @@ static void RunRustSettingsOp(void (*op)(DimeSettings*, int32_t), IME_MODE imeMo
 	scope.Commit();
 }
 
-#ifndef DIMESettings
 void CConfig::ApplyIMEColorSet(CUIPresenter* pPresenter, bool isPhraseMode)
 {
 	if (!pPresenter) return;
@@ -566,7 +563,6 @@ void CConfig::ApplyIMEColorSet(CUIPresenter* pPresenter, bool isPhraseMode)
 		pPresenter->_SetCandidateFillColor(_lightItemBGColor);
 	}
 }
-#endif // !DIMESettings
 
 //+---------------------------------------------------------------------------
 //
@@ -783,11 +779,7 @@ BOOL CConfig::LoadConfig(IME_MODE imeMode)
 
 			// In store app mode, the dll is loaded into app container which does not even have read right for IME profile in APPDATA.
 			// Here, the read right is granted once to "ALL APPLICATION PACKAGES" when loaded in desktop mode, so as all metro apps can at least read the user settings in config.ini.
-#ifdef DIMESettings
-			if (!_appPermissionSet && imeMode != IME_MODE::IME_MODE_NONE)
-#else
 			if (!CDIME::_IsStoreAppMode() && !_appPermissionSet && imeMode != IME_MODE::IME_MODE_NONE)
-#endif
 			{
 				EXPLICIT_ACCESS ea;
 				// Get a pointer to the existing DACL (Conditionally).

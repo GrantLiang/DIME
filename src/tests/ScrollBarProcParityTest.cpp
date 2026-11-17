@@ -34,7 +34,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#ifdef DIME_RUST_AVAILABLE
 namespace
 {
     HRESULT NoCallback(void*, enum CANDWND_ACTION) { return S_OK; }
@@ -252,4 +251,3 @@ namespace DIMEUnitTests
         }
     };
 }
-#endif

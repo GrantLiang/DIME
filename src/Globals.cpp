@@ -180,7 +180,6 @@ extern const GUID DIMEPhoneticGuidProfile =
 extern const GUID DIMEGenericGuidProfile =
 { 0x61beea7, 0xfff9, 0x420c, { 0xb3, 0xf6, 0xa9, 0x4, 0x7a, 0xfd, 0x8, 0x77 } };
 
-#ifndef DIMESettings
 _T_GetDpiForMonitor _GetDpiForMonitor = nullptr;
 HINSTANCE hShcore = NULL;
 HINSTANCE dllInstanceHandle;
@@ -537,6 +536,5 @@ BOOL UpdateModifiers(WPARAM wParam, LPARAM lParam)
     return TRUE;
 }
 
-#endif
 
 }

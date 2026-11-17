@@ -42,7 +42,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "pch.h"
 
-#ifdef DIME_RUST_AVAILABLE
 
 #include "CppUnitTest.h"
 #include "../TableDictionaryEngine.h"
@@ -327,13 +326,8 @@ namespace DIMEUnitTests
             CFile f;
             std::unique_ptr<CTableDictionaryEngine> e(CTableDictionaryEngine::Create(kAdapterLcid, &f, DICTIONARY_TYPE::CIN_DICTIONARY));
             Assert::IsNotNull(e.get());
-#ifdef DIME_USE_RUST_ENGINE
             Logger::WriteMessage(L"build flavor: Rust core");
             Assert::IsNotNull(dynamic_cast<CRustTableDictionaryEngine*>(e.get()));
-#else
-            Logger::WriteMessage(L"build flavor: C++");
-            Assert::IsNull(dynamic_cast<CRustTableDictionaryEngine*>(e.get()));
-#endif
         }
 
         TEST_METHOD(ShippedTables_SameResultsThroughCppInterface)
@@ -439,4 +433,3 @@ namespace DIMEUnitTests
     };
 }
 
-#endif // DIME_RUST_AVAILABLE

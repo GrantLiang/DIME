@@ -35,7 +35,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#ifdef DIME_RUST_AVAILABLE
 namespace
 {
     struct Calls
@@ -299,4 +298,3 @@ namespace DIMEUnitTests
         }
     };
 }
-#endif
