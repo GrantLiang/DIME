@@ -27,12 +27,13 @@ DIME 是一套適用於 Windows 8/10/11 的輸入法框架，支援多種中文�
 - 依本說明格式撰寫的 `Phrase.cin` 聯想詞表查不到聯想詞（原本查詢時會附加 `*`，而 CIN 查詢不把 `*` 當萬用字元）。
 - 版號標頭 `BuildInfo.h` 每次建置都重新產生，設定視窗標題的版號會跟著版本更新。
 
-### 以 Rust 改寫輸入法核心（進行中）
+### 以 Rust 改寫輸入法核心
 
-- 字典引擎（`.cin` 解析與搜尋）、設定（`CConfig`）、組字緩衝、按鍵分類與路由、候選字產生與翻頁、按鍵處理流程、整句緩衝，以及候選字窗、捲軸、提示窗、陰影窗的繪圖與訊息處理，已移到 `rust/` 的 Cargo workspace（`dime-core`、`dime-config`、`dime-ui`、`dime-settings`、`dime-ffi`）。`DIME.dll` 的 TSF 文字服務外殼仍是 C++。
+- 字典引擎（`.cin` 解析與搜尋）、設定（`CConfig`）、組字緩衝、按鍵分類與路由、候選字產生與翻頁、按鍵處理流程、整句緩衝，以及候選字窗、捲軸、提示窗、陰影窗的繪圖與訊息處理，都在 `rust/` 的 Cargo workspace（`dime-core`、`dime-config`、`dime-ui`、`dime-gdi`、`dime-settings`、`dime-ffi`）。`DIME.dll` 只剩 TSF 文字服務的外殼是 C++。
 - **`DIMESettings.exe` 已是純 Rust 程式**（設定視窗、CLI、碼表轉換、自建詞庫驗證），由 cargo 建置（`crates/dime-settings-exe`），執行期沒有 C++。
-- **建置使用 Rust 核心**，需安裝 Rust 工具鏈與對應的 target。全 C++ 的 `DIME.dll`（`/p:DimeUseRustEngine=false`）已移除，最後一個可以這樣建置的版本是 v2.0.770；剩餘的 C++ 實作正逐步移除（第 6 階段）。
-- Rust 版唯一的外部相依是 Microsoft 官方的 [`windows`](https://crates.io/crates/windows) crate（只在 `dime-ui` 使用）。
+- **建置使用 Rust 核心**，需安裝 Rust 工具鏈與對應的 target。移植期間的 C++ 原版與全 C++ 建置（`/p:DimeUseRustEngine=false`）都已移除（第 6 階段），最後一個保留全 C++ 實作的版本是 v2.0.770。
+- Rust 版唯一的外部相依是 Microsoft 官方的 [`windows`](https://crates.io/crates/windows) crate。
+- 移植期間的「C++ 對 Rust」對拍測試都已轉成黃金檔（`src/tests/golden/`）；視窗與設定視窗的繪圖錄成繪圖呼叫，量字用合成值，所以結果與機器的字型、dpi 無關。
 - 改寫計畫與設計紀錄：[`RUST_MIGRATION_PLAN.md`](docs/RUST_MIGRATION_PLAN.md)、[`RUST_WINDOW_OWNERSHIP.md`](docs/RUST_WINDOW_OWNERSHIP.md)、[`RUST_TSF_SHELL.md`](docs/RUST_TSF_SHELL.md)。
 
 ### 測試
