@@ -1,0 +1,12 @@
+# script: a Space g Left Down Space End d Home Enter
+init -> passed text="" sel=0
+a -> eaten text="人" sel=1 comp="人"
+Space -> eaten text="人" sel=1 comp="人"
+g -> eaten text="人王" sel=2 comp="人王"
+Left -> eaten text="人王" sel=1 comp="人王"
+Down -> eaten text="人王" sel=1 comp="人王" cand=original[*王 國 主 玉 全 金 理 現 球 班 珠 琴]
+Space -> eaten text="人王" sel=1 comp="人王"
+End -> eaten text="人王" sel=2 comp="人王"
+d -> eaten text="人王言" sel=3 comp="人王言"
+Home -> eaten text="人王言" sel=0 comp="人王言"
+Enter -> eaten text="人王言" sel=3

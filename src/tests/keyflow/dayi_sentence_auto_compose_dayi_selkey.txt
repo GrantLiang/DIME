@@ -1,4 +1,4 @@
-# script: a Space g ' g Shift+' d Down Space a b Space a d \ Left Left Down ] e Back e Esc Home Down Space End c Enter Enter a Space '
+# script: a Space g ' g Shift+' d Down Space a b Space a d \ Down ] e Back e Esc Home Down Space End c Enter Enter a Space '
 init -> passed text="" sel=0
 a -> eaten text="人" sel=1 comp="人" cand=incremental[*人 入 八 從 信]
 Space -> eaten text="人" sel=1 comp="人"
@@ -15,8 +15,6 @@ Space -> eaten text="人國理詞從" sel=5 comp="人國理詞從"
 a -> eaten text="人國理詞從人" sel=6 comp="人國理詞從人" cand=incremental[*人 入 八 從 信]
 d -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
 \ -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
-Left -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
-Left -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
 Down -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
 ] -> eaten text="人國理詞從人言" sel=7 comp="人國理詞從人言" cand=incremental[*信]
 e -> eaten text="人國理詞從人言山" sel=8 comp="人國理詞從人言山" cand=incremental[]

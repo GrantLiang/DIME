@@ -880,8 +880,27 @@ pub mod sentence_key {
     pub const MOVE_PAGE_BOTTOM: u32 = 22;
 }
 
-/// `_HandleSentenceArrowKey`.
+/// `_HandleSentenceArrowKey`.  With a reading being typed, the reading's
+/// character first joins the sentence as Space would add it (from the
+/// incremental window: the highlighted candidate, pinned when the highlight
+/// was moved); a reading without a character stays and only beeps.
 pub fn handle_sentence_arrow_key(h: &mut impl Host, function: u32) -> HResult {
+    if function != sentence_key::MOVE_DOWN && h.virtual_key_length() > 0 {
+        let hr = if h.candidate_mode() == candidate_mode::INCREMENTAL
+            && h.has_ui_presenter()
+            && !h.selected_candidate().is_empty()
+        {
+            handle_candidate_worker(h)
+        } else if !h.is_escape_input_leading() && h.fetch_candidates(false, false, false) > 0 {
+            sentence_append_fetched(h, -1)
+        } else {
+            h.beep(beep::WARNING);
+            return S_OK;
+        };
+        if failed(hr) || h.virtual_key_length() > 0 || !is_sentence_pending(h) {
+            return hr;
+        }
+    }
     let st = h.state();
     match function {
         sentence_key::MOVE_LEFT => st.sentence.move_left(),

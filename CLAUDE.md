@@ -91,7 +91,7 @@ $env:DIME_GOLDEN_RECORD=1; vstest.console.exe src\bin\x64\Debug\DIMETests.dll /T
 ### 整句輸入（`SentenceMode`，目前僅大易）
 
 - 設定 `SentenceMode=1`（INI / CLI / 設定視窗「整句輸入」）後，空白鍵或結束鍵不再跳出候選字窗，而是把該字（連同該字碼的全部候選字）加入組字區的「整句」，由 `rust/crates/dime-core/src/sentence.rs` 的 Viterbi 依字頻（`TCFreq.cin`）與詞庫（`Array-Phrase.cin` 的詞，不用其字碼）重選整句；Enter／空白送出，←→ 移動、↓ 改選游標所在字（選定即釘住），Backspace／Delete 刪字，Esc 放棄。標點、地址鍵、Shift 英數等直接輸出的鍵會先送出整句。
-- 搭配 `AutoCompose=1` 時打字根會顯示即時候選字窗（`INCREMENTAL`），空白加入整句（不釘選）、選字鍵或移動反白後選字會釘選；沒有另外的「整句候選字窗」設定。大易建議 `DayiSelkeyMode=2`（數字選字鍵在即時候選字窗出現時優先於數字字根）。黃金情境 `dayi_sentence_auto_compose_*`。
+- 搭配 `AutoCompose=1` 時打字根會顯示即時候選字窗（`INCREMENTAL`），空白加入整句（不釘選）、選字鍵或移動反白後選字會釘選；沒有另外的「整句候選字窗」設定。正在打字根時（有無即時候選字窗皆同）←→ Home End 先把該字加入整句（同空白鍵；即時候選字窗移過反白則釘選反白的字；沒有字的字根留著並嗶聲）再移動，路由在 `keyevent::decide_key_eaten`，處理在 `handle_sentence_arrow_key`。大易建議 `DayiSelkeyMode=2`（數字選字鍵在即時候選字窗出現時優先於數字字根）。黃金情境 `dayi_sentence_auto_compose_*`。
 - 整句的狀態與按鍵處理在 Rust session（`dime-core::session`、`sentence_buffer`）；TSF 端（`SentenceHandler.cpp`）負責寫組字區、載入字典與學習檔。`SentenceBuffer.*` 是 `CSentenceLexicon`（字頻與詞庫）與 `CSentenceUserModel`（學習資料）的 C++ 包裝。
 - 學習：送出整句時，使用者手動選定（釘住）的字會被 `UserModel`（Rust）記住「該字碼偏好的字」與「它和前後字組成的雙字詞」，之後轉換加分（同一字碼要選約 3 次才會在沒有上下文時取代第一候選字；詞在上下文中一次就生效）。存在 `%APPDATA%\DIME\SentenceUser.txt`（UTF-16，刪除即重置）；多個行程共用此檔，存檔時重新讀檔再加上本行程新增的部分（`_pSentencePending`），不會互相覆蓋。Store app／低完整性行程不寫檔，只留在記憶體。
 

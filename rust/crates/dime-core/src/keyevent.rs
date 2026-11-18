@@ -172,6 +172,26 @@ pub fn decide_key_eaten(s: &SessionState, input: &DecideInput<'_>) -> DecideOutp
                 return out;
             }
         }
+        // ... and with a reading being typed (with or without the incremental
+        // window), ← → Home End still move in the sentence: the reading's
+        // character joins it first (`handle_sentence_arrow_key`).
+        if !s.sentence.is_empty()
+            && input.is_composing
+            && (mode == candidate_mode::NONE || mode == candidate_mode::INCREMENTAL)
+            && input.virtual_key_length > 0
+        {
+            if let Some(state) = sentence_key(k.code, k.modifiers).filter(|st| {
+                st.category == CATEGORY_SENTENCE
+                    && matches!(
+                        st.function,
+                        function::MOVE_LEFT | function::MOVE_RIGHT | function::MOVE_PAGE_TOP | function::MOVE_PAGE_BOTTOM
+                    )
+            }) {
+                set(&mut out, state.category, state.function);
+                out.eaten = true;
+                return out;
+            }
+        }
 
         let mut ctx = k.clone();
         ctx.candidate_mode = mode;
@@ -348,5 +368,39 @@ mod tests {
         assert!(s.shifted_english, "auto-repeat is not a fresh press");
         on_test_key_down(&mut s, vk::SHIFT, 0);
         assert!(!s.shifted_english);
+    }
+
+    #[test]
+    fn sentence_arrows_with_a_reading() {
+        let mut s = SessionState::new();
+        let a: Vec<u16> = "a".encode_utf16().collect();
+        assert!(s.sentence.insert(&a, vec!["人".encode_utf16().collect()], -1));
+        let mut i = open_input(&[]);
+        i.is_composing = true;
+        i.virtual_key_length = 1;
+        for mode in [candidate_mode::NONE, candidate_mode::INCREMENTAL] {
+            i.key.candidate_mode = mode;
+            for (code, f) in [
+                (vk::LEFT, function::MOVE_LEFT),
+                (vk::RIGHT, function::MOVE_RIGHT),
+                (vk::HOME, function::MOVE_PAGE_TOP),
+                (vk::END, function::MOVE_PAGE_BOTTOM),
+            ] {
+                i.key.code = code;
+                let o = decide_key_eaten(&s, &i);
+                assert!(o.eaten);
+                assert_eq!((o.state.category, o.state.function), (CATEGORY_SENTENCE, f));
+            }
+            // Down / Up / Enter / Esc / Backspace keep acting on the reading.
+            for code in [vk::DOWN, vk::UP, vk::RETURN, vk::ESCAPE, vk::BACK] {
+                i.key.code = code;
+                assert_ne!(decide_key_eaten(&s, &i).state.category, CATEGORY_SENTENCE);
+            }
+        }
+        // The edit window (ORIGINAL) keeps its arrows.
+        i.key.candidate_mode = candidate_mode::ORIGINAL;
+        i.candi_count = 3;
+        i.key.code = vk::LEFT;
+        assert_ne!(decide_key_eaten(&s, &i).state.category, CATEGORY_SENTENCE);
     }
 }

@@ -1,0 +1,24 @@
+# script: a Space g Left d Down Left End a d e Left Back Back Back e Left Back Home c Right Enter
+init -> passed text="" sel=0
+a -> eaten text="人" sel=1 comp="人" cand=incremental[*人 入 八 從 信]
+Space -> eaten text="人" sel=1 comp="人"
+g -> eaten text="人王" sel=2 comp="人王" cand=incremental[*王 國 主 玉 全 金 理 現 球 班 珠 琴]
+Left -> eaten text="人王" sel=1 comp="人王"
+d -> eaten text="人言王" sel=2 comp="人言王" cand=incremental[*言 詞 這 諸]
+Down -> eaten text="人言王" sel=2 comp="人言王" cand=incremental[言 *詞 這 諸]
+Left -> eaten text="人詞王" sel=1 comp="人詞王"
+End -> eaten text="人詞王" sel=3 comp="人詞王"
+a -> eaten text="人詞王人" sel=4 comp="人詞王人" cand=incremental[*人 入 八 從 信]
+d -> eaten text="人詞王人言" sel=5 comp="人詞王人言" cand=incremental[*信]
+e -> eaten text="人詞王人言山" sel=6 comp="人詞王人言山" cand=incremental[]
+Left -> eaten text="人詞王人言山" sel=6 comp="人詞王人言山" cand=incremental[]
+Back -> eaten text="人詞王人言" sel=5 comp="人詞王人言" cand=incremental[*信]
+Back -> eaten text="人詞王人" sel=4 comp="人詞王人" cand=incremental[*人 入 八 從 信]
+Back -> eaten text="人詞王" sel=3 comp="人詞王"
+e -> eaten text="人詞王山" sel=4 comp="人詞王山" cand=incremental[*山 出 地]
+Left -> eaten text="人詞玉山" sel=3 comp="人詞玉山"
+Back -> eaten text="人詞山" sel=2 comp="人詞山"
+Home -> eaten text="人詞山" sel=0 comp="人詞山"
+c -> eaten text="金人詞山" sel=1 comp="金人詞山" cand=incremental[*金]
+Right -> eaten text="金人詞山" sel=2 comp="金人詞山"
+Enter -> eaten text="金人詞山" sel=4

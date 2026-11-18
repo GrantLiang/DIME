@@ -302,7 +302,7 @@ namespace DIMEUnitTests
         TEST_METHOD(Dayi_SentenceAutoComposeDayiSelkey)
         {
             CheckGolden(L"dayi_sentence_auto_compose_dayi_selkey", SentenceOptions({ L"AutoCompose = 1", L"DayiSelkeyMode = 2" }),
-                L"a Space g ' g Shift+' d Down Space a b Space a d \\ Left Left Down ] e Back e Esc Home Down Space End c Enter Enter a Space '");
+                L"a Space g ' g Shift+' d Down Space a b Space a d \\ Down ] e Back e Esc Home Down Space End c Enter Enter a Space '");
         }
         TEST_METHOD(Dayi_SentenceAutoComposeNumeric)
         {
@@ -313,6 +313,18 @@ namespace DIMEUnitTests
         {
             CheckGolden(L"dayi_sentence_auto_compose_table_selkey", SentenceOptions({ L"AutoCompose = 1" }),
                 L"a 1 d Space g PgDn Space Left Down 1 Enter");
+        }
+        // ← → Home End with a reading: its character joins the sentence first,
+        // then the cursor moves (a reading without a character stays).
+        TEST_METHOD(Dayi_SentenceAutoComposeArrows)
+        {
+            CheckGolden(L"dayi_sentence_auto_compose_arrows", SentenceOptions({ L"AutoCompose = 1", L"DayiSelkeyMode = 2" }),
+                L"a Space g Left d Down Left End a d e Left Back Back Back e Left Back Home c Right Enter");
+        }
+        TEST_METHOD(Dayi_SentenceArrowsWithReading)
+        {
+            CheckGolden(L"dayi_sentence_arrows_with_reading", SentenceOptions({}),
+                L"a Space g Left Down Space End d Home Enter");
         }
         TEST_METHOD(Dayi_SentenceOutputCommits)  { CheckGolden(L"dayi_sentence_output_commits", SentenceOptions({}), L"a Space Shift+b d Space ' g Space Shift+1"); }
         TEST_METHOD(Dayi_SentenceHanConvert)
