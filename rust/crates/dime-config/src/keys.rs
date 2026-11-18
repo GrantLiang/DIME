@@ -7,7 +7,7 @@ use dime_core::text::w;
 
 use crate::guid;
 use crate::num::{wcstol, wcstoul};
-use crate::values::{face_from, face_str, ImeMode, Palette, Settings};
+use crate::values::{article_chars_from, article_chars_str, face_from, face_str, ImeMode, Palette, Settings};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyType {
@@ -74,6 +74,7 @@ pub static KEYS: &[KeyInfo] = &[
     k("ArrayScope", I, 0, 5, MASK_ARRAY),
     k("PhoneticKeyboardLayout", I, 0, 1, MASK_PHONETIC),
     k("DayiSelkeyMode", I, 0, 2, MASK_DAYI),
+    k("DayiArticleChars", S, 0, 0, MASK_DAYI),
     k("FontFaceName", S, 0, 0, MASK_ALL),
     k("ReverseConversionDescription", S, 0, 0, MASK_ALL),
     k("ReverseConversionCLSID", G, 0, 0, MASK_ALL),
@@ -213,6 +214,7 @@ pub fn get_value(s: &Settings, ki: &KeyInfo) -> Vec<u16> {
             w(&format!("0x{:06X}", *palette_slot(p, f)))
         }
         KeyType::Str if n == "FontFaceName" => face_str(&s.v.font_face_name).to_vec(),
+        KeyType::Str if n == "DayiArticleChars" => article_chars_str(&s.v.dayi_article_chars).to_vec(),
         KeyType::Str => s.reverse_conversion_description.clone().unwrap_or_default(),
         KeyType::Clsid if n == "ReverseConversionCLSID" => w(&guid::to_string(&s.v.reverse_conversion_clsid)),
         KeyType::Clsid => w(&guid::to_string(&s.v.reverse_conversion_guid_profile)),
@@ -226,6 +228,7 @@ pub enum SetError {
     OutOfRange { value: i32, min: i32, max: i32, key: &'static str },
     NotColor(String),
     NotGuid(String),
+    NotArticleChars(String),
 }
 
 impl std::fmt::Display for SetError {
@@ -237,6 +240,9 @@ impl std::fmt::Display for SetError {
             }
             SetError::NotColor(v) => write!(f, "Error: '{v}' is not a valid hex colour (e.g. 0xRRGGBB)."),
             SetError::NotGuid(v) => write!(f, "Error: '{v}' is not a valid GUID."),
+            SetError::NotArticleChars(v) => {
+                write!(f, "Error: '{v}' must be empty or exactly 6 characters (for ' [ ] \\ - ` in order).")
+            }
         }
     }
 }
@@ -281,6 +287,9 @@ pub fn set_value(s: &mut Settings, ki: &KeyInfo, value: &[u16]) -> Result<(), Se
             *palette_slot(p, f) = c;
         }
         KeyType::Str if n == "FontFaceName" => s.v.font_face_name = face_from(value),
+        KeyType::Str if n == "DayiArticleChars" => {
+            s.v.dayi_article_chars = article_chars_from(value).ok_or_else(|| SetError::NotArticleChars(text()))?;
+        }
         KeyType::Str => {
             s.reverse_conversion_description = Some(value.to_vec());
             s.v.reload_reverse_conversion = 1;
@@ -324,6 +333,7 @@ mod tests {
             let v = match ki.ty {
                 KeyType::Bool | KeyType::Int => ki.max.to_string(),
                 KeyType::Color => "0x0A0B0C".into(),
+                KeyType::Str if ki.name == "DayiArticleChars" => "，『』：。、".into(),
                 KeyType::Str => "Font".into(),
                 KeyType::Clsid => "{36FE76BA-0A31-4E01-9E2B-0F4AD5A1C18B}".into(),
             };
@@ -348,6 +358,9 @@ mod tests {
         assert_eq!(set(&mut s, "ReverseConversionCLSID", ""), Ok(()));
         assert_eq!(get(&s, "ReverseConversionCLSID"), "{00000000-0000-0000-0000-000000000000}");
         assert_eq!(s.v.reload_reverse_conversion, 1);
+        assert!(set(&mut s, "DayiArticleChars", "，『』").is_err());
+        assert_eq!(set(&mut s, "DayiArticleChars", ""), Ok(()));
+        assert_eq!(get(&s, "DayiArticleChars"), "");
     }
 
     #[test]

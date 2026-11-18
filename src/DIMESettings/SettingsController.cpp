@@ -20,7 +20,8 @@
 #include <cstddef>
 
 // SettingsSnapshot must match dime-config::settings_model::SettingsSnapshot.
-static_assert(sizeof(SettingsSnapshot) == 216, "SettingsSnapshot size");
+static_assert(sizeof(SettingsSnapshot) == 232, "SettingsSnapshot size");
+static_assert(offsetof(SettingsSnapshot, dayiArticleChars) == 216, "dayiArticleChars");
 static_assert(alignof(SettingsSnapshot) == 4, "SettingsSnapshot alignment");
 static_assert(offsetof(SettingsSnapshot, fontFaceName) == 12, "fontFaceName");
 static_assert(offsetof(SettingsSnapshot, colorMode) == 76, "colorMode");

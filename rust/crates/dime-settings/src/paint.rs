@@ -1756,16 +1756,16 @@ mod tests {
     #[test]
     fn context_layout_matches_msvc() {
         if cfg!(target_pointer_width = "64") {
-            assert_eq!(size_of::<PaintContext>(), 520);
-            assert_eq!(offset_of!(PaintContext, dpi), 376);
+            assert_eq!(size_of::<PaintContext>(), 536);
+            assert_eq!(offset_of!(PaintContext, dpi), 392);
             assert_eq!(size_of::<Fonts>(), 56);
         } else {
-            assert_eq!(size_of::<PaintContext>(), 484);
-            assert_eq!(offset_of!(PaintContext, dpi), 340);
+            assert_eq!(size_of::<PaintContext>(), 500);
+            assert_eq!(offset_of!(PaintContext, dpi), 356);
             assert_eq!(size_of::<Fonts>(), 28);
         }
         assert_eq!(offset_of!(PaintContext, snapshot), 88);
-        assert_eq!(offset_of!(PaintContext, font_title), 304);
+        assert_eq!(offset_of!(PaintContext, font_title), 320);
         assert_eq!(
             offset_of!(PaintContext, toggle_on),
             offset_of!(PaintContext, card_expanded) + 16

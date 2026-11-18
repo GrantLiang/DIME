@@ -147,6 +147,43 @@ pub struct ConfigValues {
     pub font_face_name: [u16; LF_FACESIZE],
     pub reverse_conversion_clsid: [u8; 16],
     pub reverse_conversion_guid_profile: [u8; 16],
+    /// `DayiArticleChars`: what the address keys `' [ ] \ - `` ` type in
+    /// article mode, NUL-padded; empty (all zero) is the built-in symbols.
+    pub dayi_article_chars: ArticleChars,
+}
+
+/// Number of address keys (`' [ ] \ - `` `, in that order).
+pub const ARTICLE_CHAR_COUNT: usize = 6;
+/// [`ConfigValues::dayi_article_chars`]: six characters and NUL padding.
+pub type ArticleChars = [u16; 8];
+
+/// Characters an address key may type: printable BMP characters other than spaces.
+fn article_char_ok(c: u16) -> bool {
+    c > 0x20 && c != 0x7F && !(0x80..0xA0).contains(&c) && !(0xD800..=0xDFFF).contains(&c) && c != 0x3000 && c != 0xFEFF
+}
+
+/// Parse a `DayiArticleChars` value: empty (the built-in symbols) or exactly
+/// six characters (surrounding spaces ignored).  `None` when invalid.
+pub fn article_chars_from(s: &[u16]) -> Option<ArticleChars> {
+    let s = &s[..s.iter().position(|&c| c == 0).unwrap_or(s.len())];
+    let is_space = |c: &u16| matches!(*c, 0x20 | 0x09 | 0x3000);
+    let start = s.iter().position(|c| !is_space(c)).unwrap_or(s.len());
+    let end = s.iter().rposition(|c| !is_space(c)).map_or(start, |i| i + 1);
+    let s = &s[start..end];
+    let mut out = [0u16; 8];
+    if s.is_empty() {
+        return Some(out);
+    }
+    if s.len() != ARTICLE_CHAR_COUNT || !s.iter().all(|&c| article_char_ok(c)) {
+        return None;
+    }
+    out[..ARTICLE_CHAR_COUNT].copy_from_slice(s);
+    Some(out)
+}
+
+/// The characters without the padding (empty when unset).
+pub fn article_chars_str(a: &ArticleChars) -> &[u16] {
+    &a[..a.iter().position(|&c| c == 0).unwrap_or(a.len())]
 }
 
 /// `L"微軟正黑體"`, the default candidate font.
@@ -242,6 +279,7 @@ impl ConfigValues {
             font_face_name: default_font_face(),
             reverse_conversion_clsid: [0; 16],
             reverse_conversion_guid_profile: [0; 16],
+            dayi_article_chars: [0; 8],
         }
     }
 
@@ -315,5 +353,24 @@ impl Settings {
         v.color_mode = ConfigValues::default_color_mode(env);
         v.set_mode_defaults(mode);
         self.v = v;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn article_chars_parse() {
+        let parse = |s: &str| article_chars_from(&w(s)).map(|a| String::from_utf16(article_chars_str(&a)).unwrap());
+        assert_eq!(parse(""), Some(String::new()));
+        assert_eq!(parse("  "), Some(String::new()));
+        assert_eq!(parse("，『』：。、"), Some("，『』：。、".into()));
+        assert_eq!(parse(" ，『』：。、\u{3000}"), Some("，『』：。、".into()));
+        assert_eq!(parse("abcdef"), Some("abcdef".into()));
+        assert_eq!(parse("，『』：。"), None, "five");
+        assert_eq!(parse("，『』：。、？"), None, "seven");
+        assert_eq!(parse("，『 』：。"), None, "a space inside");
+        assert_eq!(parse("，『』：。😀"), None, "outside the BMP");
     }
 }

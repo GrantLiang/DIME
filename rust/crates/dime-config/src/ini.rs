@@ -6,7 +6,10 @@ use dime_core::text::{w, TextOps};
 
 use crate::guid;
 use crate::num::{wcstol, wcstoul, wtoi};
-use crate::values::{color_mode, colors, face_from, face_str, ConfigValues, Env, ImeMode, Settings, MAX_CODES};
+use crate::values::{
+    article_chars_from, article_chars_str, color_mode, colors, face_from, face_str, ConfigValues, Env, ImeMode,
+    Settings, MAX_CODES,
+};
 
 /// Apply one `[Config]` key/value pair.  Keys are matched with
 /// `CompareString(NORM_IGNORECASE)` and booleans are true only when the value
@@ -27,6 +30,9 @@ pub fn apply_entry(ops: &dyn TextOps, s: &mut Settings, key: &[u16], value: &[u1
         v.array_single_quote_custom_phrase = truthy();
     } else if is("DayiArticleMode") {
         v.dayi_article_mode = truthy();
+    } else if is("DayiArticleChars") {
+        // An invalid value keeps the built-in symbols.
+        v.dayi_article_chars = article_chars_from(value).unwrap_or_default();
     } else if is("DayiSelkeyMode") {
         let m = wtoi(value);
         v.dayi_selkey_mode = if (0..=2).contains(&m) { m } else { 0 };
@@ -260,6 +266,10 @@ pub fn serialize(s: &Settings, mode: ImeMode) -> Vec<u16> {
     if mode == ImeMode::Dayi {
         line(format!("DayiArticleMode = {}", b(v.dayi_article_mode)));
         line(format!("DayiSelkeyMode = {}", v.dayi_selkey_mode));
+        let chars = article_chars_str(&v.dayi_article_chars);
+        if !chars.is_empty() {
+            line(format!("DayiArticleChars = {}", String::from_utf16_lossy(chars)));
+        }
     }
     if mode == ImeMode::Array {
         line(format!("ArrayScope = {}", v.array_scope));
@@ -341,6 +351,7 @@ mod tests {
         s.v.font_face_name = face_from(&w("Consolas"));
         s.reverse_conversion_description = Some(w("注音"));
         s.v.load_table_mode = 1;
+        s.v.dayi_article_chars = article_chars_from(&w("，『』：。、")).unwrap();
         for mode in [ImeMode::Dayi, ImeMode::Array, ImeMode::Phonetic, ImeMode::Generic] {
             let text = serialize(&s, mode);
             assert_eq!(text[0], 0xFEFF);

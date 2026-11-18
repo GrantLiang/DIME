@@ -56,7 +56,8 @@ static const KeyInfo g_keyRegistry[] =
     { L"PhoneticKeyboardLayout",       INT_T,    0,   1,   CLI_MASK_PHONETIC  },
     { L"DayiSelkeyMode",               INT_T,    0,   2,   CLI_MASK_DAYI      },
     // String keys
-    { L"FontFaceName",                 STRING_T, 0,   0,   CLI_MASK_ALL       },
+    { L"DayiArticleChars",             STRING_T, 0,   0,   CLI_MASK_DAYI      },
+    { L"FontFaceName",                STRING_T, 0,   0,   CLI_MASK_ALL       },
     { L"ReverseConversionDescription", STRING_T, 0,   0,   CLI_MASK_ALL       },
     { L"ReverseConversionCLSID",       CLSID_T,  0,   0,   CLI_MASK_ALL       },
     { L"ReverseConversionGUIDProfile", CLSID_T,  0,   0,   CLI_MASK_ALL       },

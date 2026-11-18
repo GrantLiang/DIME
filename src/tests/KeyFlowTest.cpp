@@ -231,6 +231,10 @@ namespace DIMEUnitTests
         TEST_METHOD(Dayi_SelkeyDayi)          { CheckGolden(L"dayi_selkey_dayi", DayiOptions({ L"DayiSelkeyMode = 2" }), L"a Space ' a Space Space a Space [ g Space Shift+' g Space \\"); }
         TEST_METHOD(Dayi_AddressChars)        { CheckGolden(L"dayi_address_chars", DayiOptions(), L"' [ ] - \\ `"); }
         TEST_METHOD(Dayi_ArticleMode)         { CheckGolden(L"dayi_article_mode", DayiOptions({ L"DayiArticleMode = 1" }), L"' [ ] - \\"); }
+        // DayiArticleChars: the article-mode characters of ' [ ] \ - ` in order.
+        TEST_METHOD(Dayi_ArticleChars)        { CheckGolden(L"dayi_article_chars", DayiOptions({ L"DayiArticleMode = 1", L"DayiArticleChars = \xFF0C\x300E\x300F\xFF1A\x3002\x3001" }), L"' [ ] \\ - ` a '"); }
+        TEST_METHOD(Dayi_ArticleCharsModeOff) { CheckGolden(L"dayi_article_chars_mode_off", DayiOptions({ L"DayiArticleChars = \xFF0C\x300E\x300F\xFF1A\x3002\x3001" }), L"' ["); }
+        TEST_METHOD(Dayi_ArticleCharsInvalid) { CheckGolden(L"dayi_article_chars_invalid", DayiOptions({ L"DayiArticleMode = 1", L"DayiArticleChars = \xFF0C\x300E\x300F" }), L"' ["); }
         TEST_METHOD(Dayi_SymbolPrompt)        { CheckGolden(L"dayi_symbol_prompt", DayiOptions(), L"= 1 Space 2 = 2 Space 1"); }
         TEST_METHOD(Dayi_AutoCompose)         { CheckGolden(L"dayi_auto_compose", DayiOptions({ L"AutoCompose = 1" }), L"a d Back g 3"); }
         TEST_METHOD(Dayi_FullShapeShift)      { CheckGolden(L"dayi_shift_english_caps", DayiOptions(), L"Shift+a Shift+1"); }

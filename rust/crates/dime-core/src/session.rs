@@ -120,6 +120,11 @@ pub trait Host {
     fn shift_english_digit_mode(&self) -> u32;
     /// `CConfig::getDayiArticleMode()`.
     fn dayi_article_mode(&self) -> bool;
+    /// `DayiArticleChars`: the article-mode characters of `' [ ] \ - `` `
+    /// in that order, or `None` for the built-in symbols.
+    fn dayi_article_chars(&self) -> Option<[u16; 6]> {
+        None
+    }
     /// `iswalpha`.
     fn is_alpha(&self, c: u16) -> bool;
     /// The base (CapsLock off) or shifted (CapsLock on) character on the key
@@ -378,7 +383,26 @@ pub fn handle_address_char(h: &mut impl Host, wch: u16) -> HResult {
     if h.is_composing() {
         handle_cancel(h);
     }
-    output_char(h, dayi_address_char(wch, h.dayi_article_mode()))
+    let c = if h.dayi_article_mode() {
+        h.dayi_article_chars()
+            .and_then(|chars| dayi_custom_article_char(wch, &chars))
+            .unwrap_or_else(|| dayi_address_char(wch, true))
+    } else {
+        dayi_address_char(wch, false)
+    };
+    output_char(h, c)
+}
+
+/// The address keys in `DayiArticleChars` order.
+const DAYI_ARTICLE_KEYS: [u8; 6] = *b"'[]\\-`";
+
+/// The user's article-mode character for address key `c`.
+pub fn dayi_custom_article_char(c: u16, chars: &[u16; 6]) -> Option<u16> {
+    DAYI_ARTICLE_KEYS
+        .iter()
+        .position(|&k| u16::from(k) == c)
+        .map(|i| chars[i])
+        .filter(|&ch| ch != 0)
 }
 
 /// `_HandleCandidateFinalize` / `_HandleCandidateConvert` (both are `_HandleCandidateWorker`).
@@ -1326,6 +1350,11 @@ mod tests {
         assert_eq!(dayi_address_char(u16::from(b'\''), false), 0x865F);
         assert_eq!(dayi_address_char(u16::from(b'['), true), 0x3002);
         assert_eq!(dayi_address_char(u16::from(b'a'), false), 0);
+        let chars: [u16; 6] = "，『』：。、".encode_utf16().collect::<Vec<_>>().try_into().unwrap();
+        for (key, want) in "'[]\\-`".bytes().zip("，『』：。、".encode_utf16()) {
+            assert_eq!(dayi_custom_article_char(u16::from(key), &chars), Some(want));
+        }
+        assert_eq!(dayi_custom_article_char(u16::from(b'a'), &chars), None);
         assert_eq!(full_width(u16::from(b' ')), 0x3000);
         assert_eq!(full_width(u16::from(b'~')), 0xFF5E);
     }

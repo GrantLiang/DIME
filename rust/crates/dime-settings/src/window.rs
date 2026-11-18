@@ -190,6 +190,7 @@ const CB_SETITEMDATA: u32 = 0x0151;
 const CB_SETCURSEL: u32 = 0x014E;
 const LOGPIXELSY: i32 = 90;
 const CTRL_MAX_CODES: i32 = 18;
+const CTRL_DAYI_ARTICLE_CHARS: i32 = 43;
 const CTRL_CUSTOM_TABLE_EDITOR: i32 = 200;
 const CTRL_CUSTOM_TABLE_SAVE: i32 = 201;
 const KEY_TOGGLE_SLOTS: usize = 64;
@@ -1188,7 +1189,10 @@ fn handle_command(hwnd: Handle, wd: *mut WindowData, wparam: usize, lparam: isiz
             }
         }
     }
-    if ev.notify_code == EN_CHANGE && ev.ctrl_id - 3000 == CTRL_MAX_CODES && !sender.is_null() {
+    if ev.notify_code == EN_CHANGE
+        && (ev.ctrl_id - 3000 == CTRL_MAX_CODES || ev.ctrl_id - 3000 == CTRL_DAYI_ARTICLE_CHARS)
+        && !sender.is_null()
+    {
         // SAFETY: a 16-unit buffer, as in C++.
         unsafe { GetWindowTextW(sender, ev.edit_text.as_mut_ptr(), 16) };
     }

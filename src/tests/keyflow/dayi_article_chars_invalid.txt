@@ -1,0 +1,4 @@
+# script: ' [
+init -> passed text="" sel=0
+' -> eaten text="，" sel=1
+[ -> eaten text="，。" sel=2

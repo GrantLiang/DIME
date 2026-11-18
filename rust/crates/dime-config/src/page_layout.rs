@@ -9,7 +9,8 @@ use std::sync::OnceLock;
 
 use crate::settings_model::{
     CTRL_ARRAY_FORCE_SP, CTRL_ARRAY_NOTIFY_SP, CTRL_ARRAY_SINGLE_QUOTE, CTRL_ARROW_KEY_SW_PAGES, CTRL_AUTO_COMPOSE,
-    CTRL_CHARSET_SCOPE, CTRL_CLEAR_ON_BEEP, CTRL_CUSTOM_TABLE_PRIORITY, CTRL_DAYI_ARTICLE, CTRL_DAYI_SELKEY_MODE,
+    CTRL_CHARSET_SCOPE, CTRL_CLEAR_ON_BEEP, CTRL_CUSTOM_TABLE_PRIORITY, CTRL_DAYI_ARTICLE, CTRL_DAYI_ARTICLE_CHARS,
+    CTRL_DAYI_SELKEY_MODE,
     CTRL_DOUBLE_SINGLE_BYTE, CTRL_DO_BEEP, CTRL_DO_BEEP_CANDI, CTRL_DO_BEEP_NOTIFY, CTRL_IME_SHIFT_MODE,
     CTRL_KEYBOARD_OPEN_CLOSE, CTRL_LOAD_ARRAY40, CTRL_LOAD_ARRAY_EXPAND, CTRL_LOAD_ARRAY_EXT_B, CTRL_LOAD_ARRAY_EXT_CD,
     CTRL_LOAD_ARRAY_EXT_E_TO_J, CTRL_LOAD_ARRAY_MAIN, CTRL_LOAD_ARRAY_PHRASE, CTRL_LOAD_ARRAY_SC, CTRL_LOAD_ARRAY_SP,
@@ -537,6 +538,18 @@ fn build() -> Tables {
         ),
         row(
             &mut s,
+            CTRL_DAYI_ARTICLE_CHARS,
+            TY_EDIT,
+            ACT_NONE,
+            CTRL_NONE,
+            "地址鍵符號",
+            Some("6 個字依序對應 ' [ ] \\ - `，留空用預設"),
+            MODE_DAYI,
+            false,
+            0xE8AC,
+        ),
+        row(
+            &mut s,
             CTRL_DAYI_SELKEY_MODE,
             TY_COMBO,
             ACT_NONE,
@@ -974,7 +987,7 @@ mod tests {
         assert_eq!(utf16(cards[2].title), "輸入設定");
         assert_eq!(utf16(cards[2].description), "字集、組字、候選字、切換、輸入法專屬選項");
         assert!(cards[2].default_expanded);
-        assert_eq!(cards[2].row_count, 25);
+        assert_eq!(cards[2].row_count, 26);
         assert_eq!(utf16(cards[3].title), "自建詞庫");
         assert_eq!(cards[3].action, ACT_NAVIGATE);
         assert_eq!(cards[3].row_count, 3);
@@ -998,6 +1011,10 @@ mod tests {
         assert!(!row_visible(article.visible_modes, MODE_ARRAY));
         assert!(!row_visible(article.visible_modes, MODE_PHONETIC));
         assert!(!row_visible(article.visible_modes, MODE_GENERIC));
+        let i = input.iter().position(|r| r.id == CTRL_DAYI_ARTICLE).unwrap();
+        assert_eq!(input[i + 1].id, CTRL_DAYI_ARTICLE_CHARS);
+        assert_eq!(input[i + 1].row_type, TY_EDIT);
+        assert_eq!(input[i + 1].visible_modes, MODE_DAYI);
         let beep = unsafe { rows(&cards[1]) }
             .iter()
             .find(|r| r.id == CTRL_DO_BEEP_CANDI)

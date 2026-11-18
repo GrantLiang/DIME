@@ -246,6 +246,7 @@ DIMESettings.exe --reset-ui --mode array
 | Key | 設定介面 | Default | Notes |
 |-----|---------|---------|-------|
 | `FontFaceName` | 字型 | `微軟正黑體` | Up to 32 chars |
+| `DayiArticleChars` | 地址鍵符號（僅大易） | empty | Empty, or exactly 6 characters: what `'` `[` `]` `\` `-` `` ` `` type (in that order) when `DayiArticleMode=1`. Empty = built-in `，。？；、：`. Any other length is rejected (exit 1). `--get` prints `?` for characters above U+00FF (console code page). |
 | `ReverseConversionCLSID` | 反查輸入字根 (CLSID) | empty | `{XXXXXXXX-...}` format |
 | `ReverseConversionGUIDProfile` | 反查輸入字根 (GUIDProfile) | empty | `{XXXXXXXX-...}` format |
 | `ReverseConversionDescription` | 反查輸入字根 (Description) | empty | Free text |

@@ -72,6 +72,7 @@ enum SettingsControlId {
     // Composite / special controls
     CTRL_COLOR_GRID,           // 3x2 color swatch grid (expandable child of CTRL_COLOR_MODE)
     CTRL_CANDIDATE_PREVIEW,    // candidate + notify window preview (RowType::CandidatePreview)
+    CTRL_DAYI_ARTICLE_CHARS,   // DayiArticleChars edit (43, after the older ids)
 
     CTRL_COUNT,
 
@@ -144,6 +145,7 @@ struct SettingsSnapshot {
     int doubleSingleByteMode;    // DOUBLE_SINGLE_BYTE_MODE as int
     int shiftEnglishDigitMode;   // IME_SHIFT_ENGLISH_DIGIT_MODE as int
     int reverseConversionIndex;
+    wchar_t dayiArticleChars[8];  // DayiArticleChars: 6 characters, NUL-padded (empty = built-in)
 };
 
 // ============================================================================

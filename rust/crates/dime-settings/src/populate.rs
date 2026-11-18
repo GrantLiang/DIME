@@ -11,8 +11,9 @@ use dime_config::settings_model::{
     CTRL_DAYI_SELKEY_MODE, CTRL_DOUBLE_SINGLE_BYTE, CTRL_DO_BEEP, CTRL_DO_BEEP_CANDI, CTRL_DO_BEEP_NOTIFY,
     CTRL_IME_SHIFT_MODE, CTRL_KEYBOARD_OPEN_CLOSE, CTRL_MAKE_PHRASE, CTRL_MAX_CODES, CTRL_NUMERIC_PAD,
     CTRL_OUTPUT_CHT_CHS, CTRL_PHONETIC_KB, CTRL_SENTENCE_MODE, CTRL_SHIFT_ENGLISH_DIGIT_MODE, CTRL_SHOW_NOTIFY,
-    CTRL_SPACE_AS_FIRST_CAND, CTRL_SPACE_AS_PAGEDOWN,
+    CTRL_SPACE_AS_FIRST_CAND, CTRL_SPACE_AS_PAGEDOWN, CTRL_DAYI_ARTICLE_CHARS,
 };
+use dime_config::values::article_chars_str;
 
 const CTRL_COLOR_MODE: i32 = 4;
 const CTRL_ARRAY_SCOPE: i32 = 13;
@@ -186,6 +187,13 @@ pub fn populate(s: &SettingsSnapshot, windows1809: bool, reverse_is_null: bool, 
     o.select(CTRL_OUTPUT_CHT_CHS, i32::from(s.do_han_convert != 0));
 
     o.check(CTRL_DAYI_ARTICLE, s.dayi_article_mode);
+    o.0.push(Op {
+        kind: OP_TEXT,
+        ctrl_id: CTRL_DAYI_ARTICLE_CHARS,
+        value: 0,
+        data: None,
+        text: article_chars_str(&s.dayi_article_chars).to_vec(),
+    });
     o.check(CTRL_SENTENCE_MODE, s.sentence_mode);
     o.check(CTRL_ARRAY_FORCE_SP, s.array_force_sp);
     o.check(CTRL_ARRAY_NOTIFY_SP, s.array_notify_sp);

@@ -49,7 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <dwmapi.h>
 #include <uxtheme.h>
 #include "dime_ffi.h"
-static_assert(sizeof(DimeConfigValues) == 308, "DimeConfigValues must match dime_config::ConfigValues");
+static_assert(sizeof(DimeConfigValues) == 324,"DimeConfigValues must match dime_config::ConfigValues");
 
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "uxtheme.lib")
@@ -114,6 +114,7 @@ DIME_CONFIG_DEFINE(BOOL, _doHanConvert, do_han_convert, FALSE);
 DIME_CONFIG_DEFINE(BOOL, _showNotifyDesktop, show_notify_desktop, TRUE);
 DIME_CONFIG_DEFINE(BOOL, _dayiArticleMode, dayi_article_mode, FALSE);  // Article mode: input full-shaped symbols with address keys
 DIME_CONFIG_DEFINE(DAYI_SELKEY_MODE, _dayiSelkeyMode, dayi_selkey_mode, DAYI_SELKEY_MODE::DAYI_SELKEY_FROM_TABLE);
+DIME_CONFIG_DEFINE(DimeArticleChars, _dayiArticleChars, dayi_article_chars, {});  // DayiArticleChars (empty = built-in symbols)
 BOOL CConfig::_customTableChanged = FALSE;
 DIME_CONFIG_DEFINE(BOOL, _arraySingleQuoteCustomPhrase, array_single_quote_custom_phrase, FALSE);
 DIME_CONFIG_DEFINE(BOOL, _big5Filter, big5_filter, FALSE);
@@ -423,6 +424,8 @@ void CConfig::ExportValues(_Out_ DimeConfigValues* v)
 	static_assert(sizeof(v->reverse_conversion_clsid) == sizeof(GUID), "GUID size");
 	memcpy(v->reverse_conversion_clsid, &_reverseConverstionCLSID, sizeof(GUID));
 	memcpy(v->reverse_conversion_guid_profile, &_reverseConversionGUIDProfile, sizeof(GUID));
+	static_assert(sizeof(v->dayi_article_chars) == sizeof(_dayiArticleChars), "DayiArticleChars");
+	memcpy(v->dayi_article_chars, _dayiArticleChars, sizeof(_dayiArticleChars));
 }
 
 void CConfig::ImportValues(_In_ const DimeConfigValues* v)
@@ -472,6 +475,7 @@ void CConfig::ImportValues(_In_ const DimeConfigValues* v)
 	_pFontFaceName[LF_FACESIZE - 1] = L'\0';
 	memcpy(&_reverseConverstionCLSID, v->reverse_conversion_clsid, sizeof(GUID));
 	memcpy(&_reverseConversionGUIDProfile, v->reverse_conversion_guid_profile, sizeof(GUID));
+	memcpy(_dayiArticleChars, v->dayi_article_chars, sizeof(_dayiArticleChars));
 }
 
 DimeSettings* CConfig::CreateRustSettings()

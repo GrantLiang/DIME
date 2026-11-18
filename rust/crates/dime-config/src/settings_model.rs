@@ -11,7 +11,7 @@
 //! `CTRL_LOAD_ARRAY_EXPAND` has no suffix, an unknown sidebar index is Dayi,
 //! and the no-engine character check is `towupper(c)` in `32..=128`.
 
-use crate::values::{face_from, ConfigValues, ImeMode};
+use crate::values::{face_from, ArticleChars, ConfigValues, ImeMode};
 
 /// `SM_MODE_*` in `SettingsPageLayout.h`.
 pub const MODE_DAYI: i32 = 0x1;
@@ -51,6 +51,8 @@ pub const CTRL_DAYI_SELKEY_MODE: i32 = 36;
 pub const CTRL_ARRAY_FORCE_SP: i32 = 37;
 pub const CTRL_ARRAY_NOTIFY_SP: i32 = 38;
 pub const CTRL_ARRAY_SINGLE_QUOTE: i32 = 39;
+/// After `CTRL_CANDIDATE_PREVIEW` (42) so the older ids keep their values.
+pub const CTRL_DAYI_ARTICLE_CHARS: i32 = 43;
 
 pub const CTRL_LOAD_DAYI_MAIN: i32 = 300;
 pub const CTRL_LOAD_ARRAY_MAIN: i32 = 301;
@@ -110,6 +112,8 @@ pub struct SettingsSnapshot {
     pub double_single_byte_mode: i32,
     pub shift_english_digit_mode: i32,
     pub reverse_conversion_index: i32,
+    /// `DayiArticleChars` (NUL-padded; all zero is the built-in symbols).
+    pub dayi_article_chars: ArticleChars,
 }
 
 /// `SettingsModel::LineError` codes written across the FFI. `None` (0) is not
@@ -506,6 +510,7 @@ pub fn load_snapshot(values: &ConfigValues, effective_colors: &[u32; 6]) -> Sett
         double_single_byte_mode: values.double_single_byte_mode,
         shift_english_digit_mode: values.shift_english_digit_mode,
         reverse_conversion_index: 0,
+        dayi_article_chars: values.dayi_article_chars,
     }
 }
 
@@ -545,6 +550,7 @@ pub fn apply_snapshot(values: &mut ConfigValues, snap: &SettingsSnapshot) {
     values.ime_shift_mode = snap.ime_shift_mode;
     values.double_single_byte_mode = snap.double_single_byte_mode;
     values.shift_english_digit_mode = snap.shift_english_digit_mode;
+    values.dayi_article_chars = snap.dayi_article_chars;
 }
 
 #[cfg(test)]
@@ -559,7 +565,8 @@ mod tests {
     #[test]
     fn snapshot_layout_matches_cpp() {
         use std::mem::{align_of, offset_of, size_of};
-        assert_eq!(size_of::<SettingsSnapshot>(), 216);
+        assert_eq!(size_of::<SettingsSnapshot>(), 232);
+        assert_eq!(offset_of!(SettingsSnapshot, dayi_article_chars), 216);
         assert_eq!(align_of::<SettingsSnapshot>(), 4);
         assert_eq!(offset_of!(SettingsSnapshot, font_face_name), 12);
         assert_eq!(offset_of!(SettingsSnapshot, color_mode), 76);

@@ -157,7 +157,7 @@ typedef struct DimePalette {
 
 /* CConfig's plain-data settings.  BOOL / enum fields are int32_t, UINT /
    COLORREF fields uint32_t, GUIDs their 16 in-memory bytes.  Must match
-   dime_config::values::ConfigValues (308 bytes, checked on both sides). */
+   dime_config::values::ConfigValues (324 bytes, checked on both sides). */
 typedef struct DimeConfigValues {
     int32_t auto_compose, space_as_page_down, space_as_first_cand_selkey, arrow_key_sw_pages,
             clear_on_beep, do_beep, do_beep_notify, do_beep_on_candi, sentence_mode,
@@ -172,6 +172,7 @@ typedef struct DimeConfigValues {
     uint16_t font_face_name[32];              /* NUL-terminated (LF_FACESIZE) */
     uint8_t  reverse_conversion_clsid[16];
     uint8_t  reverse_conversion_guid_profile[16];
+    uint16_t dayi_article_chars[8];           /* DayiArticleChars: 6 chars, NUL-padded; empty = built-in */
 } DimeConfigValues;
 
 /* Host facts the defaults depend on. */
@@ -1188,7 +1189,7 @@ size_t dime_settings_gdi_record_take(uint16_t* out, size_t cap);
 
 /* ---- Settings model (phase 5b-1, dime-config::settings_model) ----------
  * Window-free SettingsModel functions. snapshot is a C++ SettingsSnapshot
- * (216 bytes). Returned strings are static NUL-terminated UTF-16, or NULL.
+ * (232 bytes). Returned strings are static NUL-terminated UTF-16, or NULL.
  * string_to_ime_mode: NULL or an unknown name is IME_MODE_NONE (4).
  * parse_max_codes: 1 and *out_val written when the text is in 1..=20;
  *   0 otherwise (NULL text does not write). validate_line: 1 when the line
@@ -1255,7 +1256,7 @@ uint32_t dime_settings_blend_color(uint32_t c1, uint32_t c2, int32_t alpha);
 int32_t dime_settings_scale_for_dpi(int32_t value, int32_t dpi);
 
 /* ---- Settings snapshot bridge (phase 5b-4) ------------------------------
- * Load copies the plain CConfig fields into SettingsSnapshot (216 bytes).
+ * Load copies the plain CConfig fields into SettingsSnapshot (232 bytes).
  * colors is six COLORREFs from the live colors[] array, in order: item,
  * selected, item background, phrase, number, selected background. Stored
  * palettes are not read. A null colors pointer is six zeros.
@@ -1340,7 +1341,7 @@ int32_t dime_settings_msgbox_close_result(const void* buttons);
  * HBRUSH, HICON) are passed as void*. ctx is a SettingsWindowPaint::
  * PaintContext (x64 520 bytes, Win32 484); fonts is SettingsWindowPaint::
  * Fonts (56 / 28). rc is a RECT, tc a ThemeColors (88 bytes), snap a
- * SettingsSnapshot (216), layout a SettingsWindowLayout::MsgBoxLayout (64).
+ * SettingsSnapshot (232), layout a SettingsWindowLayout::MsgBoxLayout (64).
  * Strings are NUL terminated. GDI+ must already be started. A null
  * required pointer paints nothing. A panic paints nothing more and returns 0.
  */
@@ -1389,7 +1390,7 @@ void dime_settings_nav_min_track_size(uint32_t screen_dpi, void* out_point);
  * Strings are (pointer, length) UTF-16 without NULs, except the message box
  * caption, which is NUL terminated. A returned string stays valid until the
  * host's next call that returns a string. logfont is a LOGFONTW (92 bytes),
- * snapshot a SettingsSnapshot (216), ev a SettingsCommand::CommandEvent (52).
+ * snapshot a SettingsSnapshot (232), ev a SettingsCommand::CommandEvent (52).
  * Host callbacks must not throw. A null pointer argument does nothing.
  */
 typedef struct DimeSettingsCmdHostVtbl {
@@ -1457,7 +1458,7 @@ const void* dime_settings_editor_subclass_proc(void);
  * CB_SETITEMDATA of data when has_data), SELECT = CB_SETCURSEL value,
  * CHECK = BM_SETCHECK value, TEXT = SetWindowTextW. Text is
  * text[text_offset .. text_offset + text_len] without NULs. snapshot is a
- * SettingsSnapshot (216 bytes); reverse_descs are NUL terminated.
+ * SettingsSnapshot (232 bytes); reverse_descs are NUL terminated.
  */
 enum {
     DIME_POPULATE_RESET = 1,

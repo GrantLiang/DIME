@@ -46,6 +46,7 @@ struct DimeSettings;
 // are references into that storage, so every accessor keeps working unchanged.
 #define DIME_CONFIG_VALUE(type, name) static type& name
 typedef WCHAR DimeFontFaceName[LF_FACESIZE];
+typedef WCHAR DimeArticleChars[8];
 
 #ifdef DIME_UNIT_TESTING
 // Forward declaration for unit testing
@@ -232,6 +233,7 @@ public:
 	//dayi address/article mode
 	static void setDayiArticleMode(BOOL dayiArticleMode) { _dayiArticleMode = dayiArticleMode; }
 	static BOOL getDayiArticleMode() { return _dayiArticleMode; }
+	static const WCHAR* GetDayiArticleChars() { return _dayiArticleChars; }  // "" = built-in symbols
 	static void SetDayiSelkeyMode(DAYI_SELKEY_MODE dayiSelkeyMode) { _dayiSelkeyMode = dayiSelkeyMode; }
 	static DAYI_SELKEY_MODE GetDayiSelkeyMode() { return _dayiSelkeyMode; }
 
@@ -354,6 +356,7 @@ private:
 	DIME_CONFIG_VALUE(BOOL, _doHanConvert);
 
 	DIME_CONFIG_VALUE(BOOL, _dayiArticleMode);  // Article mode: input full-shaped symbols with address keys
+	DIME_CONFIG_VALUE(DimeArticleChars, _dayiArticleChars);  // Article mode symbols for ' [ ] \ - ` (empty = built-in)
 	DIME_CONFIG_VALUE(DAYI_SELKEY_MODE, _dayiSelkeyMode);  // Candidate select keys in Dayi mode
 
 	DIME_CONFIG_VALUE(PHONETIC_KEYBOARD_LAYOUT, _phoneticKeyboardLayout);

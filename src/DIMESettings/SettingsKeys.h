@@ -44,6 +44,7 @@ namespace SettingsKeys {
 
     // String keys
     constexpr const wchar_t FontFaceName[]                 = L"FontFaceName";
+    constexpr const wchar_t DayiArticleChars[]             = L"DayiArticleChars";
 
     // Total count of non-color, non-CLSID keys (keys that have a UI control)
     constexpr int UI_KEY_COUNT = 31;

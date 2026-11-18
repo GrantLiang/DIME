@@ -754,7 +754,7 @@ impl DimeSettings {
 }
 
 // The C header declares the same struct; keep the layouts in lock-step.
-const _: () = assert!(std::mem::size_of::<ConfigValues>() == 308);
+const _: () = assert!(std::mem::size_of::<ConfigValues>() == 324);
 const _: () = assert!(std::mem::size_of::<Env>() == 8);
 
 /// The process-wide settings used by `CConfig` when it is built with
@@ -1986,6 +1986,12 @@ impl session::Host for FfiHost<'_> {
 
     fn virtual_key_length(&self) -> usize {
         unsafe { (self.v.virtual_key_length)(self.ctx) }
+    }
+    fn dayi_article_chars(&self) -> Option<[u16; 6]> {
+        // CConfig's storage is the global settings object (no vtable entry needed).
+        // SAFETY: process-lifetime object; read on the key-handling thread like CConfig.
+        let chars = unsafe { (*global_config_values()).dayi_article_chars };
+        (chars[0] != 0).then(|| [chars[0], chars[1], chars[2], chars[3], chars[4], chars[5]])
     }
     fn is_alpha(&self, c: u16) -> bool {
         unsafe { (self.v.is_alpha)(self.ctx, c) != 0 }

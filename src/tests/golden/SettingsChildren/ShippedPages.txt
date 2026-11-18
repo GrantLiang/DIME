@@ -1,11 +1,11 @@
-sel 0 nav 0 card 0 light: 45 lines 34938a1e1f09dbee
-sel 0 nav 0 card 0 dark: 45 lines 6909719c4f785c56
+sel 0 nav 0 card 0 light: 47 lines 97b3369056db96df
+sel 0 nav 0 card 0 dark: 47 lines d5464fc7ade07325
 sel 0 nav 1 card 0 light: 19 lines 6dc0291b28a9b98a
 sel 0 nav 1 card 0 dark: 19 lines ef20712cf04b15bc
 sel 0 nav 1 card 1 light: 7 lines f826fd9b1cd2b978
 sel 0 nav 1 card 1 dark: 7 lines f826fd9b1cd2b978
-sel 0 nav 1 card 2 light: 39 lines 673626ff4997717b
-sel 0 nav 1 card 2 dark: 39 lines 4b133bebe4be028b
+sel 0 nav 1 card 2 light: 41 lines 2872bde3e7a7e1d2
+sel 0 nav 1 card 2 dark: 41 lines 7564d5b88595eb30
 sel 0 nav 1 card 3 light missing: 9 lines c81c2f939b5bf6db
 sel 0 nav 1 card 3 light empty: 9 lines 8de8d02cf112a45b
 sel 0 nav 1 card 3 light utf8 bom: 9 lines edacce60f8dba8a6

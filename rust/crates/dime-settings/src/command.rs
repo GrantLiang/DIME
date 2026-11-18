@@ -12,8 +12,10 @@ use dime_config::page_layout::{
     CTRL_CUSTOM_TABLE_EDITOR,
 };
 use dime_config::settings_model::{
-    load_table_suffix, parse_max_codes, sync_combo, sync_toggle, SettingsSnapshot, CTRL_MAX_CODES,
+    load_table_suffix, parse_max_codes, sync_combo, sync_toggle, SettingsSnapshot, CTRL_DAYI_ARTICLE_CHARS,
+    CTRL_MAX_CODES,
 };
+use dime_config::values::article_chars_from;
 
 use crate::layout::card_rows;
 
@@ -388,6 +390,16 @@ pub unsafe fn handle(host: &mut dyn Host, s: *mut SettingsSnapshot, set_grid: &m
                 // SAFETY: forwarded contract.
                 unsafe { snap(s).max_codes = val };
                 host.apply_and_save();
+            }
+        } else if id == CTRL_DAYI_ARTICLE_CHARS {
+            // Saved only when the text is empty or six characters, like MaxCodes.
+            if let Some(chars) = article_chars_from(until_nul(&ev.edit_text)) {
+                // SAFETY: forwarded contract.
+                let changed = unsafe { snap(s).dayi_article_chars != chars };
+                if changed {
+                    unsafe { snap(s).dayi_article_chars = chars };
+                    host.apply_and_save();
+                }
             }
         }
     }

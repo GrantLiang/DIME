@@ -28,16 +28,16 @@ namespace SettingsWindowPaint {
 // ============================================================================
 
 #ifdef _WIN64
-static_assert(sizeof(PaintContext) == 520, "PaintContext must match dime-settings");
-static_assert(offsetof(PaintContext, dpi) == 376, "PaintContext::dpi");
+static_assert(sizeof(PaintContext) == 536, "PaintContext must match dime-settings");
+static_assert(offsetof(PaintContext, dpi) == 392, "PaintContext::dpi");
 static_assert(sizeof(Fonts) == 56, "Fonts must match dime-settings");
 #else
-static_assert(sizeof(PaintContext) == 484, "PaintContext must match dime-settings");
-static_assert(offsetof(PaintContext, dpi) == 340, "PaintContext::dpi");
+static_assert(sizeof(PaintContext) == 500, "PaintContext must match dime-settings");
+static_assert(offsetof(PaintContext, dpi) == 356, "PaintContext::dpi");
 static_assert(sizeof(Fonts) == 28, "Fonts must match dime-settings");
 #endif
 static_assert(offsetof(PaintContext, snapshot) == 88, "PaintContext::snapshot");
-static_assert(offsetof(PaintContext, fontTitle) == 304, "PaintContext::fontTitle");
+static_assert(offsetof(PaintContext, fontTitle) == 320, "PaintContext::fontTitle");
 static_assert(offsetof(PaintContext, toggleOn) == offsetof(PaintContext, cardExpanded) + 16, "PaintContext::toggleOn");
 
 void CreateFonts(UINT dpi, Fonts* out) { dime_settings_create_fonts(dpi, out); }
