@@ -96,7 +96,7 @@ DIME 是一套適用於 Windows 8/10/11 的輸入法框架，支援多種中文�
    ---
    <!-- DOWNLOAD_START -->     
      <details>
-     <summary><b>最新開發版本 DIME v2.0.819 (更新日期: 2026-11-18)</b></summary>
+     <summary><b>最新開發版本 DIME v2.0.823 (更新日期: 2026-11-19)</b></summary>
    <!-- DOWNLOAD_END -->
        
    [DIME-Universal.zip](https://github.com/jrywu/DIME/raw/refs/heads/master/installer/DIME-Universal.zip)
@@ -127,14 +127,14 @@ DIME 是一套適用於 Windows 8/10/11 的輸入法框架，支援多種中文�
 
    <!-- CHECKSUM_START -->
      <details>     
-     <summary><b>最新開發版本 DIME v2.0.819 SHA-256 CHECKSUM (更新日期: 2026-11-18)</b></summary>
+     <summary><b>最新開發版本 DIME v2.0.823 SHA-256 CHECKSUM (更新日期: 2026-11-19)</b></summary>
    
     | 檔案 | SHA-256 CHECKSUM |
     |------|----------------|
-    | DIME-Universal.exe | `4E7D0CBA23B52CCAB3D9631AC50441CB814A39E2332E278DC5656D42D553DDF6` |
-    | DIME-Universal.zip | `02C53945D21411F482F46E60AA62E4F61C971ED3EC0A30BB14494FDFBF8869D2` |
-    | DIME-64bit.msi | `C5BEA96C8AEA45D1E77C8D80399C1FF30AB68429ECD178D77C4730AA39061245` |
-    | DIME-32bit.msi | `228646198043C03642D83D9D9B9FAB31E65F85C46151DFC80AB860C9A7E407A3` |
+    | DIME-Universal.exe | `48EF667974AA47D724EB9680DC04CB7AF5475A2D15B542A5D8F72E3DA1586A39` |
+    | DIME-Universal.zip | `974C646F8724B255771398907695F0905BBBB9BE95B369BBFA0CFD0D0F23E772` |
+    | DIME-64bit.msi | `B417911FB3F2082C2A708AA2DE80ACC3BC3A1695D544915775A5F29D1C9B210B` |
+    | DIME-32bit.msi | `8B4ABB96167B38C2D1851A540E834DB3380AC2C85589441206F9EFAFCB5AD60F` |
    <!-- CHECKSUM_END -->
      </details>
    
