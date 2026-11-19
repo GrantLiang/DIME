@@ -325,6 +325,25 @@ namespace DIMEUnitTests
             CheckGolden(L"dayi_sentence_auto_compose_arrows", SentenceOptions({ L"AutoCompose = 1", L"DayiSelkeyMode = 2" }),
                 L"a Space g Left d Down Left End a d e Left Back Back Back e Left Back Home c Right Enter");
         }
+        // A table listing a longer code before the exact one (ef 地 before e 山 出, like
+        // 大易 mn. 冤 before mn 剛): the incremental window lists the exact code first,
+        // so Space adds 山 with its code's candidates and Down can still change it.
+        TEST_METHOD(Dayi_SentenceAutoComposeExactFirst)
+        {
+            KeyFlowOptions o = SentenceOptions({ L"AutoCompose = 1", L"DayiSelkeyMode = 2" });
+            std::wstring cin = kDayiCin;
+            const std::wstring ef = L"ef\t\x5730\n";
+            const size_t at = cin.find(ef);
+            Assert::IsTrue(at != std::wstring::npos);
+            cin.erase(at, ef.size());
+            cin.insert(cin.find(L"e\t\x5C71\n", cin.find(L"%chardef begin")), ef);
+            for (auto& f : o.appDataFiles)
+                if (f.first == L"Dayi.cin") f.second = cin;
+            CheckGolden(L"dayi_sentence_auto_compose_exact_first", o, L"e Space a Space Home Down Down Space Enter");
+            KeyFlowOptions plain = DayiOptions({ L"AutoCompose = 1" });
+            plain.appDataFiles[0].second = cin;
+            CheckGolden(L"dayi_auto_compose_exact_first", plain, L"e Space e f Space");
+        }
         TEST_METHOD(Dayi_SentenceArrowsWithReading)
         {
             CheckGolden(L"dayi_sentence_arrows_with_reading", SentenceOptions({}),

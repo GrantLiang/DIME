@@ -1,0 +1,11 @@
+# script: e Space a Space Home Down Down Space Enter
+init -> passed text="" sel=0
+e -> eaten text="山" sel=1 comp="山" cand=incremental[*山 出 地]
+Space -> eaten text="山" sel=1 comp="山"
+a -> eaten text="山人" sel=2 comp="山人" cand=incremental[*人 入 八 從 信]
+Space -> eaten text="山人" sel=2 comp="山人"
+Home -> eaten text="山人" sel=0 comp="山人"
+Down -> eaten text="山人" sel=0 comp="山人" cand=original[*山 出]
+Down -> eaten text="山人" sel=0 comp="山人" cand=original[山 *出]
+Space -> eaten text="出人" sel=0 comp="出人"
+Enter -> eaten text="出人" sel=2

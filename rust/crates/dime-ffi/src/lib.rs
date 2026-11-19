@@ -1747,6 +1747,7 @@ fn encode_step(st: candgen::Step) -> DimeCandidateStep {
         SortByWordFrequency { engine } => (9, engine, 0, 0),
         UpdateWidth => (10, 0, 0, 0),
         ClearWildcardFlag => (11, 0, 0, 0),
+        ExactMatchesFirst => (12, 0, 0, 0),
     };
     DimeCandidateStep { op, engine, key, arg }
 }

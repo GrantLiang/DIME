@@ -77,6 +77,9 @@ pub enum Step {
     SortByFindKeyCode {
         engine: u32,
     },
+    /// Stable-move the items whose `_FindKeyCode` is exactly the typed reading
+    /// (no remaining keys) to the front of the incremental list.
+    ExactMatchesFirst,
     /// Drop the typed prefix from every item's `_FindKeyCode`.
     TrimFindKeyCodes,
     /// `SetupTCFreqTable()`.
@@ -206,6 +209,12 @@ pub fn plan(i: &SearchInput<'_>) -> Vec<Step> {
         steps.push(ReturnIfEmpty);
         if i.keystroke_sort {
             steps.push(SortByFindKeyCode { engine: main });
+        }
+        // The character whose code is exactly the reading comes first, so Space
+        // in the incremental window gives what Space without it would give
+        // (大易 `mn` is 剛, not the earlier-listed `mn.` 冤).
+        if !has_wildcard {
+            steps.push(ExactMatchesFirst);
         }
         steps.push(TrimFindKeyCodes);
     } else if i.escape_input && (ime == ime_mode::DAYI || is_array) {
@@ -449,7 +458,23 @@ mod tests {
         let p = plan(&i);
         let pos = |st: Step| p.iter().position(|&x| x == st).unwrap();
         assert!(pos(ReturnIfEmpty) < pos(SortByFindKeyCode { engine: engine::TABLE }));
+        assert!(pos(SortByFindKeyCode { engine: engine::TABLE }) < pos(ExactMatchesFirst));
+        assert!(pos(ExactMatchesFirst) < pos(TrimFindKeyCodes));
         assert_eq!(p.last(), Some(&UpdateWidth));
+    }
+
+    #[test]
+    fn incremental_with_wildcard_keeps_table_order() {
+        let b = s("m?");
+        let i = SearchInput {
+            dictionary_available: true,
+            buffer: &b,
+            incremental: true,
+            ..Default::default()
+        };
+        let p = plan(&i);
+        assert!(!p.contains(&ExactMatchesFirst));
+        assert!(p.contains(&TrimFindKeyCodes));
     }
 
     #[test]

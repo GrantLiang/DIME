@@ -379,6 +379,26 @@ void CCompositionProcessorEngine::_GetCandidateListRust(_Inout_ CDIMEArray<CCand
 		case DIME_CANDGEN_SORT_BY_FIND_KEY_CODE:
 			if (pEngine) pEngine->SortListItemByFindKeyCode(pCandidateList);
 			break;
+		case DIME_CANDGEN_EXACT_MATCHES_FIRST:
+		{
+			// Matched against "<reading>*", so a code as long as the reading is the reading.
+			DWORD_PTR keystrokeBufferLen = _keystrokeBuffer.GetLength();
+			CDIMEArray<CCandidateListItem> exact, rest;
+			for (UINT index = 0; index < pCandidateList->Count(); index++)
+			{
+				const CCandidateListItem* pLI = pCandidateList->GetAt(index);
+				CCandidateListItem* pTo = (pLI->_FindKeyCode.GetLength() == keystrokeBufferLen) ? exact.Append() : rest.Append();
+				*pTo = *pLI;
+			}
+			if (exact.Count() == 0 || rest.Count() == 0)
+				break;
+			UINT to = 0;
+			for (UINT index = 0; index < exact.Count(); index++)
+				*pCandidateList->GetAt(to++) = *exact.GetAt(index);
+			for (UINT index = 0; index < rest.Count(); index++)
+				*pCandidateList->GetAt(to++) = *rest.GetAt(index);
+			break;
+		}
 		case DIME_CANDGEN_TRIM_FIND_KEY_CODES:
 		{
 			DWORD_PTR keystrokeBufferLen = _keystrokeBuffer.GetLength();

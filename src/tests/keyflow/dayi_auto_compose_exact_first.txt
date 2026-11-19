@@ -1,0 +1,7 @@
+# script: e Space e f Space
+init -> passed text="" sel=0
+e -> eaten text="山" sel=1 comp="山" cand=incremental[*山 出 地]
+Space -> eaten text="山" sel=1
+e -> eaten text="山山" sel=2 comp="山" cand=incremental[*山 出 地]
+f -> eaten text="山山土" sel=3 comp="山土" cand=incremental[*地]
+Space -> eaten text="山地" sel=2 cand=phrase[方 球]

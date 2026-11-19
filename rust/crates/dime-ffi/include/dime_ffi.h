@@ -430,6 +430,7 @@ enum {
     DIME_CANDGEN_SORT_BY_WORD_FREQUENCY = 9, /* engine; only if the frequency table is loaded */
     DIME_CANDGEN_UPDATE_WIDTH = 10,
     DIME_CANDGEN_CLEAR_WILDCARD_FLAG = 11,
+    DIME_CANDGEN_EXACT_MATCHES_FIRST = 12, /* incremental: items whose code is the reading, first (stable) */
 };
 enum {
     DIME_ENGINE_TABLE = 0, DIME_ENGINE_BIG5 = 1, DIME_ENGINE_CUSTOM = 2, DIME_ENGINE_ARRAY_SHORT_CODE = 3,
